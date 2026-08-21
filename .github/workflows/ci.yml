@@ -1,4 +1,4 @@
-name: Build and Test Pipeline
+name: Build, Test, and Containerize Pipeline
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-test:
+  build-test-and-dockerize:
     runs-on: ubuntu-latest
 
     steps:
@@ -27,3 +27,14 @@ jobs:
 
     - name: Execute Automated Unit Tests
       run: dotnet test --no-build --verbosity normal --configuration Release
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker Image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./src/A1Academy.API
+        file: ./src/A1Academy.API/Dockerfile
+        push: false
+        tags: a1academy-api:latest
