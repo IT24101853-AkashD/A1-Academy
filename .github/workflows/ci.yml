@@ -1,107 +1,29 @@
-name: A1 Academy CI/CD
+name: Build and Test Pipeline
 
 on:
   push:
-    branches:
-      - main
-      - develop
-
+    branches: [ "main", "feature/*" ]
   pull_request:
-    branches:
-      - main
-      - develop
+    branches: [ "main" ]
 
 jobs:
-
-  # =========================
-  # BACKEND CI
-  # =========================
-  backend:
-    name: Backend Build & Test
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
 
-      - name: Restore backend dependencies
-        run: dotnet restore backend/A1Academy.Api.csproj
+    - name: Restore Dependencies
+      run: dotnet restore
 
-      - name: Build backend
-        run: dotnet build backend/A1Academy.Api.csproj --no-restore --configuration Release
+    - name: Build Application
+      run: dotnet build --no-restore --configuration Release
 
-      - name: Test backend
-        run: dotnet test backend/A1Academy.Api.csproj --no-build --configuration Release
-
-
-  # =========================
-  # FRONTEND CI
-  # =========================
-  frontend:
-    name: Frontend Build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm install
-
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-
-
-  # =========================
-  # DOCKER BUILD
-  # =========================
-  docker:
-    name: Build Docker Images
-    runs-on: ubuntu-latest
-
-    needs:
-      - backend
-      - frontend
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Build backend Docker image
-        run: docker build -t a1-academy-backend ./backend
-
-      - name: Build frontend Docker image
-        run: docker build -t a1-academy-frontend ./frontend
-
-
-  # =========================
-  # DEPLOY
-  # =========================
-  deploy:
-    name: Deploy
-    runs-on: ubuntu-latest
-
-    needs:
-      - docker
-
-    # Deploy only when pushing to main
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - name: Deployment started
-        run: echo "Deployment started"
-
-      - name: Deployment placeholder
-        run: echo "Configure your cloud deployment here"
+    - name: Execute Automated Unit Tests
+      run: dotnet test --no-build --verbosity normal --configuration Release
