@@ -1,0 +1,14 @@
+## Build and output directories
+[Bb]in/
+[Oo]bj/
+.vs/
+.vscode/
+
+## User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## App settings overrides
+appsettings.Production.json
