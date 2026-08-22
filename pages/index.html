@@ -213,11 +213,11 @@
 <h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-primary mb-md">Empowering Excellence Through Expert Tutoring</h1>
 <p class="font-body-lg text-body-lg text-on-surface-variant mb-lg max-w-xl">A1 Academy connects ambitious students with top-tier educators. Experience personalized learning paths, digital badges, and gamified progress tracking designed to elevate your educational journey.</p>
 <div class="flex flex-col sm:flex-row gap-md">
-<a class="inline-flex items-center justify-center bg-secondary-container text-on-secondary-container font-label-md text-label-md px-8 py-3 rounded-full hover:bg-secondary-fixed active:scale-95 transition-all shadow-level-1 hover:shadow-level-2" href="#">
+<a class="inline-flex items-center justify-center bg-secondary-container text-on-secondary-container font-label-md text-label-md px-8 py-3 rounded-full hover:bg-secondary-fixed active:scale-95 transition-all shadow-level-1 hover:shadow-level-2 cursor-pointer" onclick="document.getElementById('register-student-modal').classList.remove('hidden')">
                             Join as a Student
                             <span class="material-symbols-outlined ml-2 text-[18px]">school</span>
 </a>
-<a class="inline-flex items-center justify-center border-2 border-primary text-primary font-label-md text-label-md px-8 py-3 rounded-full hover:bg-surface-container-low active:scale-95 transition-all" href="#">
+<a class="inline-flex items-center justify-center border-2 border-primary text-primary font-label-md text-label-md px-8 py-3 rounded-full hover:bg-surface-container-low active:scale-95 transition-all cursor-pointer" onclick="document.getElementById('register-teacher-modal').classList.remove('hidden')">
                             Teach with Us
                             <span class="material-symbols-outlined ml-2 text-[18px]">co_present</span>
 </a>
@@ -329,7 +329,7 @@
     <div class="relative w-full max-w-4xl bg-surface-container-lowest rounded-[24px] shadow-level-3 p-8 md:p-12 overflow-hidden border border-surface-variant">
         
         <!-- Close Button -->
-        <button onclick="document.getElementById('register-modal').classList.add('hidden')" class="absolute top-6 right-6 text-on-surface-variant hover:text-error transition-colors cursor-pointer outline-none">
+        <button onclick="document.getElementById('register-modal').classList.add('hidden')" class="absolute top-6 right-6 text-on-surface-variant hover:text-error transition-colors cursor-pointer outline-none z-10">
             <span class="material-symbols-outlined text-[32px]">close</span>
         </button>
 
@@ -343,27 +343,294 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             
             <!-- Student Card -->
-            <a href="register-student.html" class="bg-white rounded-[16px] p-8 shadow-level-1 hover:shadow-level-2 transition-all duration-300 border-2 border-transparent hover:border-primary-fixed group flex flex-col items-center text-center cursor-pointer">
+            <div onclick="document.getElementById('register-modal').classList.add('hidden'); document.getElementById('register-student-modal').classList.remove('hidden');" class="bg-white rounded-[16px] p-8 shadow-level-1 hover:shadow-level-2 transition-all duration-300 border-2 border-transparent hover:border-primary-fixed group flex flex-col items-center text-center cursor-pointer">
                 <!-- Colorful Cartoon Student Image -->
                 <div class="w-28 h-28 mb-6 rounded-full overflow-hidden bg-primary-fixed/40 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     <img src="https://cdn-icons-png.flaticon.com/512/3135/3135810.png" alt="Cartoon Student Avatar" class="w-20 h-20 object-contain drop-shadow-md"/>
                 </div>
                 <h3 class="font-headline-sm text-[24px] text-primary mb-3">Register as a Student</h3>
                 <p class="font-body-md text-body-md text-on-surface-variant">Browse courses, track your progress, and earn digital badges.</p>
-            </a>
+            </div>
 
             <!-- Teacher Card -->
-            <a href="register-teacher.html" class="bg-white rounded-[16px] p-8 shadow-level-1 hover:shadow-level-2 transition-all duration-300 border-2 border-transparent hover:border-primary-fixed group flex flex-col items-center text-center cursor-pointer">
+            <div onclick="document.getElementById('register-modal').classList.add('hidden'); document.getElementById('register-teacher-modal').classList.remove('hidden');" class="bg-white rounded-[16px] p-8 shadow-level-1 hover:shadow-level-2 transition-all duration-300 border-2 border-transparent hover:border-primary-fixed group flex flex-col items-center text-center cursor-pointer">
                 <!-- NEW Colorful Cartoon Teacher Image -->
                 <div class="w-28 h-28 mb-6 rounded-full overflow-hidden bg-secondary-fixed/40 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     <img src="https://cdn-icons-png.flaticon.com/512/3429/3429433.png" alt="Cartoon Teacher Avatar" class="w-20 h-20 object-contain drop-shadow-md"/>
                 </div>
                 <h3 class="font-headline-sm text-[24px] text-primary mb-3">Register as a Teacher</h3>
                 <p class="font-body-md text-body-md text-on-surface-variant">Submit your qualifications, manage classes, and guide the next generation.</p>
-            </a>
+            </div>
 
         </div>
     </div>
 </div>
+
+
+<!-- 2. NO-SCROLL STUDENT REGISTRATION FORM MODAL POPUP -->
+<div id="register-student-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center backdrop-blur-md bg-on-surface/40 p-4 transition-all duration-300">
+    <div class="relative w-full max-w-5xl min-h-[700px] flex flex-col justify-center bg-surface-container-lowest rounded-[24px] shadow-level-3 p-8 md:p-12 border border-surface-variant overflow-hidden">
+        
+        <!-- Close Button -->
+        <button onclick="document.getElementById('register-student-modal').classList.add('hidden')" class="absolute top-6 right-6 text-on-surface-variant hover:text-error transition-colors cursor-pointer outline-none z-10">
+            <span class="material-symbols-outlined text-[32px]">close</span>
+        </button>
+
+        <!-- Two-Column Grid Layout -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
+            
+            <!-- Left Column: Branding & Intro -->
+            <div class="flex flex-col items-center text-center md:border-r border-surface-variant md:pr-8">
+                <div class="w-32 h-32 mb-6 rounded-full overflow-hidden bg-primary-fixed/40 flex items-center justify-center">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135810.png" alt="Cartoon Student Avatar" class="w-24 h-24 object-contain drop-shadow-md hover:scale-110 transition-transform duration-300"/>
+                </div>
+                <h2 class="font-headline-md text-headline-md text-primary mb-3">Student Registration</h2>
+                <p class="text-body-md text-on-surface-variant max-w-xs">Create your Active account today to start browsing courses and earning your digital badges.</p>
+            </div>
+
+            <!-- Right Column: The Form -->
+            <div>
+                <form class="space-y-4" action="#" method="POST">
+                    
+                    <!-- Side-by-Side Names Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- First Name -->
+                        <div>
+                            <label class="block font-label-md text-on-surface mb-1" for="firstname">First Name</label>
+                            <input class="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" type="text" id="firstname" placeholder="First name" required />
+                        </div>
+
+                        <!-- Last Name (Optional) -->
+                        <div>
+                            <label class="block font-label-md text-on-surface mb-1" for="lastname">Last Name <span class="text-outline font-normal">(Optional)</span></label>
+                            <input class="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" type="text" id="lastname" placeholder="Last name" />
+                        </div>
+                    </div>
+
+                    <!-- Email with Verify Button -->
+                    <div>
+                        <label class="block font-label-md text-on-surface mb-1" for="email">Email Address</label>
+                        <div class="flex gap-2">
+                            <input class="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" type="email" id="email" placeholder="student@example.com" required />
+                            <button type="button" id="verify-btn" onclick="simulateVerification()" class="shrink-0 bg-surface-container-high text-on-surface font-label-md px-4 py-2.5 rounded-lg hover:bg-surface-dim transition-all border border-outline-variant cursor-pointer">Verify</button>
+                        </div>
+                        <div class="flex justify-between items-center mt-1">
+                            <p class="text-xs text-outline">* Must be a unique email address.</p>
+                            <!-- Hidden Verified Text -->
+                            <p id="verified-text" class="text-xs text-green-600 font-bold hidden flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">check_circle</span> Verified!
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Password with Toggle (Stacked) -->
+                    <div>
+                        <label class="block font-label-md text-on-surface mb-1" for="password">Password</label>
+                        <div class="relative">
+                            <input class="w-full bg-surface border border-outline-variant rounded-lg pl-4 pr-10 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" type="password" id="password" placeholder="••••••••" required />
+                            <button type="button" onclick="togglePassword('password', 'eye-icon-1')" class="absolute inset-y-0 right-0 px-3 flex items-center text-on-surface-variant hover:text-primary transition-colors outline-none cursor-pointer">
+                                <span id="eye-icon-1" class="material-symbols-outlined text-[18px]">visibility</span>
+                            </button>
+                        </div>
+                        <p class="text-xs text-outline mt-1">* Will be securely hashed.</p>
+                    </div>
+
+                    <!-- Confirm Password with Toggle (Stacked) -->
+                    <div>
+                        <label class="block font-label-md text-on-surface mb-1" for="confirm-password">Confirm Password</label>
+                        <div class="relative">
+                            <input class="w-full bg-surface border border-outline-variant rounded-lg pl-4 pr-10 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" type="password" id="confirm-password" placeholder="••••••••" required />
+                            <button type="button" onclick="togglePassword('confirm-password', 'eye-icon-2')" class="absolute inset-y-0 right-0 px-3 flex items-center text-on-surface-variant hover:text-primary transition-colors outline-none cursor-pointer">
+                                <span id="eye-icon-2" class="material-symbols-outlined text-[18px]">visibility</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button class="w-full bg-primary text-on-primary font-label-md py-3 rounded-full hover:bg-primary-container active:scale-95 transition-all shadow-sm mt-4 cursor-pointer" type="submit">
+                        Create Active Account
+                    </button>
+                    
+                    <!-- Google Sign In Divider -->
+                    <div class="relative mt-5 mb-4">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-surface-variant"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-2 bg-surface-container-lowest text-outline text-xs">Or continue with</span>
+                        </div>
+                    </div>
+
+                    <!-- Google Sign In Button -->
+                    <button type="button" class="w-full flex items-center justify-center gap-3 bg-white border border-outline-variant rounded-full px-4 py-2.5 text-body-md font-label-md text-on-surface hover:bg-surface-container-low transition-all shadow-sm cursor-pointer">
+                        <!-- Official Google "G" Logo SVG -->
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5" />
+                        Sign in with Google
+                    </button>
+
+                </form>
+
+                <div class="text-center mt-5">
+                    <p class="text-body-sm text-on-surface-variant">Already have an account? <a href="#" class="text-primary font-bold hover:underline">Sign In</a></p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- 3. NO-SCROLL TEACHER REGISTRATION FORM MODAL POPUP -->
+<div id="register-teacher-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center backdrop-blur-md bg-on-surface/40 p-4 transition-all duration-300">
+    <div class="relative w-full max-w-5xl min-h-[700px] flex flex-col justify-center bg-surface-container-lowest rounded-[24px] shadow-level-3 p-8 md:p-12 border border-surface-variant overflow-hidden">
+        
+        <!-- Close Button -->
+        <button onclick="document.getElementById('register-teacher-modal').classList.add('hidden')" class="absolute top-6 right-6 text-on-surface-variant hover:text-error transition-colors cursor-pointer outline-none z-10">
+            <span class="material-symbols-outlined text-[32px]">close</span>
+        </button>
+
+        <!-- Two-Column Grid Layout -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
+            
+            <!-- Left Column: Branding & Intro -->
+            <div class="flex flex-col items-center text-center md:border-r border-surface-variant md:pr-8">
+                <div class="w-32 h-32 mb-6 rounded-full overflow-hidden bg-secondary-fixed/40 flex items-center justify-center">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3429/3429433.png" alt="Cartoon Teacher Avatar" class="w-24 h-24 object-contain drop-shadow-md hover:scale-110 transition-transform duration-300"/>
+                </div>
+                <h2 class="font-headline-md text-headline-md text-primary mb-3">Teacher Application</h2>
+                <p class="text-body-md text-on-surface-variant max-w-xs mb-4">Join our community of expert educators. Provide your details and credentials below.</p>
+                <div class="bg-surface-container-low p-4 rounded-lg border border-surface-dim">
+                    <p class="text-label-md font-label-md text-primary flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">info</span>
+                        Pending Review Process
+                    </p>
+                    <p class="text-xs text-on-surface-variant mt-2 leading-relaxed">To ensure scholarly excellence, all new teacher accounts are placed in a <strong>Pending status</strong>. Scheduling tools will unlock once an Administrator verifies your qualifications.</p>
+                </div>
+            </div>
+
+            <!-- Right Column: The Form -->
+            <div>
+                <form class="space-y-4" action="#" method="POST">
+                    
+                    <!-- Side-by-Side Names Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- First Name -->
+                        <div>
+                            <label class="block font-label-md text-on-surface mb-1" for="teacher-firstname">First Name</label>
+                            <input class="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" type="text" id="teacher-firstname" placeholder="First name" required />
+                        </div>
+
+                        <!-- Last Name (Optional) -->
+                        <div>
+                            <label class="block font-label-md text-on-surface mb-1" for="teacher-lastname">Last Name <span class="text-outline font-normal">(Optional)</span></label>
+                            <input class="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" type="text" id="teacher-lastname" placeholder="Last name" />
+                        </div>
+                    </div>
+
+                    <!-- Email with Verify Button -->
+                    <div>
+                        <label class="block font-label-md text-on-surface mb-1" for="teacher-email">Email Address</label>
+                        <div class="flex gap-2">
+                            <input class="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" type="email" id="teacher-email" placeholder="teacher@example.com" required />
+                            <button type="button" id="teacher-verify-btn" onclick="simulateTeacherVerification()" class="shrink-0 bg-surface-container-high text-on-surface font-label-md px-4 py-2.5 rounded-lg hover:bg-surface-dim transition-all border border-outline-variant cursor-pointer">Verify</button>
+                        </div>
+                        <div class="flex justify-between items-center mt-1">
+                            <p class="text-xs text-outline">* Must be a unique email address.</p>
+                            <!-- Hidden Verified Text -->
+                            <p id="teacher-verified-text" class="text-xs text-green-600 font-bold hidden flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">check_circle</span> Verified!
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Professional Qualifications with Yellow Upload Button -->
+                    <div>
+                        <label class="block font-label-md text-on-surface mb-1" for="teacher-qualifications">Professional Qualifications</label>
+                        <div class="flex gap-2">
+                            <input class="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" type="text" id="teacher-qualifications" placeholder="e.g. BSc. Mathematics" required />
+                            <!-- Yellow Upload Button -->
+                            <button type="button" class="shrink-0 bg-secondary-container text-on-secondary-container font-label-md px-4 py-2.5 rounded-lg hover:bg-secondary-fixed transition-all flex items-center gap-2 cursor-pointer shadow-sm">
+                                <span class="material-symbols-outlined text-[18px]">upload_file</span> Upload
+                            </button>
+                        </div>
+                        <p class="text-xs text-outline mt-1">* Required for administrative verification. Please upload certificates.</p>
+                    </div>
+
+                    <!-- Password with Toggle (Stacked) -->
+                    <div>
+                        <label class="block font-label-md text-on-surface mb-1" for="teacher-password">Password</label>
+                        <div class="relative">
+                            <input class="w-full bg-surface border border-outline-variant rounded-lg pl-4 pr-10 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" type="password" id="teacher-password" placeholder="••••••••" required />
+                            <button type="button" onclick="togglePassword('teacher-password', 'teacher-eye-icon-1')" class="absolute inset-y-0 right-0 px-3 flex items-center text-on-surface-variant hover:text-primary transition-colors outline-none cursor-pointer">
+                                <span id="teacher-eye-icon-1" class="material-symbols-outlined text-[18px]">visibility</span>
+                            </button>
+                        </div>
+                        <p class="text-xs text-outline mt-1">* Will be securely hashed.</p>
+                    </div>
+
+                    <!-- Confirm Password with Toggle (Stacked) -->
+                    <div>
+                        <label class="block font-label-md text-on-surface mb-1" for="teacher-confirm-password">Confirm Password</label>
+                        <div class="relative">
+                            <input class="w-full bg-surface border border-outline-variant rounded-lg pl-4 pr-10 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" type="password" id="teacher-confirm-password" placeholder="••••••••" required />
+                            <button type="button" onclick="togglePassword('teacher-confirm-password', 'teacher-eye-icon-2')" class="absolute inset-y-0 right-0 px-3 flex items-center text-on-surface-variant hover:text-primary transition-colors outline-none cursor-pointer">
+                                <span id="teacher-eye-icon-2" class="material-symbols-outlined text-[18px]">visibility</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button class="w-full bg-primary text-on-primary font-label-md py-3 rounded-full hover:bg-primary-container active:scale-95 transition-all shadow-sm mt-4 cursor-pointer" type="submit">
+                        Submit Teacher Application
+                    </button>
+                </form>
+
+                <div class="text-center mt-4">
+                    <p class="text-body-sm text-on-surface-variant">Already an approved teacher? <a href="#" class="text-primary font-bold hover:underline">Sign In</a></p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Toggles & Verification Simulation -->
+<script>
+    function togglePassword(inputId, iconId) {
+        const passwordInput = document.getElementById(inputId);
+        const eyeIcon = document.getElementById(iconId);
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            eyeIcon.textContent = 'visibility_off';
+        } else {
+            passwordInput.type = 'password';
+            eyeIcon.textContent = 'visibility';
+        }
+    }
+
+    function simulateVerification() {
+        // Hide the Verify Button
+        document.getElementById('verify-btn').classList.add('hidden');
+        // Make the email input visually locked (readonly)
+        const emailInput = document.getElementById('email');
+        emailInput.setAttribute('readonly', true);
+        emailInput.classList.add('bg-surface-container-low', 'text-on-surface-variant');
+        emailInput.classList.remove('bg-surface');
+        // Show the green Verified text
+        document.getElementById('verified-text').classList.remove('hidden');
+    }
+
+    function simulateTeacherVerification() {
+        // Hide the Verify Button
+        document.getElementById('teacher-verify-btn').classList.add('hidden');
+        // Make the email input visually locked (readonly)
+        const emailInput = document.getElementById('teacher-email');
+        emailInput.setAttribute('readonly', true);
+        emailInput.classList.add('bg-surface-container-low', 'text-on-surface-variant');
+        emailInput.classList.remove('bg-surface');
+        // Show the green Verified text
+        document.getElementById('teacher-verified-text').classList.remove('hidden');
+    }
+</script>
 
 </body></html>
