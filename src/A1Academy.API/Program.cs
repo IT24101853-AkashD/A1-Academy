@@ -3,10 +3,13 @@ using A1Academy.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 1. Register Azure Application Insights Telemetry & Monitoring
+builder.Services.AddApplicationInsightsTelemetry();
+
 // Connection String
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// Register DbContext directly with full namespace path to prevent using issues
+// Register DbContext
 builder.Services.AddDbContext<A1Academy.API.Data.AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
@@ -20,7 +23,7 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Startup verification
+// Startup DB Verification
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
