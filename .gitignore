@@ -12,3 +12,4 @@
 
 ## App settings overrides
 appsettings.Production.json
+.azure

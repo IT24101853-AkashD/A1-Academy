@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: a1-academy
+metadata:
+    template: azd-init@1.31.2
+services:
+    a1academy-api:
+        project: src/A1Academy.API
+        host: containerapp
+        language: dotnet
+resources:
+    a1academy-api:
+        type: host.containerapp
+        port: 8080
