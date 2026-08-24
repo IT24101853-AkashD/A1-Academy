@@ -22,3 +22,7 @@ jobs:
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./A1Academy.API/Dockerfile
+          push: false
