@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Contact Us | A1 Academy</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-primary": "#adc7f7",
+                      "surface-bright": "#f7fafc",
+                      "on-tertiary-fixed": "#001d37",
+                      "on-secondary-fixed-variant": "#673d00",
+                      "inverse-surface": "#2d3133",
+                      "secondary-fixed-dim": "#ffb866",
+                      "error-container": "#ffdad6",
+                      "surface-dim": "#d7dadc",
+                      "tertiary-container": "#003762",
+                      "error": "#ba1a1a",
+                      "secondary-fixed": "#ffddba",
+                      "on-primary-fixed": "#001b3c",
+                      "secondary-container": "#ffb55c",
+                      "outline": "#74777f",
+                      "surface": "#f7fafc",
+                      "primary": "#002045",
+                      "surface-container-lowest": "#ffffff",
+                      "on-error": "#ffffff",
+                      "outline-variant": "#c4c6cf",
+                      "on-tertiary": "#ffffff",
+                      "inverse-on-surface": "#eef1f3",
+                      "on-secondary-fixed": "#2b1700",
+                      "background": "#f7fafc",
+                      "tertiary-fixed-dim": "#9fcaff",
+                      "on-tertiary-fixed-variant": "#00497e",
+                      "on-surface-variant": "#43474e",
+                      "surface-variant": "#e0e3e5",
+                      "surface-container-low": "#f1f4f6",
+                      "on-secondary-container": "#744600",
+                      "on-background": "#181c1e",
+                      "on-tertiary-container": "#58a2f0",
+                      "secondary": "#875200",
+                      "primary-fixed": "#d6e3ff",
+                      "on-secondary": "#ffffff",
+                      "on-primary": "#ffffff",
+                      "surface-container-highest": "#e0e3e5",
+                      "surface-container": "#ebeef0",
+                      "primary-fixed-dim": "#adc7f7",
+                      "tertiary-fixed": "#d2e4ff",
+                      "on-primary-container": "#86a0cd",
+                      "on-primary-fixed-variant": "#2d476f",
+                      "on-surface": "#181c1e",
+                      "surface-tint": "#455f88",
+                      "on-error-container": "#93000a",
+                      "surface-container-high": "#e5e9eb",
+                      "tertiary": "#00213e",
+                      "primary-container": "#1a365d"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xs": "4px",
+                      "gutter": "24px",
+                      "lg": "48px",
+                      "xl": "80px",
+                      "sm": "12px",
+                      "max-width": "1280px",
+                      "margin-desktop": "40px",
+                      "margin-mobile": "16px",
+                      "base": "8px",
+                      "md": "24px"
+              },
+              "fontFamily": {
+                      "display-lg-mobile": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "display-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "30px",
+                              {
+                                      "lineHeight": "38px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-sm": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .shadow-level-1 { box-shadow: 0px 2px 4px rgba(26, 54, 93, 0.04); }
+        .shadow-level-2 { box-shadow: 0px 10px 15px rgba(26, 54, 93, 0.08); }
+        .shadow-level-3 { box-shadow: 0px 20px 25px rgba(26, 54, 93, 0.12); }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md antialiased min-h-screen flex flex-col">
+
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-on-background shadow-sm sticky top-0 z-50 w-full transition-colors duration-300">
+<div class="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-base max-w-max-width mx-auto">
+<div class="flex items-center gap-md">
+<a class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg font-bold text-primary dark:text-primary-fixed-dim" href="index.html">A1 Academy</a>
+<nav class="hidden md:flex items-center gap-gutter ml-lg font-body-md text-body-md">
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary hover:bg-surface-container-low dark:hover:bg-primary-container transition-colors active:scale-95 transition-transform px-3 py-2 rounded-md" href="#">Courses</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary hover:bg-surface-container-low dark:hover:bg-primary-container transition-colors active:scale-95 transition-transform px-3 py-2 rounded-md" href="#">Teachers</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden lg:flex items-center bg-surface-container-low rounded-full px-4 py-2 border border-outline-variant focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+<span class="material-symbols-outlined text-on-surface-variant mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md w-48 outline-none" placeholder="Search courses..." type="text"/>
+</div>
+<div class="hidden sm:flex items-center gap-2">
+<!-- Swapped Register Button -->
+<a class="inline-flex justify-center items-center w-28 border-2 border-outline-variant text-primary font-label-md text-label-md py-2 rounded-full hover:bg-secondary-container hover:text-on-secondary-container hover:border-primary active:scale-95 transition-all cursor-pointer" onclick="document.getElementById('register-modal').classList.remove('hidden')">Register</a>
+<!-- Swapped Login Button -->
+<a class="inline-flex justify-center items-center w-28 border-2 border-primary bg-primary text-on-primary font-label-md text-label-md py-2 rounded-full hover:bg-primary-container hover:border-primary-container active:scale-95 transition-all shadow-sm" href="#">Login</a>
+</div>
+<button class="md:hidden text-primary">
+<span class="material-symbols-outlined text-[28px]">menu</span>
+</button>
+</div>
+</div>
+</header>
+
+<!-- NEW CONTACT US MAIN CONTENT -->
+<main class="flex-grow bg-surface">
+  <!-- Image Hero Header -->
+  <section class="relative w-full h-[350px] flex flex-col items-center justify-center px-margin-mobile md:px-margin-desktop text-center overflow-hidden">
+    <!-- Background Image -->
+    <img class="absolute inset-0 w-full h-full object-cover" src="https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=2000&auto=format&fit=crop" alt="Modern educational building exterior" />
+    <!-- Dark Overlay -->
+    <div class="absolute inset-0 bg-primary/70"></div>
+    
+    <!-- Content -->
+    <div class="relative z-10 flex flex-col items-center">
+        <h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-white mb-4">Get in Touch with A1 Academy</h1>
+        <p class="font-body-lg text-body-lg text-surface-bright max-w-2xl">
+            Whether you are a student, a teacher, or an administrator, our team is here to help.
+        </p>
+    </div>
+  </section>
+
+  <!-- Contact Information Cards -->
+  <section class="relative z-20 max-w-max-width mx-auto px-margin-mobile md:px-margin-desktop -mt-16 pb-xl">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter">
+      
+      <!-- Card 1: Headquarters -->
+      <div class="bg-white rounded-[16px] p-6 shadow-level-2 hover:shadow-level-3 transition-all duration-300 border border-transparent hover:border-primary-fixed group flex flex-col items-center justify-center text-center cursor-pointer">
+        <div class="w-14 h-14 rounded-full bg-surface-container-low flex items-center justify-center mb-4 group-hover:bg-primary-container transition-colors">
+          <span class="material-symbols-outlined text-primary text-[28px] group-hover:text-on-primary-container transition-colors" style="font-variation-settings: 'FILL' 1; font-weight: 200;">location_on</span>
+        </div>
+        <h3 class="font-headline-sm text-[20px] text-primary mb-2">Headquarters</h3>
+        <p class="text-body-md font-body-md text-on-surface-variant">15 Education Mawatha,<br>Nuwara Eliya, Sri Lanka</p>
+      </div>
+
+      <!-- Card 2: Email -->
+      <div class="bg-white rounded-[16px] p-6 shadow-level-2 hover:shadow-level-3 transition-all duration-300 border border-transparent hover:border-primary-fixed group flex flex-col items-center justify-center text-center cursor-pointer">
+        <div class="w-14 h-14 rounded-full bg-surface-container-low flex items-center justify-center mb-4 group-hover:bg-primary-container transition-colors">
+          <span class="material-symbols-outlined text-primary text-[28px] group-hover:text-on-primary-container transition-colors" style="font-variation-settings: 'FILL' 1; font-weight: 200;">mail</span>
+        </div>
+        <h3 class="font-headline-sm text-[20px] text-primary mb-2">Email Support</h3>
+        <p class="text-body-md font-body-md text-on-surface-variant">support@a1academy.lk</p>
+      </div>
+
+      <!-- Card 3: Phone -->
+      <div class="bg-white rounded-[16px] p-6 shadow-level-2 hover:shadow-level-3 transition-all duration-300 border border-transparent hover:border-primary-fixed group flex flex-col items-center justify-center text-center cursor-pointer">
+        <div class="w-14 h-14 rounded-full bg-surface-container-low flex items-center justify-center mb-4 group-hover:bg-primary-container transition-colors">
+          <span class="material-symbols-outlined text-primary text-[28px] group-hover:text-on-primary-container transition-colors" style="font-variation-settings: 'FILL' 1; font-weight: 200;">call</span>
+        </div>
+        <h3 class="font-headline-sm text-[20px] text-primary mb-2">Phone</h3>
+        <p class="text-body-md font-body-md text-on-surface-variant">+94 77 123 4567</p>
+      </div>
+
+      <!-- Card 4: Working Hours -->
+      <div class="bg-white rounded-[16px] p-6 shadow-level-2 hover:shadow-level-3 transition-all duration-300 border border-transparent hover:border-primary-fixed group flex flex-col items-center justify-center text-center cursor-pointer">
+        <div class="w-14 h-14 rounded-full bg-surface-container-low flex items-center justify-center mb-4 group-hover:bg-primary-container transition-colors">
+          <span class="material-symbols-outlined text-primary text-[28px] group-hover:text-on-primary-container transition-colors" style="font-variation-settings: 'FILL' 1; font-weight: 200;">schedule</span>
+        </div>
+        <h3 class="font-headline-sm text-[20px] text-primary mb-2">Working Hours</h3>
+        <p class="text-body-md font-body-md text-on-surface-variant">Monday – Saturday, 8:00 AM<br>to 6:00 PM (LKT)</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="max-w-4xl mx-auto px-margin-mobile md:px-margin-desktop py-xl">
+    <div class="text-center mb-12">
+      <h2 class="font-headline-md text-headline-md text-primary mb-4">Frequently Asked Questions</h2>
+      <p class="font-body-md text-body-md text-on-surface-variant">Find quick answers to common questions about A1 Academy.</p>
+    </div>
+    
+    <div class="space-y-4">
+      <!-- FAQ 1 -->
+      <div class="bg-white border border-surface-variant rounded-lg p-6 shadow-sm hover:shadow-level-1 transition-shadow">
+        <h3 class="font-headline-sm text-[18px] text-primary mb-2">How do I enroll in a class?</h3>
+        <p class="text-body-md font-body-md text-on-surface-variant">Simply register for a free Student account. Once logged in, you can browse our Course Catalog by subject, view available seats, and instantly enroll in any active class.</p>
+      </div>
+      
+      <!-- FAQ 2 -->
+      <div class="bg-white border border-surface-variant rounded-lg p-6 shadow-sm hover:shadow-level-1 transition-shadow">
+        <h3 class="font-headline-sm text-[18px] text-primary mb-2">How do I apply to become a teacher?</h3>
+        <p class="text-body-md font-body-md text-on-surface-variant">Click the "Register" button and select the Teacher role. Your account will be placed in a "Pending" status while our Administrators review your professional qualifications. Once approved, you can begin scheduling classes.</p>
+      </div>
+
+      <!-- FAQ 3 -->
+      <div class="bg-white border border-surface-variant rounded-lg p-6 shadow-sm hover:shadow-level-1 transition-shadow">
+        <h3 class="font-headline-sm text-[18px] text-primary mb-2">How does the digital badge system work?</h3>
+        <p class="text-body-md font-body-md text-on-surface-variant">Our gamified learning system allows teachers to award digital badges for excellent academic performance, perfect attendance, and class participation. These badges are permanently displayed on your student progress card.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Location Map Section -->
+  <section class="w-full bg-surface-container-low py-xl px-margin-mobile md:px-margin-desktop">
+    <div class="max-w-max-width mx-auto grid grid-cols-1 md:grid-cols-2 gap-lg items-center">
+      <div>
+        <h2 class="font-headline-md text-headline-md text-primary mb-4">Visit Our Campus</h2>
+        <p class="font-body-lg text-body-lg text-on-surface-variant mb-6">
+          A1 Academy is proudly headquartered in the serene, focused environment of Nuwara Eliya. While our digital platform connects students globally, our administrative and support teams operate from our central campus.
+        </p>
+        <div class="flex items-center gap-3 text-primary font-label-md">
+          <span class="material-symbols-outlined">directions_car</span>
+          <span>Free parking available for all registered students and faculty.</span>
+        </div>
+      </div>
+      <!-- Map Image Placeholder -->
+      <div class="w-full h-[300px] bg-surface-variant rounded-xl overflow-hidden shadow-level-2 border-4 border-white relative">
+        <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1000&auto=format&fit=crop" alt="Map of Nuwara Eliya Headquarters" class="w-full h-full object-cover opacity-80" />
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div class="bg-primary text-white p-3 rounded-full shadow-lg flex items-center justify-center animate-bounce">
+                <span class="material-symbols-outlined text-[32px]">pin_drop</span>
+            </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Footer -->
+<footer class="bg-primary dark:bg-on-tertiary-fixed text-on-primary dark:text-tertiary-fixed font-label-md text-label-md mt-auto">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter px-margin-mobile md:px-margin-desktop py-xl max-w-max-width mx-auto">
+<div class="col-span-1 md:col-span-1">
+<h3 class="font-headline-sm text-headline-sm text-surface-bright mb-md">A1 Academy</h3>
+<p class="text-primary-fixed-dim opacity-80 mt-2 max-w-xs font-body-md text-body-md">
+                    Scholarly excellence for the modern age. Connecting dedicated students with verified expert educators.
+                </p>
+</div>
+<div class="col-span-1 md:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-lg">
+<div>
+<h4 class="text-surface-bright font-semibold mb-sm">Platform</h4>
+<ul class="space-y-sm">
+<li class=""><a class="text-primary-fixed-dim opacity-80 hover:opacity-100 hover:text-surface-bright transition-opacity focus:outline-none focus:ring-2 focus:ring-secondary rounded" href="#">Courses</a></li>
+<li class=""><a class="text-primary-fixed-dim opacity-80 hover:opacity-100 hover:text-surface-bright transition-opacity focus:outline-none focus:ring-2 focus:ring-secondary rounded" href="#">Teachers</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-surface-bright font-semibold mb-sm">Company</h4>
+<ul class="space-y-sm">
+<li class=""><a class="text-primary-fixed-dim opacity-80 hover:opacity-100 hover:text-surface-bright transition-opacity focus:outline-none focus:ring-2 focus:ring-secondary rounded" href="about.html">About Us</a></li>
+<li class=""><a class="text-primary-fixed-dim opacity-80 hover:opacity-100 hover:text-surface-bright transition-opacity focus:outline-none focus:ring-2 focus:ring-secondary rounded" href="careers.html">Careers</a></li>
+<li class=""><a class="text-surface-bright underline focus:outline-none focus:ring-2 focus:ring-secondary rounded" href="contact.html">Contact</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-surface-bright font-semibold mb-sm">Legal & Support</h4>
+<ul class="space-y-sm">
+<li class=""><a class="text-primary-fixed-dim opacity-80 hover:opacity-100 hover:text-surface-bright transition-opacity focus:outline-none focus:ring-2 focus:ring-secondary rounded" href="privacy.html">Privacy Policy</a></li>
+<li class=""><a class="text-primary-fixed-dim opacity-80 hover:opacity-100 hover:text-surface-bright transition-opacity focus:outline-none focus:ring-2 focus:ring-secondary rounded" href="terms.html">Terms of Service</a></li>
+<li class=""><a class="text-primary-fixed-dim opacity-80 hover:opacity-100 hover:text-surface-bright transition-opacity focus:outline-none focus:ring-2 focus:ring-secondary rounded" href="help.html">Help Center</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="border-t border-on-primary/10 px-margin-mobile md:px-margin-desktop py-md max-w-max-width mx-auto flex flex-col md:flex-row justify-between items-center gap-sm">
+<p class="text-primary-fixed-dim opacity-80 text-sm">© 2026 A1 Academy. Scholarly excellence for the modern age.</p>
+</div>
+</footer>
+
+<!-- REGISTER MODAL POPUP -->
+<div id="register-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-md bg-on-surface/40 p-4 transition-all duration-300">
+    <div class="relative w-full max-w-4xl bg-surface-container-lowest rounded-[24px] shadow-level-3 p-8 md:p-12 overflow-hidden border border-surface-variant">
+        
+        <!-- Close Button -->
+        <button onclick="document.getElementById('register-modal').classList.add('hidden')" class="absolute top-6 right-6 text-on-surface-variant hover:text-error transition-colors cursor-pointer outline-none">
+            <span class="material-symbols-outlined text-[32px]">close</span>
+        </button>
+
+        <!-- Modal Header with Increased Font Size -->
+        <div class="text-center mb-10">
+            <h2 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg font-bold text-primary mb-4">Join A1 Academy</h2>
+            <p class="font-body-lg text-body-lg text-on-surface-variant">Select your role to begin the registration process.</p>
+        </div>
+
+        <!-- Role Selection Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <!-- Student Card -->
+            <a href="register-student.html" class="bg-white rounded-[16px] p-8 shadow-level-1 hover:shadow-level-2 transition-all duration-300 border-2 border-transparent hover:border-primary-fixed group flex flex-col items-center text-center cursor-pointer">
+                <!-- Colorful Cartoon Student Image -->
+                <div class="w-28 h-28 mb-6 rounded-full overflow-hidden bg-primary-fixed/40 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135810.png" alt="Cartoon Student Avatar" class="w-20 h-20 object-contain drop-shadow-md"/>
+                </div>
+                <h3 class="font-headline-sm text-[24px] text-primary mb-3">Register as a Student</h3>
+                <p class="font-body-md text-body-md text-on-surface-variant">Browse courses, track your progress, and earn digital badges.</p>
+            </a>
+
+            <!-- Teacher Card -->
+            <a href="register-teacher.html" class="bg-white rounded-[16px] p-8 shadow-level-1 hover:shadow-level-2 transition-all duration-300 border-2 border-transparent hover:border-primary-fixed group flex flex-col items-center text-center cursor-pointer">
+                <!-- NEW Colorful Cartoon Teacher Image -->
+                <div class="w-28 h-28 mb-6 rounded-full overflow-hidden bg-secondary-fixed/40 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3429/3429433.png" alt="Cartoon Teacher Avatar" class="w-20 h-20 object-contain drop-shadow-md"/>
+                </div>
+                <h3 class="font-headline-sm text-[24px] text-primary mb-3">Register as a Teacher</h3>
+                <p class="font-body-md text-body-md text-on-surface-variant">Submit your qualifications, manage classes, and guide the next generation.</p>
+            </a>
+
+        </div>
+    </div>
+</div>
+
+</body></html>
