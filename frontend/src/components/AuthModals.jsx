@@ -294,14 +294,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
                     <img src="https://cdn-icons-png.flaticon.com/512/3135/3135810.png" alt="Cartoon Student Avatar" className="w-24 h-24 object-contain drop-shadow-md hover:scale-110 transition-transform duration-300"/>
                 </div>
                 <h2 className="font-headline-md text-headline-md text-primary mb-3">Student Registration</h2>
-                <p className="text-body-md text-on-surface-variant max-w-xs mb-4">Create your account to unlock interactive courses and start learning.</p>
-                <div className="bg-surface-container-low p-4 rounded-lg border border-surface-dim">
-                    <p className="text-label-md font-label-md text-primary flex items-center justify-center gap-2">
-                        <span className="material-symbols-outlined text-[18px]">verified</span>
-                        Instant Access
-                    </p>
-                    <p className="text-xs text-on-surface-variant mt-2 leading-relaxed">Unlike teacher accounts, student accounts are approved instantly. You'll be browsing courses in less than two minutes!</p>
-                </div>
+                <p className="text-body-md text-on-surface-variant max-w-xs mb-4">Create your Active account today to start browsing courses and earning your digital badges.</p>
             </div>
             <div>
                 <form className="space-y-4" onSubmit={(e) => handleRegister(e, 'Student')}>
@@ -311,39 +304,69 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
                             <input className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" type="text" id="student-firstname" name="firstName" placeholder="First name" required />
                         </div>
                         <div>
-                            <label className="block font-label-md text-on-surface mb-1" htmlFor="student-lastname">Last Name <span className="text-on-surface-variant font-normal">(Optional)</span></label>
+                            <label className="block font-label-md text-on-surface mb-1" htmlFor="student-lastname">Last Name <span className="text-outline font-normal">(Optional)</span></label>
                             <input className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" type="text" id="student-lastname" name="lastName" placeholder="Last name" />
                         </div>
                     </div>
+                    
                     <div>
                         <label className="block font-label-md text-on-surface mb-1" htmlFor="student-email">Email Address</label>
-                        <input className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" type="email" id="student-email" name="email" placeholder="hello@example.com" required />
+                        <div className="flex gap-2">
+                            <input className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" type="email" id="student-email" name="email" placeholder="student@example.com" required />
+                            <button type="button" id="student-verify-btn" disabled={isSubmitting} onClick={() => sendOtp('student-email', 'Student')} className="shrink-0 bg-secondary-container text-on-secondary-container font-label-md px-4 py-2.5 rounded-lg hover:bg-secondary-fixed transition-all shadow-sm cursor-pointer w-[116px] flex items-center justify-center gap-1 disabled:opacity-70 disabled:cursor-not-allowed">
+                                {isSubmitting ? (
+                                    <><span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> Sending...</>
+                                ) : (
+                                    'Verify'
+                                )}
+                            </button>
+                        </div>
+                        <p className="text-xs text-on-surface-variant mt-1">* Must be a unique email address.</p>
                     </div>
+                    
                     <div>
                         <label className="block font-label-md text-on-surface mb-1" htmlFor="student-password">Password</label>
                         <div className="relative">
-                            <input className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all pr-12" type={showPasswords['student-password'] ? "text" : "password"} id="student-password" name="password" placeholder="Create a strong password" required />
+                            <input className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all pr-12" type={showPasswords['student-password'] ? "text" : "password"} id="student-password" name="password" placeholder="••••••••" required />
                             <button type="button" onClick={() => togglePassword('student-password')} className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer outline-none">
                                 <span className="material-symbols-outlined text-[20px]">{showPasswords['student-password'] ? "visibility_off" : "visibility"}</span>
                             </button>
                         </div>
+                        <p className="text-xs text-on-surface-variant mt-1">* Will be securely hashed.</p>
                     </div>
+                    
                     <div>
                         <label className="block font-label-md text-on-surface mb-1" htmlFor="student-confirm-password">Confirm Password</label>
                         <div className="relative">
-                            <input className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all pr-12" type={showPasswords['student-confirm-password'] ? "text" : "password"} id="student-confirm-password" name="confirmPassword" placeholder="Repeat your password" required />
+                            <input className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all pr-12" type={showPasswords['student-confirm-password'] ? "text" : "password"} id="student-confirm-password" name="confirmPassword" placeholder="••••••••" required />
                             <button type="button" onClick={() => togglePassword('student-confirm-password')} className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer outline-none">
                                 <span className="material-symbols-outlined text-[20px]">{showPasswords['student-confirm-password'] ? "visibility_off" : "visibility"}</span>
                             </button>
                         </div>
                     </div>
-                    <button type="submit" disabled={isSubmitting} className="w-full bg-primary text-on-primary font-label-md py-3 rounded-full hover:bg-primary-container active:scale-95 transition-all shadow-sm cursor-pointer mt-4 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
+                    
+                    <button type="submit" disabled={isSubmitting} className="w-full bg-primary text-on-primary font-label-md py-3 rounded-full hover:bg-primary-container active:scale-95 transition-all shadow-sm cursor-pointer mt-6 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
                         {isSubmitting ? (
                             <><span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span> Registering...</>
                         ) : (
-                            'Create Account'
+                            'Create Active Account'
                         )}
                     </button>
+                    
+                    <div className="flex items-center gap-4 my-6">
+                        <div className="h-px bg-surface-variant flex-1"></div>
+                        <span className="text-label-sm text-on-surface-variant">Or continue with</span>
+                        <div className="h-px bg-surface-variant flex-1"></div>
+                    </div>
+                    
+                    <button type="button" className="w-full bg-surface border border-outline-variant text-on-surface font-label-md py-3 rounded-full hover:bg-surface-container-low transition-all shadow-sm cursor-pointer flex items-center justify-center gap-3">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/google/google-original.svg" alt="Google Logo" className="w-5 h-5"/>
+                        Sign in with Google
+                    </button>
+                    
+                    <p className="text-center text-body-sm text-on-surface-variant mt-6">
+                        Already have an account? <button type="button" onClick={() => openModal('login-modal')} className="font-bold text-primary hover:underline cursor-pointer outline-none">Sign In</button>
+                    </p>
                 </form>
             </div>
         </div>
