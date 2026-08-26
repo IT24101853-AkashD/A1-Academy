@@ -20,6 +20,9 @@ namespace A1Academy.API.Data.Models
         public string Email { get; set; } = string.Empty;
 
         [Required]
+        [StringLength(20)]
+        public string AuthProvider { get; set; } = "Regular";
+
         public string PasswordHash { get; set; } = string.Empty;
 
         [Required]
