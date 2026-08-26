@@ -9,6 +9,7 @@ using A1Academy.API.Data.Models;
 using A1Academy.API.Services;
 using Microsoft.Extensions.Caching.Memory;
 using BCrypt.Net;
+using Google.Apis.Auth;
 
 namespace A1Academy.API.Controllers
 {
@@ -72,7 +73,7 @@ namespace A1Academy.API.Controllers
                 Role = request.Role,
                 Qualifications = request.Role == "Teacher" ? request.Qualifications : null,
                 QualificationDocumentPath = documentPath,
-                IsEmailVerified = false,
+                IsEmailVerified = _cache.TryGetValue(request.Email + "_VERIFIED", out bool isVerified) && isVerified,
                 IsApproved = request.Role == "Teacher" ? false : true,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
             };
@@ -94,7 +95,17 @@ namespace A1Academy.API.Controllers
         {
             var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == request.Email);
             
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            if (user == null)
+            {
+                return Unauthorized("Invalid email or password.");
+            }
+
+            if (user.AuthProvider == "Google")
+            {
+                return Unauthorized("This email is registered via Google. Please use 'Sign in with Google'.");
+            }
+
+            if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
                 return Unauthorized("Invalid email or password.");
             }
@@ -126,18 +137,104 @@ namespace A1Academy.API.Controllers
             return Ok(new { token = jwt, role = user.Role });
         }
 
-        public class OtpRequest { public string Email { get; set; } = string.Empty; }
+        public class GoogleLoginRequest
+        {
+            public string Credential { get; set; } = string.Empty;
+        }
+
+        [HttpPost("google-login")]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+        {
+            try
+            {
+                using var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", request.Credential);
+                var response = await httpClient.GetAsync("https://www.googleapis.com/oauth2/v3/userinfo");
+                if (!response.IsSuccessStatusCode) return Unauthorized("Invalid Google token.");
+                
+                var userInfoString = await response.Content.ReadAsStringAsync();
+                var payload = System.Text.Json.JsonDocument.Parse(userInfoString).RootElement;
+                var email = payload.GetProperty("email").GetString();
+                var givenName = payload.TryGetProperty("given_name", out var gn) ? gn.GetString() : "Student";
+                var familyName = payload.TryGetProperty("family_name", out var fn) ? fn.GetString() : "";
+
+                var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == email);
+
+                if (user == null)
+                {
+                    user = new User
+                    {
+                        FirstName = givenName ?? "Student",
+                        LastName = familyName,
+                        Email = email,
+                        PasswordHash = "",
+                        Role = "Student",
+                        AuthProvider = "Google",
+                        IsApproved = true
+                    };
+                    _context.Users.Add(user);
+                    await _context.SaveChangesAsync();
+                }
+                else
+                {
+                    if (user.Role == "Teacher")
+                    {
+                        return Unauthorized("Google Sign-In is only available for Students. Please use your email and password.");
+                    }
+                    if (user.AuthProvider != "Google")
+                    {
+                        return Unauthorized("This email is registered with a password. Please log in normally.");
+                    }
+                }
+
+                if (!user.IsApproved)
+                {
+                    return Unauthorized("Your account is pending administrator approval.");
+                }
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!);
+                var tokenDescriptor = new SecurityTokenDescriptor
+                {
+                    Subject = new ClaimsIdentity(new[]
+                    {
+                        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                        new Claim(ClaimTypes.Email, user.Email),
+                        new Claim(ClaimTypes.Role, user.Role)
+                    }),
+                    Expires = DateTime.UtcNow.AddDays(7),
+                    Issuer = _configuration["Jwt:Issuer"],
+                    Audience = _configuration["Jwt:Audience"],
+                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                };
+                
+                var token = tokenHandler.CreateToken(tokenDescriptor);
+                var jwt = tokenHandler.WriteToken(token);
+
+                return Ok(new { token = jwt, role = user.Role });
+            }
+            catch (InvalidJwtException)
+            {
+                return Unauthorized("Invalid Google credential.");
+            }
+        }
+
+        public class OtpRequest { public string Email { get; set; } = string.Empty; public string FirstName { get; set; } = string.Empty; }
         public class VerifyOtpRequest { public string Email { get; set; } = string.Empty; public string Otp { get; set; } = string.Empty; }
 
         [HttpPost("send-otp")]
         public async Task<IActionResult> SendOtp([FromBody] OtpRequest request)
         {
-            // We allow sending OTPs to any email because this is used for Registration where the user doesn't exist yet.
+            if (await _context.Users.AnyAsync(u => u.Email == request.Email))
+            {
+                return BadRequest("This email is already taken.");
+            }
             var otp = new Random().Next(10000, 99999).ToString();
-            Console.WriteLine($"SendOtp Called! Generated OTP '{otp}' for Email '{request.Email}'");
+            Console.WriteLine($"SendOtp Called! Generated OTP '{otp}' for {request.FirstName} ({request.Email})");
             _cache.Set(request.Email + "_OTP", otp, TimeSpan.FromMinutes(5));
 
-            await _emailService.SendEmailAsync(request.Email, "A1 Academy - Verification Code", $"Your OTP is: {otp}. It expires in 5 minutes.");
+            var emailBody = GetEmailTemplate(request.FirstName, otp, "Thank you for registering. Your A1 Academy verification code is:");
+            await _emailService.SendEmailAsync(request.Email, "A1 Academy - Verification Code", emailBody);
             return Ok(new { message = "OTP sent successfully." });
         }
 
@@ -153,6 +250,10 @@ namespace A1Academy.API.Controllers
                 {
                     user.IsEmailVerified = true;
                     await _context.SaveChangesAsync();
+                }
+                else
+                {
+                    _cache.Set(request.Email + "_VERIFIED", true, TimeSpan.FromMinutes(30));
                 }
                 _cache.Remove(request.Email + "_OTP");
                 return Ok(new { message = "Email successfully verified." });
@@ -172,7 +273,8 @@ namespace A1Academy.API.Controllers
 
             var otp = new Random().Next(10000, 99999).ToString();
             _cache.Set(request.Email + "_RESET_OTP", otp, TimeSpan.FromMinutes(5));
-            await _emailService.SendEmailAsync(request.Email, "A1 Academy - Password Reset Code", $"Your password reset code is: {otp}. It expires in 5 minutes.");
+            var emailBody = GetEmailTemplate(request.FirstName, otp, "We received a request to reset your password. Your A1 Academy password reset code is:");
+            await _emailService.SendEmailAsync(request.Email, "A1 Academy - Password Reset Code", emailBody);
             return Ok(new { message = "Reset code sent successfully." });
         }
 
@@ -204,6 +306,67 @@ namespace A1Academy.API.Controllers
                 }
             }
             return BadRequest("Invalid or expired reset token.");
+        }
+
+        private string GetEmailTemplate(string name, string otp, string message)
+        {
+            var displayName = string.IsNullOrEmpty(name) ? "User" : name;
+            return $@"<!DOCTYPE html>
+<html>
+<head>
+<meta charset=""UTF-8"">
+<meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+<title>A1 Academy Verification</title>
+</head>
+<body style=""margin: 0; padding: 0; background-color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;"">
+    <table border=""0"" cellpadding=""0"" cellspacing=""0"" width=""100%"" style=""background-color: #ffffff;"">
+        <tr>
+            <td align=""center"">
+                <!-- Main Email Card -->
+                <table border=""0"" cellpadding=""0"" cellspacing=""0"" width=""600"" style=""background-color: #ffffff; max-width: 600px; width: 100%;"">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td align=""center"" style=""background-color: #ffffff; padding: 30px;"">
+                            <h1 style=""color: #002045; margin: 0; font-size: 36px; letter-spacing: -0.5px; font-weight: bold;"">A1 Academy</h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Email Body -->
+                    <tr>
+                        <td style=""padding: 40px 40px 20px 40px; color: #181c1e;"">
+                            <!-- Dynamic Name (Bold) -->
+                            <p style=""font-size: 18px; line-height: 28px; margin: 0 0 20px 0;"">Hi <strong>{displayName}</strong>,</p>
+                            
+                            <p style=""font-size: 16px; line-height: 26px; margin: 0 0 30px 0;"">{message}</p>
+                            
+                            <!-- Golden Orange OTP Box -->
+                            <div style=""text-align: center; background-color: #ffb55c; padding: 24px; border-radius: 8px; margin-bottom: 30px;"">
+                                <!-- Dynamic OTP (Bold and Large) -->
+                                <span style=""font-size: 36px; font-weight: 700; color: #001d37; letter-spacing: 6px;"">{otp}</span>
+                            </div>
+                            
+                            <!-- Expiration Notice -->
+                            <p style=""font-size: 14px; line-height: 24px; color: #74777f; margin: 0 0 20px 0;"">This code will expire in <strong>5 minutes</strong>.</p>
+                            
+                            <!-- Sign Off -->
+                            <p style=""font-size: 16px; line-height: 26px; margin: 0;"">Welcome aboard!<br><strong style=""color: #002045;"">The A1 Academy Team</strong></p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td align=""center"" style=""background-color: #ffffff; padding: 20px;"">
+                            <p style=""font-size: 12px; color: #74777f; margin: 0;"">© {DateTime.Now.Year} A1 Academy. Scholarly excellence for the modern age.</p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
         }
     }
 }
