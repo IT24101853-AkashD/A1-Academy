@@ -3,7 +3,7 @@ name: Deploy A1-Academy to Azure
 on:
   push:
     branches:
-      - main
+      - feature/setup-infrastructure   # <--- Updated branch name
 
 jobs:
   build-and-deploy:
