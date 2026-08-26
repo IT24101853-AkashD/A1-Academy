@@ -80,6 +80,22 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
         return () => Object.values(intervals).forEach(clearInterval);
     }, [timers]);
 
+    useEffect(() => {
+        if (!activeModal) {
+            document.querySelectorAll('form').forEach(form => form.reset());
+            setFormErrors({});
+            setLoginErrors({});
+            setOtpError('');
+            setOtpValues(['', '', '', '', '']);
+            setVerifiedEmails({});
+            setShowPasswords({});
+            setForgotEmail('');
+            setResetToken('');
+            setTeacherFile(null);
+            setOtpContext(null);
+        }
+    }, [activeModal]);
+
     const startOtpTimer = (role) => {
         setTimers(prev => ({ ...prev, [role]: 60 }));
     };
