@@ -260,6 +260,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
         const emailValue = document.getElementById(emailId)?.value || '';
         data.email = emailValue;
         formData.set('email', emailValue);
+        formData.set('firstName', firstNameValue);
         formData.set('role', role);
         
         if (!emailValue.trim()) {
