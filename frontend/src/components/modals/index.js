@@ -1,0 +1,14 @@
+export { default as RegisterModal } from './RegisterModal';
+export { default as RoleSelectStudent } from './RoleSelectStudent';
+export { default as RegisterStudentModal } from './RegisterStudentModal';
+export { default as RegisterTeacherModal } from './RegisterTeacherModal';
+export { default as OtpStudentModal } from './OtpStudentModal';
+export { default as OtpTeacherModal } from './OtpTeacherModal';
+export { default as LoginModal } from './LoginModal';
+export { default as LoginRoleStudent } from './LoginRoleStudent';
+export { default as SuccessStudentModal } from './SuccessStudentModal';
+export { default as PendingTeacherModal } from './PendingTeacherModal';
+export { default as ForgotPasswordModal } from './ForgotPasswordModal';
+export { default as OtpResetModal } from './OtpResetModal';
+export { default as NewPasswordModal } from './NewPasswordModal';
+export { default as SuccessResetModal } from './SuccessResetModal';
