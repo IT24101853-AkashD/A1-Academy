@@ -1,4 +1,4 @@
-name: Deploy A1-Academy to Azure
+﻿name: Deploy A1-Academy to Azure
 
 on:
   push:
