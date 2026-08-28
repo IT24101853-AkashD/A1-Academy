@@ -5,7 +5,7 @@ metadata:
     template: azd-init@1.31.2
 services:
     a1academy-api:
-        project: src/A1Academy.API
+        project: backend/A1Academy.API
         host: containerapp
         language: dotnet
 resources:

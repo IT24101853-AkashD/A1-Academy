@@ -1,4 +1,4 @@
-﻿name: Deploy A1-Academy to Azure
+name: Deploy A1-Academy to Azure
 
 on:
   push:
@@ -20,6 +20,7 @@ jobs:
 
       - name: Install dependencies and build
         run: |
+          cd frontend
           npm install
           npm run build --if-present
 
