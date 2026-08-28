@@ -1092,7 +1092,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
                 <span className="material-symbols-outlined text-[64px] text-white">favorite</span>
             </div>
             <h2 className="font-display-lg text-[48px] font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-red-500 to-purple-500 mb-4 tracking-tight drop-shadow-sm">
-                I LOVE YOU
+                Welcome
             </h2>
             <p className="text-body-lg text-on-surface-variant mb-10 font-medium">
                 You have successfully logged in to A1 Academy!
