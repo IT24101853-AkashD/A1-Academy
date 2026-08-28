@@ -17,16 +17,16 @@ jobs:
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '10.0.x'
 
     - name: Restore Dependencies
-      run: dotnet restore
+      run: dotnet restore backend/A1Academy.sln
 
     - name: Build Application
-      run: dotnet build --no-restore --configuration Release
+      run: dotnet build backend/A1Academy.sln --no-restore --configuration Release
 
     - name: Execute Automated Unit Tests
-      run: dotnet test --no-build --verbosity normal --configuration Release
+      run: dotnet test backend/A1Academy.sln --no-build --verbosity normal --configuration Release
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -34,7 +34,7 @@ jobs:
     - name: Build Docker Image
       uses: docker/build-push-action@v5
       with:
-        context: ./src/A1Academy.API
-        file: ./src/A1Academy.API/Dockerfile
+        context: ./backend/A1Academy.API
+        file: ./backend/A1Academy.API/Dockerfile
         push: false
         tags: a1academy-api:latest
