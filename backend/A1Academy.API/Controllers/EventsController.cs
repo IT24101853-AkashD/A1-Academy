@@ -7,9 +7,9 @@ namespace A1Academy.API.Controllers
     [Route("api/[controller]")]
     public class EventsController : ControllerBase
     {
-        private readonly KafkaProducerService _producer;
+        private readonly IKafkaProducerService _producer;
 
-        public EventsController(KafkaProducerService producer)
+        public EventsController(IKafkaProducerService producer)
         {
             _producer = producer;
         }
@@ -18,10 +18,16 @@ namespace A1Academy.API.Controllers
         public async Task<IActionResult> PublishMessage([FromBody] string message)
         {
             var success = await _producer.ProduceEventAsync("test-topic", message);
+
             if (success)
             {
-                return Ok(new { Status = "Event Published Successfully", Message = message });
+                return Ok(new
+                {
+                    Status = "Event Published Successfully",
+                    Message = message
+                });
             }
+
             return StatusCode(500, "Failed to publish event");
         }
     }
