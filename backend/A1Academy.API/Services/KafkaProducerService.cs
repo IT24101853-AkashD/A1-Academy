@@ -2,11 +2,6 @@ using Confluent.Kafka;
 
 namespace A1Academy.API.Services
 {
-    public interface IKafkaProducerService
-    {
-        Task<bool> ProduceEventAsync(string topic, string message);
-    }
-
     public class KafkaProducerService : IKafkaProducerService
     {
         private readonly IConfiguration _configuration;
