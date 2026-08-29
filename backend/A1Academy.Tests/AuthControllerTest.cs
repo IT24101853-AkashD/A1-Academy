@@ -19,14 +19,17 @@ private readonly IMemoryCache _cache;
 private readonly Mock<IEmailService> _emailServiceMock;
 private readonly AuthController _controller;
 
+```
 public AuthControllerTests()
 {
+    // Create a unique in-memory database for every test
     var options = new DbContextOptionsBuilder<AppDbContext>()
         .UseInMemoryDatabase(Guid.NewGuid().ToString())
         .Options;
 
     _context = new AppDbContext(options);
 
+    // Mock IConfiguration
     _configurationMock = new Mock<IConfiguration>();
 
     _configurationMock
@@ -41,8 +44,10 @@ public AuthControllerTests()
         .Setup(x => x["Jwt:Audience"])
         .Returns("A1AcademyUsers");
 
+    // Real in-memory cache
     _cache = new MemoryCache(new MemoryCacheOptions());
 
+    // Mock email service
     _emailServiceMock = new Mock<IEmailService>();
 
     _emailServiceMock
@@ -52,6 +57,7 @@ public AuthControllerTests()
             It.IsAny<string>()))
         .Returns(Task.CompletedTask);
 
+    // Create controller
     _controller = new AuthController(
         _context,
         _configurationMock.Object,
@@ -62,6 +68,7 @@ public AuthControllerTests()
 [Fact]
 public async Task Login_WithValidCredentials_ReturnsOk()
 {
+    // Arrange
     var password = "Password123!";
 
     var user = new User
@@ -85,8 +92,10 @@ public async Task Login_WithValidCredentials_ReturnsOk()
         Password = password
     };
 
+    // Act
     var result = await _controller.Login(request);
 
+    // Assert
     var okResult = Assert.IsType<OkObjectResult>(result);
 
     Assert.NotNull(okResult.Value);
@@ -95,6 +104,7 @@ public async Task Login_WithValidCredentials_ReturnsOk()
 [Fact]
 public async Task Login_WithWrongPassword_ReturnsUnauthorized()
 {
+    // Arrange
     var user = new User
     {
         FirstName = "Test",
@@ -115,28 +125,34 @@ public async Task Login_WithWrongPassword_ReturnsUnauthorized()
         Password = "WrongPassword123!"
     };
 
+    // Act
     var result = await _controller.Login(request);
 
+    // Assert
     Assert.IsType<UnauthorizedObjectResult>(result);
 }
 
 [Fact]
 public async Task Login_WithUnknownEmail_ReturnsUnauthorized()
 {
+    // Arrange
     var request = new AuthController.LoginRequest
     {
         Email = "doesnotexist@example.com",
         Password = "Password123!"
     };
 
+    // Act
     var result = await _controller.Login(request);
 
+    // Assert
     Assert.IsType<UnauthorizedObjectResult>(result);
 }
 
 [Fact]
 public async Task Login_WithUnapprovedUser_ReturnsUnauthorized()
 {
+    // Arrange
     var password = "Password123!";
 
     var user = new User
@@ -159,14 +175,17 @@ public async Task Login_WithUnapprovedUser_ReturnsUnauthorized()
         Password = password
     };
 
+    // Act
     var result = await _controller.Login(request);
 
+    // Assert
     Assert.IsType<UnauthorizedObjectResult>(result);
 }
 
 [Fact]
 public async Task Register_WithNewEmail_ReturnsOk()
 {
+    // Arrange
     var request = new AuthController.RegisterRequest
     {
         FirstName = "New",
@@ -176,8 +195,10 @@ public async Task Register_WithNewEmail_ReturnsOk()
         Role = "Student"
     };
 
+    // Act
     var result = await _controller.Register(request);
 
+    // Assert
     var okResult = Assert.IsType<OkObjectResult>(result);
 
     Assert.NotNull(okResult.Value);
@@ -193,6 +214,7 @@ public async Task Register_WithNewEmail_ReturnsOk()
 [Fact]
 public async Task Register_WithExistingEmail_ReturnsBadRequest()
 {
+    // Arrange
     var existingUser = new User
     {
         FirstName = "Existing",
@@ -213,14 +235,17 @@ public async Task Register_WithExistingEmail_ReturnsBadRequest()
         Role = "Student"
     };
 
+    // Act
     var result = await _controller.Register(request);
 
+    // Assert
     Assert.IsType<BadRequestObjectResult>(result);
 }
 
 [Fact]
 public async Task VerifyOtp_WithCorrectOtp_ReturnsOk()
 {
+    // Arrange
     var email = "student@example.com";
     var otp = "12345";
 
@@ -235,14 +260,17 @@ public async Task VerifyOtp_WithCorrectOtp_ReturnsOk()
         Otp = otp
     };
 
+    // Act
     var result = await _controller.VerifyOtp(request);
 
+    // Assert
     Assert.IsType<OkObjectResult>(result);
 }
 
 [Fact]
 public async Task VerifyOtp_WithWrongOtp_ReturnsBadRequest()
 {
+    // Arrange
     var email = "student@example.com";
 
     _cache.Set(
@@ -256,9 +284,12 @@ public async Task VerifyOtp_WithWrongOtp_ReturnsBadRequest()
         Otp = "99999"
     };
 
+    // Act
     var result = await _controller.VerifyOtp(request);
 
+    // Assert
     Assert.IsType<BadRequestObjectResult>(result);
 }
+```
 
 }
