@@ -17,7 +17,7 @@ builder.Services.AddDbContext<A1Academy.API.Data.AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // Register Kafka Services
-builder.Services.AddSingleton<KafkaProducerService>();
+builder.Services.AddSingleton<IKafkaProducerService, KafkaProducerService>();
 builder.Services.AddHostedService<KafkaConsumerService>();
 
 // Register Email & OTP Services

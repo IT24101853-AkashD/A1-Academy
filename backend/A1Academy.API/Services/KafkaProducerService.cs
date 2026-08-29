@@ -2,7 +2,7 @@ using Confluent.Kafka;
 
 namespace A1Academy.API.Services
 {
-    public class KafkaProducerService
+    public class KafkaProducerService : IKafkaProducerService
     {
         private readonly IConfiguration _configuration;
 
@@ -19,8 +19,11 @@ namespace A1Academy.API.Services
             };
 
             using var producer = new ProducerBuilder<Null, string>(config).Build();
-            
-            var result = await producer.ProduceAsync(topic, new Message<Null, string> { Value = message });
+
+            var result = await producer.ProduceAsync(
+                topic,
+                new Message<Null, string> { Value = message });
+
             return result.Status == PersistenceStatus.Persisted;
         }
     }
