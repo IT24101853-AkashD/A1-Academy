@@ -19,7 +19,6 @@ private readonly IMemoryCache _cache;
 private readonly Mock<IEmailService> _emailServiceMock;
 private readonly AuthController _controller;
 
-```
 public AuthControllerTests()
 {
     // Create a unique in-memory database for every test
@@ -290,6 +289,5 @@ public async Task VerifyOtp_WithWrongOtp_ReturnsBadRequest()
     // Assert
     Assert.IsType<BadRequestObjectResult>(result);
 }
-```
 
 }
