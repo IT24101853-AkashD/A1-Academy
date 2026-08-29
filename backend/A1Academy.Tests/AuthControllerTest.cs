@@ -19,7 +19,6 @@ private readonly IMemoryCache _cache;
 private readonly Mock<IEmailService> _emailServiceMock;
 private readonly AuthController _controller;
 
-```
 public AuthControllerTests()
 {
     var options = new DbContextOptionsBuilder<AppDbContext>()
@@ -261,6 +260,5 @@ public async Task VerifyOtp_WithWrongOtp_ReturnsBadRequest()
 
     Assert.IsType<BadRequestObjectResult>(result);
 }
-```
 
 }
