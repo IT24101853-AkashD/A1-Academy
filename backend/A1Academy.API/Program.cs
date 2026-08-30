@@ -64,6 +64,7 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var dbContext = services.GetRequiredService<A1Academy.API.Data.AppDbContext>();
+        dbContext.Database.Migrate();
         if (dbContext.Database.CanConnect())
         {
             Console.WriteLine("==================================================");
