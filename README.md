@@ -137,3 +137,51 @@ To run the unit tests locally, navigate to the tests folder and execute them:
 cd backend/A1Academy.Tests
 dotnet test
 ```
+
+## Evidence
+
+The following screenshots provide evidence that the local infrastructure and backend integration were successfully verified.
+
+### Docker Compose Services
+
+PostgreSQL, Kafka, and ZooKeeper were successfully started using Docker Compose.
+
+![Docker Compose Services](docs/evidence/docker%20.png)
+
+### PostgreSQL
+
+Backend connectivity to PostgreSQL was successfully verified.
+
+![PostgreSQL Verification](docs/evidence/postgresql.png)
+
+### Kafka
+
+Kafka consumer successfully connected and listened for messages.
+
+![Kafka Verification](docs/evidence/kafka.png)
+
+### Backend
+
+The backend successfully connected to the required infrastructure services.
+
+![Backend Verification](docs/evidence/backend%20working.png)
+
+### Swagger API
+
+Swagger was successfully served by the ASP.NET Core backend with HTTP 200.
+
+![Swagger Verification](docs/evidence/swagger.png)
+
+### Integration Testing
+
+The automated integration test suite was executed successfully.
+
+![Integration Testing](docs/evidence/git%20integration%20testing.png)
+
+Test result:
+
+- **Total:** 12
+- **Passed:** 12
+- **Failed:** 0
+- **Skipped:** 0
+- **Build:** Successful
