@@ -23,10 +23,12 @@ jobs:
           cd frontend
           npm install
           npm run build --if-present
+          cd dist
+          zip -r ../../deploy.zip .
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'a1-academy-frontend'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: './frontend/dist'
+          package: 'deploy.zip'
