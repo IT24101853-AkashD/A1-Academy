@@ -25,7 +25,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
             setIsLoggingIn(true);
             setLoginErrors({});
             try {
-                const res = await fetch('https://a1academy-api.wittymushroom-94d43ea8.southeastasia.azurecontainerapps.io/api/auth/google-login', {
+                const res = await fetch(import.meta.env.VITE_API_URL + '/api/auth/google-login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ credential: tokenResponse.access_token })
@@ -114,7 +114,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
         setIsSendingOtp(true);
         setOtpError('');
         try {
-            const res = await fetch('https://a1academy-api.wittymushroom-94d43ea8.southeastasia.azurecontainerapps.io/api/auth/send-otp', {
+            const res = await fetch(import.meta.env.VITE_API_URL + '/api/auth/send-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, firstName })
@@ -149,7 +149,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
         setIsSendingOtp(true);
         
         try {
-            const res = await fetch('https://a1academy-api.wittymushroom-94d43ea8.southeastasia.azurecontainerapps.io/api/auth/forgot-password', {
+            const res = await fetch(import.meta.env.VITE_API_URL + '/api/auth/forgot-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: emailInput, firstName: firstNameInput })
@@ -208,11 +208,11 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
         setIsVerifying(true);
 
         try {
-            let endpoint = 'https://a1academy-api.wittymushroom-94d43ea8.southeastasia.azurecontainerapps.io/api/auth/verify-otp';
+            let endpoint = import.meta.env.VITE_API_URL + '/api/auth/verify-otp';
             let bodyData = {};
             
             if (otpContext === 'Reset') {
-                endpoint = 'https://a1academy-api.wittymushroom-94d43ea8.southeastasia.azurecontainerapps.io/api/auth/verify-reset-otp';
+                endpoint = import.meta.env.VITE_API_URL + '/api/auth/verify-reset-otp';
                 bodyData = { email: document.getElementById('forgot-email')?.value, otp };
             } else {
                 const emailId = otpContext === 'Student' ? 'student-email' : 'teacher-email';
@@ -307,7 +307,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
 
         setIsSubmitting(true);
         try {
-            const res = await fetch('https://a1academy-api.wittymushroom-94d43ea8.southeastasia.azurecontainerapps.io/api/auth/register', {
+            const res = await fetch(import.meta.env.VITE_API_URL + '/api/auth/register', {
                 method: 'POST',
                 body: formData
             });
@@ -350,7 +350,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
         setLoginErrors({});
 
         try {
-            const res = await fetch('https://a1academy-api.wittymushroom-94d43ea8.southeastasia.azurecontainerapps.io/api/auth/login', {
+            const res = await fetch(import.meta.env.VITE_API_URL + '/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
@@ -383,7 +383,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
         }
 
         try {
-            const res = await fetch('https://a1academy-api.wittymushroom-94d43ea8.southeastasia.azurecontainerapps.io/api/auth/reset-password', {
+            const res = await fetch(import.meta.env.VITE_API_URL + '/api/auth/reset-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: forgotEmail, newPassword, token: resetToken })
