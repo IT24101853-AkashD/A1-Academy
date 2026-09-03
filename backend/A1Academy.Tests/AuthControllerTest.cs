@@ -2,6 +2,7 @@ using A1Academy.API.Controllers;
 using A1Academy.API.Data;
 using A1Academy.API.Data.Models;
 using A1Academy.API.Services;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -17,6 +18,7 @@ private readonly AppDbContext _context;
 private readonly Mock<IConfiguration> _configurationMock;
 private readonly IMemoryCache _cache;
 private readonly Mock<IEmailService> _emailServiceMock;
+private readonly Mock<IWebHostEnvironment> _environmentMock;
 private readonly AuthController _controller;
 
 public AuthControllerTests()
@@ -56,12 +58,17 @@ public AuthControllerTests()
             It.IsAny<string>()))
         .Returns(Task.CompletedTask);
 
+    // Mock hosting environment (Development, so Register/Login behavior matches local runs)
+    _environmentMock = new Mock<IWebHostEnvironment>();
+    _environmentMock.Setup(x => x.EnvironmentName).Returns("Development");
+
     // Create controller
     _controller = new AuthController(
         _context,
         _configurationMock.Object,
         _cache,
-        _emailServiceMock.Object);
+        _emailServiceMock.Object,
+        _environmentMock.Object);
 }
 
 [Fact]
@@ -288,6 +295,50 @@ public async Task VerifyOtp_WithWrongOtp_ReturnsBadRequest()
 
     // Assert
     Assert.IsType<BadRequestObjectResult>(result);
+}
+
+[Fact]
+public void DebugOtp_InDevelopment_WithPendingOtp_ReturnsOk()
+{
+    // Arrange
+    var email = "student@example.com";
+    _cache.Set(email + "_OTP", "54321", TimeSpan.FromMinutes(5));
+
+    // Act
+    var result = _controller.DebugOtp(email);
+
+    // Assert
+    Assert.IsType<OkObjectResult>(result);
+}
+
+[Fact]
+public void DebugOtp_InDevelopment_WithNoPendingOtp_ReturnsNotFound()
+{
+    // Act
+    var result = _controller.DebugOtp("nobody@example.com");
+
+    // Assert
+    Assert.IsType<NotFoundObjectResult>(result);
+}
+
+[Fact]
+public void DebugOtp_OutsideDevelopmentOrTesting_ReturnsNotFound()
+{
+    // Arrange
+    var environmentMock = new Mock<IWebHostEnvironment>();
+    environmentMock.Setup(x => x.EnvironmentName).Returns("Production");
+    var controller = new AuthController(
+        _context,
+        _configurationMock.Object,
+        _cache,
+        _emailServiceMock.Object,
+        environmentMock.Object);
+
+    // Act
+    var result = controller.DebugOtp("student@example.com");
+
+    // Assert
+    Assert.IsType<NotFoundResult>(result);
 }
 
 }
