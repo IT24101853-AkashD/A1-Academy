@@ -163,6 +163,27 @@ a real mailbox, and only covers the Student role — Teacher signups start unapp
 log in until an admin approves them. It's excluded from the default `dotnet test` run and from
 CI (see `.github/workflows/ci.yml`).
 
+### Load Testing (JMeter)
+
+[`performance/jmeter/login-load-test.jmx`](performance/jmeter/login-load-test.jmx) drives
+concurrent `POST /api/auth/login` requests against a running API instance to check it holds up
+under load:
+
+```bash
+docker-compose up -d postgres kafka zookeeper
+dotnet run --project backend/A1Academy.API
+
+cd performance/jmeter
+./seed-load-test-user.sh                                         # once, creates the test account
+jmeter -n -t login-load-test.jmx -l results.jtl -Jusers=50 -JrampUp=10 -Jloops=10
+jmeter -g results.jtl -o report/                                 # HTML dashboard with percentiles
+```
+
+See [`performance/jmeter/README.md`](performance/jmeter/README.md) for the full profile list
+(baseline/stress/higher-load) and [`docs/evidence/Login-Load-Testing.md`](docs/evidence/Login-Load-Testing.md)
+for a real run's results: 0% errors and a 95th-percentile response time under 1.5s even at 200
+concurrent users, well inside the ticket's 5-second threshold.
+
 ## Evidence
 
 The following screenshots provide evidence that the local infrastructure and backend integration were successfully verified.
@@ -172,6 +193,15 @@ The following screenshots provide evidence that the local infrastructure and bac
 The Selenium flow completed Student registration, email verification, and login successfully.
 
 ![E2E Authentication Test](docs/evidence/AA-21-E2E-authentication.png)
+
+### Login Load Testing
+
+The login endpoint was load-tested at 50, 100, and 200 concurrent users with JMeter — 0% errors
+throughout, and response times stayed well under the 5-second threshold at every profile. Full
+numbers and analysis in [`docs/evidence/Login-Load-Testing.md`](docs/evidence/Login-Load-Testing.md).
+
+![Login Load Test - Baseline (50 users)](docs/evidence/login-load-test-baseline-dashboard.png)
+![Login Load Test - Higher Load (200 users)](docs/evidence/login-load-test-highload-dashboard.png)
 
 ### Docker Compose Services
 
