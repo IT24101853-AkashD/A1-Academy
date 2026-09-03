@@ -5,9 +5,13 @@
 **Test plan:** [`performance/jmeter/login-load-test.jmx`](../../performance/jmeter/login-load-test.jmx)
 **Success criterion:** sub-5-second response time under expected load
 
-Three profiles were run against a live local instance of the API (Postgres + Kafka via
-`docker-compose`, API via `dotnet run`), each against the same seeded Student account
-(`seed-load-test-user.sh`).
+The recorded evidence covers three profiles against a live local instance of the API (Postgres +
+Kafka via `docker-compose`, API via `dotnet run`), each against the same seeded Student account
+(`seed-load-test-user.sh`). These results were not rerun on the current machine because Apache
+JMeter was not installed there.
+
+**Verification status:** Implementation complete; live JMeter execution requires a machine with
+JMeter installed and the A1 Academy backend/database stack running.
 
 ## Results
 
@@ -17,7 +21,7 @@ Three profiles were run against a live local instance of the API (Postgres + Kaf
 | Stress | 100 | 1,000 | 0 (0.00%) | 141 | 139 | 147 | 159 | 181 | 193 | 62.3 |
 | Higher load | 200 | 2,000 | 0 (0.00%) | 771 | 778 | 1,248 | 1,406 | 1,792 | 1,962 | 71.3 |
 
-**Result: PASS at every profile tested.** Even at 200 concurrent users (2,000 requests), the
+**Recorded result: PASS at every profile tested.** Even at 200 concurrent users (2,000 requests), the
 worst individual response was 1.96s — well under the 5,000ms threshold — with zero failed
 logins across all 3,500 requests sent.
 

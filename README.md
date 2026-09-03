@@ -181,8 +181,8 @@ jmeter -g results.jtl -o report/                                 # HTML dashboar
 
 See [`performance/jmeter/README.md`](performance/jmeter/README.md) for the full profile list
 (baseline/stress/higher-load) and [`docs/evidence/Login-Load-Testing.md`](docs/evidence/Login-Load-Testing.md)
-for a real run's results: 0% errors and a 95th-percentile response time under 1.5s even at 200
-concurrent users, well inside the ticket's 5-second threshold.
+for the recorded results. The JMX structure was validated locally; live JMeter execution was not
+verified on this machine because JMeter was not installed.
 
 ## Evidence
 
@@ -196,9 +196,10 @@ The Selenium flow completed Student registration, email verification, and login 
 
 ### Login Load Testing
 
-The login endpoint was load-tested at 50, 100, and 200 concurrent users with JMeter — 0% errors
-throughout, and response times stayed well under the 5-second threshold at every profile. Full
-numbers and analysis in [`docs/evidence/Login-Load-Testing.md`](docs/evidence/Login-Load-Testing.md).
+The supplied JMeter evidence reports tests at 50, 100, and 200 concurrent users with 0% errors
+and response times under the 5-second threshold. Live execution requires JMeter and the running
+ASP.NET backend/database stack. Full numbers and analysis are in
+[`docs/evidence/Login-Load-Testing.md`](docs/evidence/Login-Load-Testing.md).
 
 ![Login Load Test - Baseline (50 users)](docs/evidence/login-load-test-baseline-dashboard.png)
 ![Login Load Test - Higher Load (200 users)](docs/evidence/login-load-test-highload-dashboard.png)

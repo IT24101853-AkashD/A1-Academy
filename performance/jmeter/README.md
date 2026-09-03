@@ -67,7 +67,8 @@ Open `report/index.html`. The numbers that matter for this ticket:
 - **95th pct** (and Max) response time — should stay under 5000 ms
 
 See `docs/evidence/` in the repo root for a real run's dashboard screenshots and a written
-pass/fail summary.
+pass/fail summary. The repository's screenshots are recorded evidence; they do not represent a
+live JMeter run on every developer machine.
 
 ## Notes / limitations
 
@@ -76,6 +77,8 @@ pass/fail summary.
 - Not wired into CI — load tests share a runner's resources unpredictably and would produce
   noisy, unreliable pass/fail results there. Run it locally (or against a real staging
   environment) when performance needs checking.
+- The JMX structure was validated locally, but live execution still requires Apache JMeter and
+  the running A1 Academy backend/database stack.
 - `BCrypt.Verify` (password hashing) is intentionally CPU-heavy and synchronous, so response
   times climb with concurrency — that showed up clearly at 200 concurrent users in the recorded
   evidence. It's a real cost worth knowing about even though it stayed inside the 5s budget.
