@@ -26,9 +26,7 @@ jobs:
       run: dotnet build backend/A1Academy.sln --no-restore --configuration Release
 
     - name: Execute Automated Unit Tests
-      # Excludes the Selenium E2E suite (Category=E2E), which needs a running
-      # frontend/backend instance and a browser and is run separately/manually.
-      run: dotnet test backend/A1Academy.sln --no-build --verbosity normal --configuration Release --filter "Category!=E2E"
+      run: dotnet test backend/A1Academy.sln --no-build --verbosity normal --configuration Release
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3

@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -22,15 +21,13 @@ namespace A1Academy.API.Controllers
         private readonly IConfiguration _configuration;
         private readonly IMemoryCache _cache;
         private readonly IEmailService _emailService;
-        private readonly IWebHostEnvironment _environment;
 
-        public AuthController(AppDbContext context, IConfiguration configuration, IMemoryCache cache, IEmailService emailService, IWebHostEnvironment environment)
+        public AuthController(AppDbContext context, IConfiguration configuration, IMemoryCache cache, IEmailService emailService)
         {
             _context = context;
             _configuration = configuration;
             _cache = cache;
             _emailService = emailService;
-            _environment = environment;
         }
 
         public class RegisterRequest
@@ -262,33 +259,6 @@ namespace A1Academy.API.Controllers
                 return Ok(new { message = "Email successfully verified." });
             }
             return BadRequest("Invalid or expired OTP.");
-        }
-
-        /// <summary>
-        /// Test-support endpoint that exposes the pending signup OTP for a given email.
-        /// Never available outside Development/Testing environments - real SMTP delivery
-        /// is the only OTP channel in Production. Lets automated E2E tests (e.g. Selenium)
-        /// complete the email-verification step without needing a real mailbox.
-        /// </summary>
-        [HttpGet("debug-otp")]
-        public IActionResult DebugOtp([FromQuery] string email)
-        {
-            if (!_environment.IsDevelopment() && _environment.EnvironmentName != "Testing")
-            {
-                return NotFound();
-            }
-
-            if (string.IsNullOrWhiteSpace(email))
-            {
-                return BadRequest("email query parameter is required.");
-            }
-
-            if (_cache.TryGetValue(email + "_OTP", out string? otp))
-            {
-                return Ok(new { otp });
-            }
-
-            return NotFound("No pending OTP for this email.");
         }
 
         public class ForgotPasswordRequest { public string FirstName { get; set; } = string.Empty; public string Email { get; set; } = string.Empty; }

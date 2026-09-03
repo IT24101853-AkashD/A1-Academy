@@ -135,43 +135,12 @@ Visit [http://localhost:5123/swagger/index.html](http://localhost:5123/swagger/i
 To run the unit tests locally, navigate to the tests folder and execute them:
 ```bash
 cd backend/A1Academy.Tests
-dotnet test --filter "Category!=E2E"
+dotnet test
 ```
-
-### End-to-End (Selenium) Testing
-
-`AuthenticationFlowE2ETests` drives a real Chrome browser through Student signup (including
-OTP verification) followed by login, and checks that an authenticated session with the correct
-role is reached. It runs against a live local environment rather than starting one itself:
-
-```bash
-docker-compose up -d postgres kafka zookeeper   # from the repo root
-dotnet run --project backend/A1Academy.API      # http://localhost:5123, ASPNETCORE_ENVIRONMENT=Development
-npm run dev --prefix frontend                   # http://localhost:5173
-
-cd backend/A1Academy.Tests
-dotnet test --filter Category=E2E
-```
-
-A Chromium-based browser must be installed - Chrome, Brave, or Edge are all auto-detected from
-their usual install locations (override with `E2E_BROWSER_BINARY` if yours lives elsewhere);
-Selenium downloads a matching `chromedriver` for it automatically. Override `E2E_FRONTEND_URL` /
-`E2E_API_URL` if your servers run elsewhere, and set `E2E_HEADLESS=false` to watch the browser
-drive itself. This suite relies on a
-Development/Testing-only endpoint (`GET /api/auth/debug-otp`) to read the signup OTP instead of
-a real mailbox, and only covers the Student role — Teacher signups start unapproved and can't
-log in until an admin approves them. It's excluded from the default `dotnet test` run and from
-CI (see `.github/workflows/ci.yml`).
 
 ## Evidence
 
 The following screenshots provide evidence that the local infrastructure and backend integration were successfully verified.
-
-### E2E Authentication
-
-The Selenium flow completed Student registration, email verification, and login successfully.
-
-![E2E Authentication Test](docs/evidence/AA-21-E2E-authentication.png)
 
 ### Docker Compose Services
 
