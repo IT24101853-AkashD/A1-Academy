@@ -44,9 +44,19 @@ namespace A1Academy.API.Controllers
             public IFormFile? QualificationDocument { get; set; }
         }
 
+        private static readonly string[] SelfRegisterableRoles = { "Student", "Teacher" };
+
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromForm] RegisterRequest request)
         {
+            // Admin accounts are provisioned separately (see Program.cs bootstrap seeding) and
+            // are never selectable through this public endpoint - otherwise anyone could POST
+            // role=Admin here and grant themselves access to admin-only endpoints.
+            if (!SelfRegisterableRoles.Contains(request.Role))
+            {
+                return BadRequest("Invalid role. Registration is only available for Student or Teacher accounts.");
+            }
+
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
             {
                 return BadRequest("Email already exists.");

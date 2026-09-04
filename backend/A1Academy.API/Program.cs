@@ -39,6 +39,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddAuthorization();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -70,12 +72,48 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("==================================================");
             Console.WriteLine(" SUCCESS: Backend connected to PostgreSQL (v15)!");
             Console.WriteLine("==================================================");
+
+            SeedAdminUser(dbContext, builder.Configuration);
         }
     }
     catch (Exception ex)
     {
         Console.WriteLine($" ERROR DB Connection: {ex.Message}");
     }
+}
+
+// Bootstraps the platform's first Administrator account from configuration (Admin:Email /
+// Admin:Password), since there is no self-registration path for the Admin role - see
+// AuthController.Register, which deliberately rejects it. No-ops once any Admin exists, and
+// no-ops entirely if the config values aren't set (nothing to seed with).
+static void SeedAdminUser(A1Academy.API.Data.AppDbContext dbContext, IConfiguration configuration)
+{
+    var adminEmail = configuration["Admin:Email"];
+    var adminPassword = configuration["Admin:Password"];
+
+    if (string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPassword))
+    {
+        Console.WriteLine("INFO: Admin:Email/Admin:Password not configured - skipping admin account bootstrap.");
+        return;
+    }
+
+    if (dbContext.Users.Any(u => u.Role == "Admin"))
+    {
+        return;
+    }
+
+    dbContext.Users.Add(new A1Academy.API.Data.Models.User
+    {
+        FirstName = "Admin",
+        Email = adminEmail,
+        Role = "Admin",
+        AuthProvider = "Regular",
+        IsEmailVerified = true,
+        IsApproved = true,
+        PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword)
+    });
+    dbContext.SaveChanges();
+    Console.WriteLine($"SUCCESS: Bootstrap Admin account created for {adminEmail}.");
 }
 
 if (app.Environment.IsDevelopment())

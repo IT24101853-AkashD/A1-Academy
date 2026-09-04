@@ -16,6 +16,10 @@
   "GoogleAuth": {
     "ClientId": "<YOUR_GOOGLE_CLIENT_ID>"
   },
+  "Admin": {
+    "Email": "<YOUR_ADMIN_EMAIL>",
+    "Password": "<YOUR_ADMIN_PASSWORD>"
+  },
   "EmailSettings": {
     "SmtpServer": "smtp.gmail.com",
     "SmtpPort": "587",
