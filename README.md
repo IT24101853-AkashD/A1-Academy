@@ -32,6 +32,7 @@ cp appsettings.Development.json.template appsettings.Development.json
    - `<YOUR_SENDER_EMAIL>` - Email address for SMTP
    - `<YOUR_SMTP_PASSWORD>` - SMTP password (e.g., Gmail app password)
    - `<YOUR_APPLICATION_INSIGHTS_CONNECTION_STRING>` - Application Insights key (optional)
+   - `<YOUR_ADMIN_EMAIL>` / `<YOUR_ADMIN_PASSWORD>` - credentials for the bootstrap Administrator account, created automatically on first run (there's no self-registration path for Admin - see [Admin User Directory evidence](docs/evidence/Admin-User-Directory.md))
 
 **⚠️ Important:** Never commit `appsettings.Development.json` with real credentials to version control.
 
@@ -202,6 +203,16 @@ under the 5-second threshold. Full numbers and analysis are in
 
 ![Login Load Test - Baseline (50 users)](docs/evidence/login-load-test-baseline-dashboard.png)
 ![Login Load Test - Higher Load (200 users)](docs/evidence/login-load-test-highload-dashboard.png)
+
+### Admin User Directory
+
+`GET /api/users` is restricted server-side to the Admin role (`[Authorize(Roles = "Admin")]`) —
+verified with 200/403/403/401 for Admin/Student/Teacher/unauthenticated requests, both in
+automated tests and against the live running API. Full writeup in
+[`docs/evidence/Admin-User-Directory.md`](docs/evidence/Admin-User-Directory.md).
+
+![Admin User Directory](docs/evidence/admin-user-directory.png)
+![Access Denied for non-Admin](docs/evidence/admin-user-directory-access-denied.png)
 
 ### Docker Compose Services
 

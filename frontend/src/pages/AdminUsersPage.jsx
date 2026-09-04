@@ -1,0 +1,125 @@
+import React, { useEffect, useState } from 'react';
+import Layout from '../components/Layout';
+
+const STATUS_STYLES = {
+    Active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    Pending: 'bg-amber-50 text-amber-700 border-amber-200',
+};
+
+export default function AdminUsersPage() {
+    // Client-side gate is a UX nicety only - GET /api/users is protected server-side by
+    // [Authorize(Roles = "Admin")], so a Student/Teacher (or a tampered localStorage value)
+    // gets a real 403 from the API regardless of what this component decides to render.
+    const [role] = useState(() => localStorage.getItem('role'));
+    const [users, setUsers] = useState([]);
+    const [status, setStatus] = useState('idle'); // idle | loading | success | denied | error
+    const [errorMessage, setErrorMessage] = useState('');
+
+    useEffect(() => {
+        if (role !== 'Admin') {
+            setStatus('denied');
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        setStatus('loading');
+
+        fetch(import.meta.env.VITE_API_URL + '/api/users', {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+            .then(async (res) => {
+                if (res.status === 401 || res.status === 403) {
+                    setStatus('denied');
+                    return null;
+                }
+                if (!res.ok) {
+                    throw new Error(`Request failed with status ${res.status}`);
+                }
+                return res.json();
+            })
+            .then((data) => {
+                if (data) {
+                    setUsers(data);
+                    setStatus('success');
+                }
+            })
+            .catch((err) => {
+                setErrorMessage(err.message || 'Server connection error.');
+                setStatus('error');
+            });
+    }, [role]);
+
+    return (
+        <Layout>
+            <section className="py-24 px-6 max-w-6xl mx-auto w-full min-h-[60vh]">
+                <div className="mb-10 text-center">
+                    <div className="inline-block mb-4 px-5 py-2 rounded-full bg-white/80 backdrop-blur-md text-slate-600 text-sm font-bold tracking-widest uppercase shadow-sm border border-slate-200">
+                        Administrator
+                    </div>
+                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-3">User Directory</h1>
+                    <p className="text-lg font-medium text-slate-500">All registered students, teachers, and administrators on the platform.</p>
+                </div>
+
+                {status === 'denied' && (
+                    <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[32px] text-red-500">block</span>
+                        </div>
+                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h2>
+                        <p className="text-base font-medium text-slate-500">
+                            The User Directory is restricted to Administrators. Sign in with an Administrator account to view it.
+                        </p>
+                    </div>
+                )}
+
+                {status === 'loading' && (
+                    <div className="text-center py-20">
+                        <span className="material-symbols-outlined text-[40px] text-slate-400 animate-spin">progress_activity</span>
+                    </div>
+                )}
+
+                {status === 'error' && (
+                    <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
+                        <p className="text-base font-bold text-red-500">{errorMessage}</p>
+                    </div>
+                )}
+
+                {status === 'success' && (
+                    <div className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 overflow-hidden">
+                        <table className="w-full text-left">
+                            <thead className="bg-slate-50 border-b border-slate-100">
+                                <tr>
+                                    <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Name</th>
+                                    <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Email</th>
+                                    <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Role</th>
+                                    <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {users.length === 0 && (
+                                    <tr>
+                                        <td colSpan={4} className="px-6 py-10 text-center text-slate-500 font-medium">
+                                            No registered users yet.
+                                        </td>
+                                    </tr>
+                                )}
+                                {users.map((user) => (
+                                    <tr key={user.email} className="hover:bg-slate-50 transition-colors">
+                                        <td className="px-6 py-4 font-bold text-slate-900">{user.name}</td>
+                                        <td className="px-6 py-4 text-slate-600">{user.email}</td>
+                                        <td className="px-6 py-4 text-slate-600">{user.role}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${STATUS_STYLES[user.status] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                                                {user.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </section>
+        </Layout>
+    );
+}

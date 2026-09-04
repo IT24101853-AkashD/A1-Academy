@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  // UX nicety only - hiding this link from non-Admins is not the access control. The real
+  // restriction is server-side, on GET /api/users (see UsersController).
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -10,6 +13,10 @@ export default function Navbar() {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    setIsAdmin(localStorage.getItem('role') === 'Admin');
   }, []);
 
   return (
@@ -20,7 +27,14 @@ export default function Navbar() {
         </Link>
         
         <div className="flex gap-4 items-center">
-          <button 
+          {isAdmin && (
+            <Link
+              to="/admin/users"
+              className="text-slate-600 font-semibold hover:text-slate-900 transition-colors px-4">
+              User Directory
+            </Link>
+          )}
+          <button
             onClick={() => window.openReactModal && window.openReactModal('login-modal')}
             className="text-slate-600 font-semibold hover:text-slate-900 transition-colors px-4">
             Login

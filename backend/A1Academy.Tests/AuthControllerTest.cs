@@ -218,6 +218,30 @@ public async Task Register_WithNewEmail_ReturnsOk()
 }
 
 [Fact]
+public async Task Register_WithAdminRole_ReturnsBadRequest()
+{
+    // Arrange - Admin is provisioned separately (see Program.cs bootstrap seeding); the public
+    // register endpoint must never let a caller grant themselves that role.
+    var request = new AuthController.RegisterRequest
+    {
+        FirstName = "Wannabe",
+        Email = "wannabe-admin@example.com",
+        Password = "Password123!",
+        Role = "Admin"
+    };
+
+    // Act
+    var result = await _controller.Register(request);
+
+    // Assert
+    Assert.IsType<BadRequestObjectResult>(result);
+
+    var createdUser = await _context.Users
+        .SingleOrDefaultAsync(u => u.Email == "wannabe-admin@example.com");
+    Assert.Null(createdUser);
+}
+
+[Fact]
 public async Task Register_WithExistingEmail_ReturnsBadRequest()
 {
     // Arrange
