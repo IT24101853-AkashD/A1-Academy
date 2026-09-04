@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import AdminUsersPage from '../AdminUsersPage';
 
@@ -14,6 +14,16 @@ const mockUsers = [
   { name: 'Jane Smith', email: 'jane@example.com', role: 'Teacher', status: 'Active' },
   { name: 'Admin One', email: 'admin@example.com', role: 'Admin', status: 'Active' },
 ];
+
+// Shape returned by GET /api/users?page=&pageSize= once pagination was added server-side.
+const pagedResponse = (items, overrides = {}) => ({
+  items,
+  page: 1,
+  pageSize: 10,
+  totalCount: items.length,
+  totalPages: 1,
+  ...overrides,
+});
 
 describe('AdminUsersPage', () => {
   beforeEach(() => {
@@ -59,7 +69,7 @@ describe('AdminUsersPage', () => {
       Promise.resolve({
         ok: true,
         status: 200,
-        json: () => Promise.resolve(mockUsers),
+        json: () => Promise.resolve(pagedResponse(mockUsers)),
       })
     );
 
@@ -71,8 +81,10 @@ describe('AdminUsersPage', () => {
     expect(screen.getAllByText('Active')).toHaveLength(3);
 
     // Called with an Authorization header carrying the admin's token.
-    const [, options] = global.fetch.mock.calls[0];
+    const [url, options] = global.fetch.mock.calls[0];
     expect(options.headers.Authorization).toBe('Bearer admin-token');
+    // Requests page 1 by default.
+    expect(url).toContain('page=1');
   });
 
   it('falls back to Access Denied if the backend itself rejects the request (403)', async () => {
@@ -87,5 +99,63 @@ describe('AdminUsersPage', () => {
     renderPage();
 
     expect(await screen.findByText(/access denied/i)).toBeInTheDocument();
+  });
+
+  it('does not render pagination controls when everything fits on one page', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(pagedResponse(mockUsers, { totalPages: 1 })),
+      })
+    );
+
+    renderPage();
+
+    await screen.findByText('John Doe');
+    expect(screen.queryByRole('navigation', { name: /pagination/i })).not.toBeInTheDocument();
+  });
+
+  it('renders page numbers and Next/Previous controls, and fetches the next page on click', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn((url) => {
+      const isPageTwo = url.includes('page=2');
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve(
+            pagedResponse(isPageTwo ? [mockUsers[2]] : mockUsers.slice(0, 2), {
+              page: isPageTwo ? 2 : 1,
+              pageSize: 2,
+              totalCount: 3,
+              totalPages: 2,
+            })
+          ),
+      });
+    });
+
+    renderPage();
+
+    await screen.findByText('John Doe');
+    expect(screen.getByText(/showing page 1 of 2/i)).toBeInTheDocument();
+
+    const nextButton = screen.getByRole('button', { name: /^next$/i });
+    const previousButton = screen.getByRole('button', { name: /^previous$/i });
+    expect(previousButton).toBeDisabled();
+    expect(nextButton).not.toBeDisabled();
+
+    fireEvent.click(nextButton);
+
+    await waitFor(() => expect(screen.getByText(/showing page 2 of 2/i)).toBeInTheDocument());
+    expect(screen.getByText('Admin One')).toBeInTheDocument();
+    expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
+
+    // Second call requested page 2.
+    const secondCallUrl = global.fetch.mock.calls[1][0];
+    expect(secondCallUrl).toContain('page=2');
   });
 });

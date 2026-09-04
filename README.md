@@ -214,6 +214,16 @@ automated tests and against the live running API. Full writeup in
 ![Admin User Directory](docs/evidence/admin-user-directory.png)
 ![Access Denied for non-Admin](docs/evidence/admin-user-directory-access-denied.png)
 
+### Directory Pagination
+
+`GET /api/users` paginates (`?page=`/`?pageSize=`) and the directory table uses a windowed
+Previous/page-numbers/Next control. Verified against 21 real seeded users (3 pages) by actually
+clicking Next in a live browser session. Full writeup in
+[`docs/evidence/Directory-Pagination.md`](docs/evidence/Directory-Pagination.md).
+
+![Directory Pagination - page 1](docs/evidence/admin-user-directory-page1.png)
+![Directory Pagination - page 2](docs/evidence/admin-user-directory-page2.png)
+
 ### Docker Compose Services
 
 PostgreSQL, Kafka, and ZooKeeper were successfully started using Docker Compose.

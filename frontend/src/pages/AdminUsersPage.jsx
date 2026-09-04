@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
+import Pagination from '../components/Pagination';
 
 const STATUS_STYLES = {
     Active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     Pending: 'bg-amber-50 text-amber-700 border-amber-200',
 };
+
+const PAGE_SIZE = 10;
 
 export default function AdminUsersPage() {
     // Client-side gate is a UX nicety only - GET /api/users is protected server-side by
@@ -12,6 +15,9 @@ export default function AdminUsersPage() {
     // gets a real 403 from the API regardless of what this component decides to render.
     const [role] = useState(() => localStorage.getItem('role'));
     const [users, setUsers] = useState([]);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalCount, setTotalCount] = useState(0);
     const [status, setStatus] = useState('idle'); // idle | loading | success | denied | error
     const [errorMessage, setErrorMessage] = useState('');
 
@@ -24,7 +30,9 @@ export default function AdminUsersPage() {
         const token = localStorage.getItem('token');
         setStatus('loading');
 
-        fetch(import.meta.env.VITE_API_URL + '/api/users', {
+        const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
+
+        fetch(`${import.meta.env.VITE_API_URL}/api/users?${params.toString()}`, {
             headers: { Authorization: `Bearer ${token}` },
         })
             .then(async (res) => {
@@ -39,7 +47,9 @@ export default function AdminUsersPage() {
             })
             .then((data) => {
                 if (data) {
-                    setUsers(data);
+                    setUsers(data.items ?? []);
+                    setTotalPages(data.totalPages ?? 0);
+                    setTotalCount(data.totalCount ?? 0);
                     setStatus('success');
                 }
             })
@@ -47,7 +57,7 @@ export default function AdminUsersPage() {
                 setErrorMessage(err.message || 'Server connection error.');
                 setStatus('error');
             });
-    }, [role]);
+    }, [role, page]);
 
     return (
         <Layout>
@@ -117,6 +127,15 @@ export default function AdminUsersPage() {
                                 ))}
                             </tbody>
                         </table>
+
+                        {totalCount > 0 && (
+                            <div className="px-6 py-4 border-t border-slate-100 flex flex-col items-center gap-1">
+                                <p className="text-sm font-medium text-slate-500">
+                                    Showing page {page} of {totalPages} &middot; {totalCount} total users
+                                </p>
+                                <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                            </div>
+                        )}
                     </div>
                 )}
             </section>
