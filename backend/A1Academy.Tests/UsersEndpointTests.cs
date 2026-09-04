@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -75,7 +76,8 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         Assert.DoesNotContain("passwordHash", rawJson, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("otp", rawJson, StringComparison.OrdinalIgnoreCase);
 
-        var users = JsonSerializer.Deserialize<List<UserSummaryDto>>(rawJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+        var page = JsonSerializer.Deserialize<PagedUsersResponseDto>(rawJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+        var users = page.Items;
 
         var admin = Assert.Single(users, u => u.Email == $"ada.{suffix}@example.com");
         Assert.Equal("Ada Admin", admin.Name);
@@ -138,11 +140,100 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    [Fact]
+    public async Task GetUsers_AsAdmin_PaginatesAcrossMultiplePages()
+    {
+        // The in-memory database backing ApiWebApplicationFactory is shared by every test in
+        // this class (one instance per class, not per test), so other tests' seeded users are
+        // already present here. Rather than assert an absolute TotalCount, this test reads
+        // whatever total the endpoint reports and checks pagination is internally consistent
+        // with it - which is what the "Paginated Results"/"Navigation Controls" ACs actually
+        // require, and it stays correct no matter what order tests run in.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("Zz-Admin", "Seed", $"zzadmin.{suffix}@example.com", "AdminPass1!", "Admin");
+        for (var i = 0; i < 12; i++)
+        {
+            await SeedUserAsync($"Student{i:D2}", "Seed", $"student{i:D2}.{suffix}@example.com", "StudentPass1!", "Student");
+        }
+
+        var token = await LoginAsync(client, $"zzadmin.{suffix}@example.com", "AdminPass1!");
+
+        async Task<PagedUsersResponseDto> GetPageAsync(int page, int pageSize)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/users?page={page}&pageSize={pageSize}");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var response = await client.SendAsync(request);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            return (await response.Content.ReadFromJsonAsync<PagedUsersResponseDto>())!;
+        }
+
+        // A page big enough to hold everything reveals the current total (at least our own 13
+        // freshly-seeded users, plus whatever earlier tests in this class left behind).
+        var everything = await GetPageAsync(1, 1000);
+        var totalCount = everything.TotalCount;
+        Assert.True(totalCount >= 13);
+
+        const int pageSize = 5;
+        var expectedTotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var firstPage = await GetPageAsync(1, pageSize);
+        Assert.Equal(1, firstPage.Page);
+        Assert.Equal(pageSize, firstPage.PageSize);
+        Assert.Equal(totalCount, firstPage.TotalCount);
+        Assert.Equal(expectedTotalPages, firstPage.TotalPages);
+        Assert.Equal(pageSize, firstPage.Items.Count);
+
+        var secondPage = await GetPageAsync(2, pageSize);
+        Assert.Equal(pageSize, secondPage.Items.Count);
+        // Pages don't overlap or repeat entries.
+        Assert.Empty(firstPage.Items.Select(u => u.Email).Intersect(secondPage.Items.Select(u => u.Email)));
+
+        var lastPage = await GetPageAsync(expectedTotalPages, pageSize);
+        var remainder = totalCount % pageSize;
+        var expectedLastPageCount = remainder == 0 ? pageSize : remainder;
+        Assert.Equal(expectedLastPageCount, lastPage.Items.Count);
+
+        var pastLastPage = await GetPageAsync(expectedTotalPages + 1, pageSize);
+        Assert.Empty(pastLastPage.Items);
+        Assert.Equal(totalCount, pastLastPage.TotalCount);
+    }
+
+    [Fact]
+    public async Task GetUsers_WithInvalidPagingInput_ClampsToSensibleBounds()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        await SeedUserAsync("Clamp", "Admin", $"clampadmin.{suffix}@example.com", "AdminPass1!", "Admin");
+
+        var token = await LoginAsync(client, $"clampadmin.{suffix}@example.com", "AdminPass1!");
+
+        // page=0 and a very large pageSize should clamp rather than error.
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/users?page=0&pageSize=99999");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var page = (await response.Content.ReadFromJsonAsync<PagedUsersResponseDto>())!;
+        Assert.Equal(1, page.Page);
+        Assert.Equal(100, page.PageSize); // MaxPageSize in the controller
+    }
+
     private class UserSummaryDto
     {
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
+    }
+
+    private class PagedUsersResponseDto
+    {
+        public List<UserSummaryDto> Items { get; set; } = new();
+        public int Page { get; set; }
+        public int PageSize { get; set; }
+        public int TotalCount { get; set; }
+        public int TotalPages { get; set; }
     }
 }
