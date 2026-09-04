@@ -14,3 +14,9 @@
 appsettings.Production.json
 appsettings.Development.json
 .azure
+
+## JMeter local run artifacts (results/reports are generated per-run, not committed)
+performance/jmeter/*.jtl
+performance/jmeter/*.log
+performance/jmeter/report/
+performance/jmeter/*-report/
