@@ -85,7 +85,7 @@ public async Task Login_WithValidCredentials_ReturnsOk()
         PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
         Role = "Student",
         AuthProvider = "Local",
-        IsApproved = true,
+        AccountStatus = AccountStatus.Active,
         IsEmailVerified = true
     };
 
@@ -119,7 +119,7 @@ public async Task Login_WithWrongPassword_ReturnsUnauthorized()
         PasswordHash = BCrypt.Net.BCrypt.HashPassword("CorrectPassword123!"),
         Role = "Student",
         AuthProvider = "Local",
-        IsApproved = true
+        AccountStatus = AccountStatus.Active
     };
 
     _context.Users.Add(user);
@@ -156,7 +156,7 @@ public async Task Login_WithUnknownEmail_ReturnsUnauthorized()
 }
 
 [Fact]
-public async Task Login_WithUnapprovedUser_ReturnsUnauthorized()
+public async Task Login_WithPendingTeacher_ReturnsUnauthorized()
 {
     // Arrange
     var password = "Password123!";
@@ -169,7 +169,7 @@ public async Task Login_WithUnapprovedUser_ReturnsUnauthorized()
         PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
         Role = "Teacher",
         AuthProvider = "Local",
-        IsApproved = false
+        AccountStatus = AccountStatus.Pending
     };
 
     _context.Users.Add(user);
@@ -185,7 +185,76 @@ public async Task Login_WithUnapprovedUser_ReturnsUnauthorized()
     var result = await _controller.Login(request);
 
     // Assert
-    Assert.IsType<UnauthorizedObjectResult>(result);
+    var unauthorized = Assert.IsType<UnauthorizedObjectResult>(result);
+    Assert.Equal("Your account is pending administrator approval.", unauthorized.Value);
+}
+
+[Fact]
+public async Task Login_WithRejectedTeacher_ReturnsUnauthorized()
+{
+    // Arrange
+    var password = "Password123!";
+
+    var user = new User
+    {
+        FirstName = "Rejected",
+        LastName = "Teacher",
+        Email = "rejected-teacher@example.com",
+        PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+        Role = "Teacher",
+        AuthProvider = "Local",
+        AccountStatus = AccountStatus.Rejected
+    };
+
+    _context.Users.Add(user);
+    await _context.SaveChangesAsync();
+
+    var request = new AuthController.LoginRequest
+    {
+        Email = "rejected-teacher@example.com",
+        Password = password
+    };
+
+    // Act
+    var result = await _controller.Login(request);
+
+    // Assert
+    var unauthorized = Assert.IsType<UnauthorizedObjectResult>(result);
+    Assert.Equal("Your registration was not approved. Please contact support.", unauthorized.Value);
+}
+
+[Fact]
+public async Task Login_WithDeactivatedAccount_ReturnsUnauthorized()
+{
+    // Arrange - deactivation applies to any role, not just teachers, so this one's a Student.
+    var password = "Password123!";
+
+    var user = new User
+    {
+        FirstName = "Deactivated",
+        LastName = "Student",
+        Email = "deactivated-student@example.com",
+        PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+        Role = "Student",
+        AuthProvider = "Local",
+        AccountStatus = AccountStatus.Deactivated
+    };
+
+    _context.Users.Add(user);
+    await _context.SaveChangesAsync();
+
+    var request = new AuthController.LoginRequest
+    {
+        Email = "deactivated-student@example.com",
+        Password = password
+    };
+
+    // Act
+    var result = await _controller.Login(request);
+
+    // Assert
+    var unauthorized = Assert.IsType<UnauthorizedObjectResult>(result);
+    Assert.Equal("Your account has been deactivated. Please contact support.", unauthorized.Value);
 }
 
 [Fact]
@@ -215,6 +284,33 @@ public async Task Register_WithNewEmail_ReturnsOk()
     Assert.NotNull(createdUser);
     Assert.Equal("New", createdUser.FirstName);
     Assert.Equal("Student", createdUser.Role);
+}
+
+[Fact]
+public async Task Register_WithTeacherRole_StartsInPendingStatus()
+{
+    // Arrange - a Teacher signup shouldn't be usable until an Admin approves it, which is only
+    // true if it starts life as Pending rather than Active like a Student's does.
+    var request = new AuthController.RegisterRequest
+    {
+        FirstName = "New",
+        LastName = "Teacher",
+        Email = "newteacher@example.com",
+        Password = "Password123!",
+        Role = "Teacher",
+        Qualifications = "BSc"
+    };
+
+    // Act
+    var result = await _controller.Register(request);
+
+    // Assert
+    Assert.IsType<OkObjectResult>(result);
+
+    var createdUser = await _context.Users
+        .SingleOrDefaultAsync(u => u.Email == "newteacher@example.com");
+    Assert.NotNull(createdUser);
+    Assert.Equal(AccountStatus.Pending, createdUser.AccountStatus);
 }
 
 [Fact]
@@ -251,7 +347,7 @@ public async Task Register_WithExistingEmail_ReturnsBadRequest()
         Email = "existing@example.com",
         PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"),
         Role = "Student",
-        IsApproved = true
+        AccountStatus = AccountStatus.Active
     };
 
     _context.Users.Add(existingUser);

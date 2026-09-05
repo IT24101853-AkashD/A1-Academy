@@ -6,6 +6,17 @@ import UserFilters from '../components/UserFilters';
 const STATUS_STYLES = {
     Active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     Pending: 'bg-amber-50 text-amber-700 border-amber-200',
+    Rejected: 'bg-red-50 text-red-700 border-red-200',
+    Deactivated: 'bg-slate-100 text-slate-600 border-slate-200',
+};
+
+// What the account status API errors would call "not a valid action from here" messages, kept
+// friendly per action instead of surfacing the raw status code to whoever's clicking the button.
+const ACTION_ERROR_MESSAGES = {
+    approve: 'Could not approve this teacher. Please try again.',
+    reject: 'Could not reject this application. Please try again.',
+    deactivate: 'Could not deactivate this account. Please try again.',
+    reactivate: 'Could not reactivate this account. Please try again.',
 };
 
 const PAGE_SIZE = 10;
@@ -23,10 +34,10 @@ export default function AdminUsersPage() {
     const [roleFilter, setRoleFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
-    // Tracks which row's Approve button is mid-request, so we can disable just that one instead
-    // of freezing the whole table while the call is in flight.
-    const [approvingId, setApprovingId] = useState(null);
-    const [approveError, setApproveError] = useState('');
+    // Tracks which row has an account-action (approve/reject/deactivate/reactivate) mid-request,
+    // so we can disable just that one button instead of freezing the whole table.
+    const [pendingActionId, setPendingActionId] = useState(null);
+    const [actionError, setActionError] = useState('');
 
     useEffect(() => {
         if (role !== 'Admin') {
@@ -92,41 +103,44 @@ export default function AdminUsersPage() {
         setStatusFilter('');
     };
 
-    // Approves a single Pending Teacher. Updates the row in place on success instead of
-    // refetching the whole page - if the admin is sitting on the "Pending Teacher Applications"
-    // filter, the approved teacher no longer belongs there anyway, so we just drop it from view.
-    const approveTeacher = async (user) => {
-        setApprovingId(user.id);
-        setApproveError('');
+    // Runs one of the account actions (approve/reject/deactivate/reactivate) against a single
+    // row. All four work the same way on the frontend - hit PATCH /api/users/{id}/{action} and
+    // either update the row in place or drop it from view, depending on whether it still
+    // matches whatever status filter the admin currently has selected.
+    const runAccountAction = async (user, action) => {
+        setPendingActionId(user.id);
+        setActionError('');
         const token = localStorage.getItem('token');
 
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${user.id}/approve`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${user.id}/${action}`, {
                 method: 'PATCH',
                 headers: { Authorization: `Bearer ${token}` },
             });
 
             if (!res.ok) {
-                throw new Error(`Approval failed with status ${res.status}`);
+                throw new Error(`${action} failed with status ${res.status}`);
             }
 
             const updated = await res.json();
-            const isPendingOnlyView = statusFilter === 'Pending';
+            // If a status filter is active and the account's new status no longer matches it,
+            // the row doesn't belong on screen anymore - e.g. approving out of a "Pending" view.
+            const dropsOutOfView = Boolean(statusFilter) && updated.status !== statusFilter;
 
             setUsers((current) =>
-                isPendingOnlyView
+                dropsOutOfView
                     ? current.filter((u) => u.id !== user.id)
                     : current.map((u) => (u.id === user.id ? updated : u))
             );
-            if (isPendingOnlyView) {
+            if (dropsOutOfView) {
                 setTotalCount((count) => Math.max(count - 1, 0));
             }
         } catch {
             // Whatever went wrong (network blip, 4xx/5xx), the admin doesn't need the raw
             // status code - just a plain "it didn't work, try again" message.
-            setApproveError('Could not approve this teacher. Please try again.');
+            setActionError(ACTION_ERROR_MESSAGES[action] || 'That action could not be completed. Please try again.');
         } finally {
-            setApprovingId(null);
+            setPendingActionId(null);
         }
     };
 
@@ -178,9 +192,9 @@ export default function AdminUsersPage() {
 
                 {viewState === 'success' && (
                     <div className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 overflow-hidden">
-                        {approveError && (
+                        {actionError && (
                             <div className="px-6 py-3 bg-red-50 border-b border-red-100 text-sm font-bold text-red-600">
-                                {approveError}
+                                {actionError}
                             </div>
                         )}
                         <table className="w-full text-left">
@@ -214,16 +228,50 @@ export default function AdminUsersPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            {user.status === 'Pending' && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => approveTeacher(user)}
-                                                    disabled={approvingId === user.id}
-                                                    className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                                                >
-                                                    {approvingId === user.id ? 'Approving…' : 'Approve'}
-                                                </button>
-                                            )}
+                                            <div className="flex gap-2">
+                                                {user.status === 'Pending' && (
+                                                    <>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => runAccountAction(user, 'approve')}
+                                                            disabled={pendingActionId === user.id}
+                                                            className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                        >
+                                                            {pendingActionId === user.id ? 'Working…' : 'Approve'}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => runAccountAction(user, 'reject')}
+                                                            disabled={pendingActionId === user.id}
+                                                            className="px-3 py-1.5 rounded-full text-xs font-bold bg-white border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                    </>
+                                                )}
+                                                {user.status === 'Active' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => runAccountAction(user, 'deactivate')}
+                                                        disabled={pendingActionId === user.id}
+                                                        className="px-3 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                    >
+                                                        {pendingActionId === user.id ? 'Working…' : 'Deactivate'}
+                                                    </button>
+                                                )}
+                                                {user.status === 'Deactivated' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => runAccountAction(user, 'reactivate')}
+                                                        disabled={pendingActionId === user.id}
+                                                        className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                    >
+                                                        {pendingActionId === user.id ? 'Working…' : 'Reactivate'}
+                                                    </button>
+                                                )}
+                                                {/* Rejected is a dead end by design - see AccountStatusTransitions - so no
+                                                    action renders here. A rejected applicant re-registers instead. */}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

@@ -245,6 +245,21 @@ writeup in [`docs/evidence/Teacher-Approval.md`](docs/evidence/Teacher-Approval.
 ![Pending teachers before approval](docs/evidence/admin-user-directory-pending-before-approval.png)
 ![After approval](docs/evidence/admin-user-directory-after-approval.png)
 
+### User Deactivation
+
+Accounts now move through a real state machine - Pending/Active/Rejected/Deactivated - instead
+of a single approved bool, with a dedicated, pure-C# rules module deciding which moves are legal
+(`AccountStatusTransitions`). Backed by `PATCH /api/users/{id}/{approve|reject|deactivate|reactivate}`,
+each enforced the same way, and `AuthController.Login` blocking anyone whose account isn't
+Active with a status-specific message. Verified with real registered accounts end to end -
+deactivation blocks login, reactivation unblocks it again - plus every invalid transition (like
+re-approving an already-Active account) checked live. Full writeup in
+[`docs/evidence/User-Deactivation.md`](docs/evidence/User-Deactivation.md).
+
+![Pending actions](docs/evidence/admin-user-directory-pending-actions.png)
+![Deactivated actions](docs/evidence/admin-user-directory-deactivated-actions.png)
+![Rejected view](docs/evidence/admin-user-directory-rejected-view.png)
+
 ### Docker Compose Services
 
 PostgreSQL, Kafka, and ZooKeeper were successfully started using Docker Compose.

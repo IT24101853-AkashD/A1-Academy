@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using A1Academy.API.Data;
+using A1Academy.API.Services;
+using AccountStatus = A1Academy.API.Data.Models.AccountStatus;
 
 namespace A1Academy.API.Controllers
 {
@@ -68,18 +70,17 @@ namespace A1Academy.API.Controllers
                 filtered = filtered.Where(u => u.Role == role);
             }
 
-            // "Status" isn't a stored column - it's derived from Role + IsApproved (see the
-            // projection below), so filtering on it has to express the same rule as a Where
-            // clause. Keep the two in sync if that derivation ever changes.
-            if (string.Equals(status, "Pending", StringComparison.OrdinalIgnoreCase))
+            // Match the query string against our known status values case-insensitively (so
+            // ?status=pending and ?status=Pending behave the same), then filter on the exact
+            // stored value. Anything that doesn't match one of ours - typos, empty string - is
+            // just treated as "no filter" rather than a 400; this is a convenience filter, not
+            // a strict API contract.
+            var matchedStatus = new[] { AccountStatus.Pending, AccountStatus.Active, AccountStatus.Rejected, AccountStatus.Deactivated }
+                .FirstOrDefault(known => string.Equals(known, status, StringComparison.OrdinalIgnoreCase));
+            if (matchedStatus != null)
             {
-                filtered = filtered.Where(u => u.Role == "Teacher" && !u.IsApproved);
+                filtered = filtered.Where(u => u.AccountStatus == matchedStatus);
             }
-            else if (string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase))
-            {
-                filtered = filtered.Where(u => !(u.Role == "Teacher" && !u.IsApproved));
-            }
-            // Any other/empty status value is treated as "no filter" rather than an error.
 
             // Projected directly into UserSummary in the query (never materializing the full
             // User entity here) so password hashes, OTP cache keys, etc. can't leak into the
@@ -93,7 +94,7 @@ namespace A1Academy.API.Controllers
                     Name = (u.FirstName + " " + (u.LastName ?? string.Empty)).Trim(),
                     Email = u.Email,
                     Role = u.Role,
-                    Status = (u.Role == "Teacher" && !u.IsApproved) ? "Pending" : "Active"
+                    Status = u.AccountStatus
                 });
 
             var totalCount = await query.CountAsync();
@@ -114,12 +115,37 @@ namespace A1Academy.API.Controllers
             });
         }
 
-        // Flips a Pending Teacher to Active. This is the whole "Teacher Approval" story - an
+        // Approves a Pending Teacher application. This is the "Teacher Approval" story - an
         // Admin looks at a Pending Teacher in the directory and hits Approve, and from then on
-        // that teacher can log in and use the platform (AuthController's login already blocks
-        // unapproved teachers, so this is the other half of that gate).
+        // that teacher can log in and use the platform (AuthController's login blocks anyone
+        // whose account isn't Active, so this is the other half of that gate).
         [HttpPatch("{id}/approve")]
-        public async Task<ActionResult<UserSummary>> ApproveTeacher(int id)
+        public Task<ActionResult<UserSummary>> ApproveTeacher(int id) =>
+            ApplyTransitionAsync(id, AccountStatusTransitions.Approve);
+
+        // Turns down a Pending Teacher application. Unlike deactivation this isn't meant to be
+        // reversed later - if someone's rejected application should be reconsidered, that's a
+        // fresh registration, not a status flip.
+        [HttpPatch("{id}/reject")]
+        public Task<ActionResult<UserSummary>> RejectTeacher(int id) =>
+            ApplyTransitionAsync(id, AccountStatusTransitions.Reject);
+
+        // Switches an Active account off. Works for any role, not just Teachers - a Student or
+        // even an Admin account can be deactivated the same way.
+        [HttpPatch("{id}/deactivate")]
+        public Task<ActionResult<UserSummary>> DeactivateUser(int id) =>
+            ApplyTransitionAsync(id, AccountStatusTransitions.Deactivate);
+
+        // Switches a previously Deactivated account back on.
+        [HttpPatch("{id}/reactivate")]
+        public Task<ActionResult<UserSummary>> ReactivateUser(int id) =>
+            ApplyTransitionAsync(id, AccountStatusTransitions.Reactivate);
+
+        // Shared by all four actions above - looks up the account, asks the state machine
+        // whether the move is legal from wherever the account currently is, and only touches
+        // the database if it is. AccountStatusTransitions is what actually decides what's valid;
+        // this method is just the HTTP plumbing around it (404/400/200).
+        private async Task<ActionResult<UserSummary>> ApplyTransitionAsync(int id, string action)
         {
             var user = await _context.Users.FindAsync(id);
             if (user == null)
@@ -127,20 +153,13 @@ namespace A1Academy.API.Controllers
                 return NotFound(new { message = "User not found." });
             }
 
-            if (user.Role != "Teacher")
+            if (!AccountStatusTransitions.TryApply(action, user.AccountStatus, out var resultingStatus, out var error))
             {
-                // Approval only makes sense for teacher accounts - students and admins don't
-                // have a pending state, so trying to approve one is a client error, not a 404.
-                return BadRequest(new { message = "Only Teacher accounts can be approved." });
+                return BadRequest(new { message = error });
             }
 
-            // Already approved? Don't error, just treat it as a no-op - an admin double-clicking
-            // Approve (or a stale page reloaded twice) shouldn't blow up.
-            if (!user.IsApproved)
-            {
-                user.IsApproved = true;
-                await _context.SaveChangesAsync();
-            }
+            user.AccountStatus = resultingStatus;
+            await _context.SaveChangesAsync();
 
             return Ok(new UserSummary
             {
@@ -148,7 +167,7 @@ namespace A1Academy.API.Controllers
                 Name = (user.FirstName + " " + (user.LastName ?? string.Empty)).Trim(),
                 Email = user.Email,
                 Role = user.Role,
-                Status = "Active"
+                Status = user.AccountStatus
             });
         }
     }
