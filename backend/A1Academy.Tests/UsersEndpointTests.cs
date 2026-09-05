@@ -306,8 +306,166 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         Assert.DoesNotContain(page.Items, u => u.Email == $"statuspending.{suffix}@example.com");
     }
 
+    [Fact]
+    public async Task ApproveTeacher_AsAdmin_FlipsPendingTeacherToActive()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("Approve", "Admin", $"approveadmin.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Grace", "Green", $"gracegreen.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: false);
+
+        var token = await LoginAsync(client, $"approveadmin.{suffix}@example.com", "AdminPass1!");
+        var pendingId = await FindUserIdAsync(client, token, $"gracegreen.{suffix}@example.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{pendingId}/approve");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var updated = (await response.Content.ReadFromJsonAsync<UserSummaryDto>())!;
+        Assert.Equal("Active", updated.Status);
+        Assert.Equal("Teacher", updated.Role);
+
+        // Reflected in the directory too, not just the approve response.
+        var directory = await GetUsersAsync(client, token, $"?role=Teacher&status=Pending&pageSize=100");
+        Assert.DoesNotContain(directory.Items, u => u.Email == $"gracegreen.{suffix}@example.com");
+    }
+
+    [Fact]
+    public async Task ApproveTeacher_UnblocksLoginForThatTeacher()
+    {
+        // This is the actual point of the ticket, not just the flag flip: a Pending Teacher
+        // can't log in at all until an Admin approves them, and approval should unblock login
+        // immediately - no re-registration, no waiting on anything else.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var teacherEmail = $"unblock.{suffix}@example.com";
+        const string teacherPassword = "TeacherPass1!";
+
+        await SeedUserAsync("Approve", "AdminSix", $"approveadmin6.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Unblock", "Teacher", teacherEmail, teacherPassword, "Teacher", isApproved: false);
+
+        // Can't log in yet - still Pending.
+        var blockedResponse = await client.PostAsJsonAsync("/api/auth/login", new { email = teacherEmail, password = teacherPassword });
+        Assert.Equal(HttpStatusCode.Unauthorized, blockedResponse.StatusCode);
+
+        var adminToken = await LoginAsync(client, $"approveadmin6.{suffix}@example.com", "AdminPass1!");
+        var teacherId = await FindUserIdAsync(client, adminToken, teacherEmail);
+
+        var approveRequest = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{teacherId}/approve");
+        approveRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+        var approveResponse = await client.SendAsync(approveRequest);
+        Assert.Equal(HttpStatusCode.OK, approveResponse.StatusCode);
+
+        // Same credentials, now let in.
+        var unblockedResponse = await client.PostAsJsonAsync("/api/auth/login", new { email = teacherEmail, password = teacherPassword });
+        Assert.Equal(HttpStatusCode.OK, unblockedResponse.StatusCode);
+        var body = await unblockedResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(string.IsNullOrEmpty(body.GetProperty("token").GetString()));
+        Assert.Equal("Teacher", body.GetProperty("role").GetString());
+    }
+
+    [Fact]
+    public async Task ApproveTeacher_AlreadyApproved_IsANoOpAndStillReturnsOk()
+    {
+        // An admin double-clicking Approve (or two admins racing on the same stale page)
+        // shouldn't error out - the teacher is Active either way.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("Approve", "AdminTwo", $"approveadmin2.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Already", "Approved", $"alreadyapproved.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: true);
+
+        var token = await LoginAsync(client, $"approveadmin2.{suffix}@example.com", "AdminPass1!");
+        var teacherId = await FindUserIdAsync(client, token, $"alreadyapproved.{suffix}@example.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{teacherId}/approve");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var updated = (await response.Content.ReadFromJsonAsync<UserSummaryDto>())!;
+        Assert.Equal("Active", updated.Status);
+    }
+
+    [Fact]
+    public async Task ApproveTeacher_OnStudentAccount_ReturnsBadRequest()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("Approve", "AdminThree", $"approveadmin3.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Not", "ATeacher", $"notateacher.{suffix}@example.com", "StudentPass1!", "Student");
+
+        var token = await LoginAsync(client, $"approveadmin3.{suffix}@example.com", "AdminPass1!");
+        var studentId = await FindUserIdAsync(client, token, $"notateacher.{suffix}@example.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{studentId}/approve");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ApproveTeacher_UnknownId_ReturnsNotFound()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        await SeedUserAsync("Approve", "AdminFour", $"approveadmin4.{suffix}@example.com", "AdminPass1!", "Admin");
+
+        var token = await LoginAsync(client, $"approveadmin4.{suffix}@example.com", "AdminPass1!");
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, "/api/users/999999/approve");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ApproveTeacher_AsNonAdmin_ReturnsForbidden()
+    {
+        // Same story as GetUsers - the [Authorize(Roles = "Admin")] on the controller covers
+        // every action in it, this endpoint included. Worth its own test anyway since it's the
+        // one that actually changes data, not just reads it.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("Approve", "AdminFive", $"approveadmin5.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Some", "Teacher", $"nonadmintarget.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: false);
+        await SeedUserAsync("Sneaky", "Student", $"sneakystudent.{suffix}@example.com", "StudentPass1!", "Student");
+
+        var adminToken = await LoginAsync(client, $"approveadmin5.{suffix}@example.com", "AdminPass1!");
+        var targetId = await FindUserIdAsync(client, adminToken, $"nonadmintarget.{suffix}@example.com");
+
+        var studentToken = await LoginAsync(client, $"sneakystudent.{suffix}@example.com", "StudentPass1!");
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{targetId}/approve");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", studentToken);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    private async Task<int> FindUserIdAsync(HttpClient client, string adminToken, string email)
+    {
+        var directory = await GetUsersAsync(client, adminToken, "?pageSize=1000");
+        return Assert.Single(directory.Items, u => u.Email == email).Id;
+    }
+
+    private async Task<PagedUsersResponseDto> GetUsersAsync(HttpClient client, string token, string queryString)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/api/users{queryString}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<PagedUsersResponseDto>())!;
+    }
+
     private class UserSummaryDto
     {
+        public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;

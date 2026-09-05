@@ -234,6 +234,17 @@ Status dropdowns. Verified against real seeded data. Full writeup in
 ![Unfiltered directory](docs/evidence/admin-user-directory-unfiltered.png)
 ![Pending Teacher Applications filter applied](docs/evidence/admin-user-directory-pending-teachers-filter.png)
 
+### Teacher Approval
+
+Admins can now act on what the pending-teacher filter finds - `PATCH /api/users/{id}/approve`
+flips a Teacher from Pending to Active, and the directory shows an "Approve" button on any
+Pending row. Verified end to end with a real registered teacher: blocked from logging in while
+Pending, able to log in immediately after approval, plus the 400/404/403 error paths. Full
+writeup in [`docs/evidence/Teacher-Approval.md`](docs/evidence/Teacher-Approval.md).
+
+![Pending teachers before approval](docs/evidence/admin-user-directory-pending-before-approval.png)
+![After approval](docs/evidence/admin-user-directory-after-approval.png)
+
 ### Docker Compose Services
 
 PostgreSQL, Kafka, and ZooKeeper were successfully started using Docker Compose.
