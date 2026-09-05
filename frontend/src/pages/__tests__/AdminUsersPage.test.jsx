@@ -10,9 +10,9 @@ const renderPage = () => render(
 );
 
 const mockUsers = [
-  { name: 'John Doe', email: 'john@example.com', role: 'Student', status: 'Active' },
-  { name: 'Jane Smith', email: 'jane@example.com', role: 'Teacher', status: 'Active' },
-  { name: 'Admin One', email: 'admin@example.com', role: 'Admin', status: 'Active' },
+  { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Student', status: 'Active' },
+  { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'Teacher', status: 'Active' },
+  { id: 3, name: 'Admin One', email: 'admin@example.com', role: 'Admin', status: 'Active' },
 ];
 
 // Shape returned by GET /api/users?page=&pageSize= once pagination was added server-side.
@@ -230,5 +230,104 @@ describe('AdminUsersPage', () => {
       expect(lastCallUrl).not.toContain('status=');
     });
     expect(screen.queryByRole('button', { name: /clear filters/i })).not.toBeInTheDocument();
+  });
+
+  it('shows an Approve button only for Pending rows', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const pendingTeacher = { id: 4, name: 'Pending Teacher', email: 'pending@example.com', role: 'Teacher', status: 'Pending' };
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse([...mockUsers, pendingTeacher])) })
+    );
+
+    renderPage();
+    await screen.findByText('Pending Teacher');
+
+    // Only one row is Pending, so there should be exactly one Approve button.
+    expect(screen.getAllByRole('button', { name: /^approve$/i })).toHaveLength(1);
+  });
+
+  it('clicking Approve calls the approve endpoint and flips the row to Active', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const pendingTeacher = { id: 4, name: 'Pending Teacher', email: 'pending@example.com', role: 'Teacher', status: 'Pending' };
+    const approvedTeacher = { ...pendingTeacher, status: 'Active' };
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(approvedTeacher) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse([...mockUsers, pendingTeacher])) });
+    });
+
+    renderPage();
+    await screen.findByText('Pending Teacher');
+
+    fireEvent.click(screen.getByRole('button', { name: /^approve$/i }));
+
+    await waitFor(() => expect(screen.queryByRole('button', { name: /^approve$/i })).not.toBeInTheDocument());
+
+    // Hit the right endpoint with PATCH and the admin's auth header.
+    const patchCall = global.fetch.mock.calls.find(([, options]) => options?.method === 'PATCH');
+    expect(patchCall[0]).toContain('/api/users/4/approve');
+    expect(patchCall[1].headers.Authorization).toBe('Bearer admin-token');
+
+    // Row now shows Active instead of Pending, still no Approve button on it.
+    const row = screen.getByText('Pending Teacher').closest('tr');
+    expect(within(row).getByText('Active')).toBeInTheDocument();
+  });
+
+  it('shows an error message and re-enables Approve if the approval request fails', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const pendingTeacher = { id: 4, name: 'Pending Teacher', email: 'pending@example.com', role: 'Teacher', status: 'Pending' };
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: false, status: 500 });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse([...mockUsers, pendingTeacher])) });
+    });
+
+    renderPage();
+    await screen.findByText('Pending Teacher');
+
+    fireEvent.click(screen.getByRole('button', { name: /^approve$/i }));
+
+    expect(await screen.findByText(/could not approve/i)).toBeInTheDocument();
+    // Still Pending, button back to normal so the admin can retry.
+    expect(screen.getByRole('button', { name: /^approve$/i })).not.toBeDisabled();
+  });
+
+  it('removes the row entirely when approving from the Pending-only filtered view', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const pendingTeacher = { id: 4, name: 'Pending Teacher', email: 'pending@example.com', role: 'Teacher', status: 'Pending' };
+    const approvedTeacher = { ...pendingTeacher, status: 'Active' };
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(approvedTeacher) });
+      }
+      const isPendingFilter = url.includes('role=Teacher') && url.includes('status=Pending');
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(pagedResponse(isPendingFilter ? [pendingTeacher] : mockUsers)),
+      });
+    });
+
+    renderPage();
+    await screen.findByText('John Doe');
+
+    // Switch to the Pending Teacher Applications view first.
+    fireEvent.click(screen.getByRole('button', { name: /pending teacher applications/i }));
+    await screen.findByText('Pending Teacher');
+
+    fireEvent.click(screen.getByRole('button', { name: /^approve$/i }));
+
+    // Once approved it no longer belongs in a status=Pending view, so the row disappears
+    // instead of just flipping its badge.
+    await waitFor(() => expect(screen.queryByText('Pending Teacher')).not.toBeInTheDocument());
   });
 });

@@ -26,6 +26,10 @@ namespace A1Academy.API.Controllers
 
         public class UserSummary
         {
+            // Needed so the frontend has something to target when approving a specific teacher -
+            // email would technically work too since it's unique, but the primary key is the
+            // obvious choice for an update/approve action.
+            public int Id { get; set; }
             public string Name { get; set; } = string.Empty;
             public string Email { get; set; } = string.Empty;
             public string Role { get; set; } = string.Empty;
@@ -85,6 +89,7 @@ namespace A1Academy.API.Controllers
                 .ThenBy(u => u.LastName)
                 .Select(u => new UserSummary
                 {
+                    Id = u.Id,
                     Name = (u.FirstName + " " + (u.LastName ?? string.Empty)).Trim(),
                     Email = u.Email,
                     Role = u.Role,
@@ -106,6 +111,44 @@ namespace A1Academy.API.Controllers
                 PageSize = pageSize,
                 TotalCount = totalCount,
                 TotalPages = totalPages
+            });
+        }
+
+        // Flips a Pending Teacher to Active. This is the whole "Teacher Approval" story - an
+        // Admin looks at a Pending Teacher in the directory and hits Approve, and from then on
+        // that teacher can log in and use the platform (AuthController's login already blocks
+        // unapproved teachers, so this is the other half of that gate).
+        [HttpPatch("{id}/approve")]
+        public async Task<ActionResult<UserSummary>> ApproveTeacher(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found." });
+            }
+
+            if (user.Role != "Teacher")
+            {
+                // Approval only makes sense for teacher accounts - students and admins don't
+                // have a pending state, so trying to approve one is a client error, not a 404.
+                return BadRequest(new { message = "Only Teacher accounts can be approved." });
+            }
+
+            // Already approved? Don't error, just treat it as a no-op - an admin double-clicking
+            // Approve (or a stale page reloaded twice) shouldn't blow up.
+            if (!user.IsApproved)
+            {
+                user.IsApproved = true;
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(new UserSummary
+            {
+                Id = user.Id,
+                Name = (user.FirstName + " " + (user.LastName ?? string.Empty)).Trim(),
+                Email = user.Email,
+                Role = user.Role,
+                Status = "Active"
             });
         }
     }

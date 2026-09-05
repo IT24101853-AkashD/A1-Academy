@@ -23,6 +23,10 @@ export default function AdminUsersPage() {
     const [roleFilter, setRoleFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    // Tracks which row's Approve button is mid-request, so we can disable just that one instead
+    // of freezing the whole table while the call is in flight.
+    const [approvingId, setApprovingId] = useState(null);
+    const [approveError, setApproveError] = useState('');
 
     useEffect(() => {
         if (role !== 'Admin') {
@@ -88,6 +92,44 @@ export default function AdminUsersPage() {
         setStatusFilter('');
     };
 
+    // Approves a single Pending Teacher. Updates the row in place on success instead of
+    // refetching the whole page - if the admin is sitting on the "Pending Teacher Applications"
+    // filter, the approved teacher no longer belongs there anyway, so we just drop it from view.
+    const approveTeacher = async (user) => {
+        setApprovingId(user.id);
+        setApproveError('');
+        const token = localStorage.getItem('token');
+
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${user.id}/approve`, {
+                method: 'PATCH',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (!res.ok) {
+                throw new Error(`Approval failed with status ${res.status}`);
+            }
+
+            const updated = await res.json();
+            const isPendingOnlyView = statusFilter === 'Pending';
+
+            setUsers((current) =>
+                isPendingOnlyView
+                    ? current.filter((u) => u.id !== user.id)
+                    : current.map((u) => (u.id === user.id ? updated : u))
+            );
+            if (isPendingOnlyView) {
+                setTotalCount((count) => Math.max(count - 1, 0));
+            }
+        } catch {
+            // Whatever went wrong (network blip, 4xx/5xx), the admin doesn't need the raw
+            // status code - just a plain "it didn't work, try again" message.
+            setApproveError('Could not approve this teacher. Please try again.');
+        } finally {
+            setApprovingId(null);
+        }
+    };
+
     return (
         <Layout>
             <section className="py-24 px-6 max-w-6xl mx-auto w-full min-h-[60vh]">
@@ -136,6 +178,11 @@ export default function AdminUsersPage() {
 
                 {viewState === 'success' && (
                     <div className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 overflow-hidden">
+                        {approveError && (
+                            <div className="px-6 py-3 bg-red-50 border-b border-red-100 text-sm font-bold text-red-600">
+                                {approveError}
+                            </div>
+                        )}
                         <table className="w-full text-left">
                             <thead className="bg-slate-50 border-b border-slate-100">
                                 <tr>
@@ -143,12 +190,13 @@ export default function AdminUsersPage() {
                                     <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Email</th>
                                     <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Role</th>
                                     <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Status</th>
+                                    <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {users.length === 0 && (
                                     <tr>
-                                        <td colSpan={4} className="px-6 py-10 text-center text-slate-500 font-medium">
+                                        <td colSpan={5} className="px-6 py-10 text-center text-slate-500 font-medium">
                                             {roleFilter || statusFilter
                                                 ? 'No users match the current filter.'
                                                 : 'No registered users yet.'}
@@ -164,6 +212,18 @@ export default function AdminUsersPage() {
                                             <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${STATUS_STYLES[user.status] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
                                                 {user.status}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {user.status === 'Pending' && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => approveTeacher(user)}
+                                                    disabled={approvingId === user.id}
+                                                    className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                >
+                                                    {approvingId === user.id ? 'Approving…' : 'Approve'}
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
