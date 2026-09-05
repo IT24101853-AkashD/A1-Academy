@@ -45,7 +45,11 @@ namespace A1Academy.API.Controllers
         private const int MaxPageSize = 100;
 
         [HttpGet]
-        public async Task<ActionResult<PagedUsersResponse>> GetUsers([FromQuery] int page = 1, [FromQuery] int pageSize = DefaultPageSize)
+        public async Task<ActionResult<PagedUsersResponse>> GetUsers(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = DefaultPageSize,
+            [FromQuery] string? role = null,
+            [FromQuery] string? status = null)
         {
             // Clamp rather than reject bad/out-of-range paging input - an admin bookmarking
             // ?page=0 or a stale link from a shrunk dataset should just land on something
@@ -53,10 +57,30 @@ namespace A1Academy.API.Controllers
             page = Math.Max(page, 1);
             pageSize = Math.Clamp(pageSize, 1, MaxPageSize);
 
+            IQueryable<Data.Models.User> filtered = _context.Users;
+
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                filtered = filtered.Where(u => u.Role == role);
+            }
+
+            // "Status" isn't a stored column - it's derived from Role + IsApproved (see the
+            // projection below), so filtering on it has to express the same rule as a Where
+            // clause. Keep the two in sync if that derivation ever changes.
+            if (string.Equals(status, "Pending", StringComparison.OrdinalIgnoreCase))
+            {
+                filtered = filtered.Where(u => u.Role == "Teacher" && !u.IsApproved);
+            }
+            else if (string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase))
+            {
+                filtered = filtered.Where(u => !(u.Role == "Teacher" && !u.IsApproved));
+            }
+            // Any other/empty status value is treated as "no filter" rather than an error.
+
             // Projected directly into UserSummary in the query (never materializing the full
             // User entity here) so password hashes, OTP cache keys, etc. can't leak into the
             // response even by accident.
-            var query = _context.Users
+            var query = filtered
                 .OrderBy(u => u.FirstName)
                 .ThenBy(u => u.LastName)
                 .Select(u => new UserSummary

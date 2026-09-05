@@ -224,6 +224,16 @@ clicking Next in a live browser session. Full writeup in
 ![Directory Pagination - page 1](docs/evidence/admin-user-directory-page1.png)
 ![Directory Pagination - page 2](docs/evidence/admin-user-directory-page2.png)
 
+### Filter Pending Teachers
+
+`GET /api/users` now takes `?role=`/`?status=` filters, and the directory has a one-click
+"Pending Teacher Applications" button (role=Teacher + status=Pending) alongside generic Role/
+Status dropdowns. Verified against real seeded data. Full writeup in
+[`docs/evidence/Filter-Pending-Teachers.md`](docs/evidence/Filter-Pending-Teachers.md).
+
+![Unfiltered directory](docs/evidence/admin-user-directory-unfiltered.png)
+![Pending Teacher Applications filter applied](docs/evidence/admin-user-directory-pending-teachers-filter.png)
+
 ### Docker Compose Services
 
 PostgreSQL, Kafka, and ZooKeeper were successfully started using Docker Compose.
