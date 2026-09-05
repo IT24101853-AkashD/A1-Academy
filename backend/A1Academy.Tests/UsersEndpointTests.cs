@@ -220,6 +220,92 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         Assert.Equal(100, page.PageSize); // MaxPageSize in the controller
     }
 
+    [Fact]
+    public async Task GetUsers_FilteredByRoleAndStatus_ReturnsOnlyPendingTeachers()
+    {
+        // This is the exact scenario the "Filter Pending Teachers" acceptance criterion
+        // describes: role=Teacher + status=Pending should isolate only Teacher accounts still
+        // awaiting approval, excluding approved teachers, students, and admins.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("Filter", "Admin", $"filteradmin.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Approved", "Teacher", $"approvedteacher.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: true);
+        await SeedUserAsync("Pending", "TeacherOne", $"pendingteacher1.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: false);
+        await SeedUserAsync("Pending", "TeacherTwo", $"pendingteacher2.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: false);
+        await SeedUserAsync("Some", "Student", $"filterstudent.{suffix}@example.com", "StudentPass1!", "Student");
+
+        var token = await LoginAsync(client, $"filteradmin.{suffix}@example.com", "AdminPass1!");
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/users?role=Teacher&status=Pending&pageSize=100");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var page = (await response.Content.ReadFromJsonAsync<PagedUsersResponseDto>())!;
+        var ourEmails = new[]
+        {
+            $"filteradmin.{suffix}@example.com",
+            $"approvedteacher.{suffix}@example.com",
+            $"pendingteacher1.{suffix}@example.com",
+            $"pendingteacher2.{suffix}@example.com",
+            $"filterstudent.{suffix}@example.com",
+        };
+        var ourResults = page.Items.Where(u => ourEmails.Contains(u.Email)).ToList();
+
+        Assert.Equal(2, ourResults.Count);
+        Assert.All(ourResults, u => Assert.Equal("Teacher", u.Role));
+        Assert.All(ourResults, u => Assert.Equal("Pending", u.Status));
+        Assert.Contains(ourResults, u => u.Email == $"pendingteacher1.{suffix}@example.com");
+        Assert.Contains(ourResults, u => u.Email == $"pendingteacher2.{suffix}@example.com");
+    }
+
+    [Fact]
+    public async Task GetUsers_FilteredByRoleOnly_IncludesBothApprovedAndPendingTeachers()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("RoleFilter", "Admin", $"rolefilteradmin.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Approved", "Teacher", $"roleapproved.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: true);
+        await SeedUserAsync("Pending", "Teacher", $"rolepending.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: false);
+        await SeedUserAsync("Some", "Student", $"rolestudent.{suffix}@example.com", "StudentPass1!", "Student");
+
+        var token = await LoginAsync(client, $"rolefilteradmin.{suffix}@example.com", "AdminPass1!");
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/users?role=Teacher&pageSize=100");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.SendAsync(request);
+        var page = (await response.Content.ReadFromJsonAsync<PagedUsersResponseDto>())!;
+
+        Assert.Contains(page.Items, u => u.Email == $"roleapproved.{suffix}@example.com" && u.Status == "Active");
+        Assert.Contains(page.Items, u => u.Email == $"rolepending.{suffix}@example.com" && u.Status == "Pending");
+        Assert.DoesNotContain(page.Items, u => u.Email == $"rolestudent.{suffix}@example.com");
+        Assert.DoesNotContain(page.Items, u => u.Email == $"rolefilteradmin.{suffix}@example.com");
+    }
+
+    [Fact]
+    public async Task GetUsers_FilteredByStatusActive_ExcludesPendingTeachers()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("StatusFilter", "Admin", $"statusfilteradmin.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Pending", "Teacher", $"statuspending.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: false);
+        await SeedUserAsync("Some", "Student", $"statusstudent.{suffix}@example.com", "StudentPass1!", "Student");
+
+        var token = await LoginAsync(client, $"statusfilteradmin.{suffix}@example.com", "AdminPass1!");
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/users?status=Active&pageSize=100");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.SendAsync(request);
+        var page = (await response.Content.ReadFromJsonAsync<PagedUsersResponseDto>())!;
+
+        Assert.Contains(page.Items, u => u.Email == $"statusfilteradmin.{suffix}@example.com");
+        Assert.Contains(page.Items, u => u.Email == $"statusstudent.{suffix}@example.com");
+        Assert.DoesNotContain(page.Items, u => u.Email == $"statuspending.{suffix}@example.com");
+    }
+
     private class UserSummaryDto
     {
         public string Name { get; set; } = string.Empty;

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import Pagination from '../components/Pagination';
+import UserFilters from '../components/UserFilters';
 
 const STATUS_STYLES = {
     Active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -18,26 +19,30 @@ export default function AdminUsersPage() {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
     const [totalCount, setTotalCount] = useState(0);
-    const [status, setStatus] = useState('idle'); // idle | loading | success | denied | error
+    const [viewState, setViewState] = useState('idle'); // idle | loading | success | denied | error
+    const [roleFilter, setRoleFilter] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
 
     useEffect(() => {
         if (role !== 'Admin') {
-            setStatus('denied');
+            setViewState('denied');
             return;
         }
 
         const token = localStorage.getItem('token');
-        setStatus('loading');
+        setViewState('loading');
 
         const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
+        if (roleFilter) params.set('role', roleFilter);
+        if (statusFilter) params.set('status', statusFilter);
 
         fetch(`${import.meta.env.VITE_API_URL}/api/users?${params.toString()}`, {
             headers: { Authorization: `Bearer ${token}` },
         })
             .then(async (res) => {
                 if (res.status === 401 || res.status === 403) {
-                    setStatus('denied');
+                    setViewState('denied');
                     return null;
                 }
                 if (!res.ok) {
@@ -50,14 +55,38 @@ export default function AdminUsersPage() {
                     setUsers(data.items ?? []);
                     setTotalPages(data.totalPages ?? 0);
                     setTotalCount(data.totalCount ?? 0);
-                    setStatus('success');
+                    setViewState('success');
                 }
             })
             .catch((err) => {
                 setErrorMessage(err.message || 'Server connection error.');
-                setStatus('error');
+                setViewState('error');
             });
-    }, [role, page]);
+    }, [role, page, roleFilter, statusFilter]);
+
+    // Any filter change invalidates the current page number - jumping straight to a filtered
+    // set's page 4 when it might only have 1 page now would just show an empty table.
+    const applyRoleFilter = (value) => {
+        setPage(1);
+        setRoleFilter(value);
+    };
+
+    const applyStatusFilter = (value) => {
+        setPage(1);
+        setStatusFilter(value);
+    };
+
+    const showPendingTeachers = () => {
+        setPage(1);
+        setRoleFilter('Teacher');
+        setStatusFilter('Pending');
+    };
+
+    const clearFilters = () => {
+        setPage(1);
+        setRoleFilter('');
+        setStatusFilter('');
+    };
 
     return (
         <Layout>
@@ -70,7 +99,7 @@ export default function AdminUsersPage() {
                     <p className="text-lg font-medium text-slate-500">All registered students, teachers, and administrators on the platform.</p>
                 </div>
 
-                {status === 'denied' && (
+                {viewState === 'denied' && (
                     <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 flex items-center justify-center">
                             <span className="material-symbols-outlined text-[32px] text-red-500">block</span>
@@ -82,19 +111,30 @@ export default function AdminUsersPage() {
                     </div>
                 )}
 
-                {status === 'loading' && (
+                {(viewState === 'loading' || viewState === 'error' || viewState === 'success') && (
+                    <UserFilters
+                        role={roleFilter}
+                        status={statusFilter}
+                        onRoleChange={applyRoleFilter}
+                        onStatusChange={applyStatusFilter}
+                        onShowPendingTeachers={showPendingTeachers}
+                        onClear={clearFilters}
+                    />
+                )}
+
+                {viewState === 'loading' && (
                     <div className="text-center py-20">
                         <span className="material-symbols-outlined text-[40px] text-slate-400 animate-spin">progress_activity</span>
                     </div>
                 )}
 
-                {status === 'error' && (
+                {viewState === 'error' && (
                     <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
                         <p className="text-base font-bold text-red-500">{errorMessage}</p>
                     </div>
                 )}
 
-                {status === 'success' && (
+                {viewState === 'success' && (
                     <div className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 overflow-hidden">
                         <table className="w-full text-left">
                             <thead className="bg-slate-50 border-b border-slate-100">
@@ -109,7 +149,9 @@ export default function AdminUsersPage() {
                                 {users.length === 0 && (
                                     <tr>
                                         <td colSpan={4} className="px-6 py-10 text-center text-slate-500 font-medium">
-                                            No registered users yet.
+                                            {roleFilter || statusFilter
+                                                ? 'No users match the current filter.'
+                                                : 'No registered users yet.'}
                                         </td>
                                     </tr>
                                 )}

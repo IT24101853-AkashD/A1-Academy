@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import AdminUsersPage from '../AdminUsersPage';
 
@@ -78,7 +78,8 @@ describe('AdminUsersPage', () => {
     expect(await screen.findByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('jane@example.com')).toBeInTheDocument();
     expect(screen.getByText('Admin One')).toBeInTheDocument();
-    expect(screen.getAllByText('Active')).toHaveLength(3);
+    // Scoped to the table: the role/status filter dropdowns also render an "Active" option.
+    expect(within(screen.getByRole('table')).getAllByText('Active')).toHaveLength(3);
 
     // Called with an Authorization header carrying the admin's token.
     const [url, options] = global.fetch.mock.calls[0];
@@ -157,5 +158,77 @@ describe('AdminUsersPage', () => {
     // Second call requested page 2.
     const secondCallUrl = global.fetch.mock.calls[1][0];
     expect(secondCallUrl).toContain('page=2');
+  });
+
+  it('the Pending Teacher Applications button requests role=Teacher&status=Pending', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const pendingTeacher = { name: 'Pending Teacher', email: 'pending@example.com', role: 'Teacher', status: 'Pending' };
+    global.fetch = vi.fn((url) => {
+      const isFiltered = url.includes('role=Teacher') && url.includes('status=Pending');
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(pagedResponse(isFiltered ? [pendingTeacher] : mockUsers)),
+      });
+    });
+
+    renderPage();
+    await screen.findByText('John Doe');
+
+    fireEvent.click(screen.getByRole('button', { name: /pending teacher applications/i }));
+
+    await waitFor(() => expect(screen.getByText('Pending Teacher')).toBeInTheDocument());
+    expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
+
+    const filteredCallUrl = global.fetch.mock.calls[1][0];
+    expect(filteredCallUrl).toContain('role=Teacher');
+    expect(filteredCallUrl).toContain('status=Pending');
+    // A filter change resets back to page 1.
+    expect(filteredCallUrl).toContain('page=1');
+  });
+
+  it('selecting a role/status from the dropdowns refetches with those query params', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse(mockUsers)) })
+    );
+
+    renderPage();
+    await screen.findByText('John Doe');
+
+    fireEvent.change(screen.getByLabelText(/filter by role/i), { target: { value: 'Teacher' } });
+    await waitFor(() => expect(global.fetch.mock.calls[1][0]).toContain('role=Teacher'));
+
+    fireEvent.change(screen.getByLabelText(/filter by status/i), { target: { value: 'Active' } });
+    await waitFor(() => {
+      const lastCallUrl = global.fetch.mock.calls.at(-1)[0];
+      expect(lastCallUrl).toContain('role=Teacher');
+      expect(lastCallUrl).toContain('status=Active');
+    });
+  });
+
+  it('Clear filters resets both filters and refetches unfiltered', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse(mockUsers)) })
+    );
+
+    renderPage();
+    await screen.findByText('John Doe');
+
+    fireEvent.click(screen.getByRole('button', { name: /pending teacher applications/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /clear filters/i })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /clear filters/i }));
+
+    await waitFor(() => {
+      const lastCallUrl = global.fetch.mock.calls.at(-1)[0];
+      expect(lastCallUrl).not.toContain('role=');
+      expect(lastCallUrl).not.toContain('status=');
+    });
+    expect(screen.queryByRole('button', { name: /clear filters/i })).not.toBeInTheDocument();
   });
 });
