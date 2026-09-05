@@ -109,7 +109,7 @@ static void SeedAdminUser(A1Academy.API.Data.AppDbContext dbContext, IConfigurat
         Role = "Admin",
         AuthProvider = "Regular",
         IsEmailVerified = true,
-        IsApproved = true,
+        AccountStatus = A1Academy.API.Data.Models.AccountStatus.Active,
         PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword)
     });
     dbContext.SaveChanges();

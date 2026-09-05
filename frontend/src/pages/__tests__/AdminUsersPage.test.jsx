@@ -330,4 +330,136 @@ describe('AdminUsersPage', () => {
     // instead of just flipping its badge.
     await waitFor(() => expect(screen.queryByText('Pending Teacher')).not.toBeInTheDocument());
   });
+
+  it('shows Approve and Reject on Pending rows, Deactivate on Active rows, Reactivate on Deactivated rows, and nothing on Rejected', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const allStatuses = [
+      { id: 10, name: 'Pending Person', email: 'pendingperson@example.com', role: 'Teacher', status: 'Pending' },
+      { id: 11, name: 'Active Person', email: 'activeperson@example.com', role: 'Student', status: 'Active' },
+      { id: 12, name: 'Deactivated Person', email: 'deactivatedperson@example.com', role: 'Student', status: 'Deactivated' },
+      { id: 13, name: 'Rejected Person', email: 'rejectedperson@example.com', role: 'Teacher', status: 'Rejected' },
+    ];
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse(allStatuses)) })
+    );
+
+    renderPage();
+    await screen.findByText('Pending Person');
+
+    expect(within(screen.getByText('Pending Person').closest('tr')).getByRole('button', { name: /^approve$/i })).toBeInTheDocument();
+    expect(within(screen.getByText('Pending Person').closest('tr')).getByRole('button', { name: /^reject$/i })).toBeInTheDocument();
+
+    expect(within(screen.getByText('Active Person').closest('tr')).getByRole('button', { name: /^deactivate$/i })).toBeInTheDocument();
+
+    expect(within(screen.getByText('Deactivated Person').closest('tr')).getByRole('button', { name: /^reactivate$/i })).toBeInTheDocument();
+
+    // Rejected is a dead end - no action button on that row at all.
+    expect(within(screen.getByText('Rejected Person').closest('tr')).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('clicking Reject calls the reject endpoint and flips the row to Rejected', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const pendingTeacher = { id: 20, name: 'Turned Down', email: 'turneddown@example.com', role: 'Teacher', status: 'Pending' };
+    const rejectedTeacher = { ...pendingTeacher, status: 'Rejected' };
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(rejectedTeacher) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse([pendingTeacher])) });
+    });
+
+    renderPage();
+    await screen.findByText('Turned Down');
+
+    fireEvent.click(screen.getByRole('button', { name: /^reject$/i }));
+
+    await waitFor(() => {
+      const row = screen.getByText('Turned Down').closest('tr');
+      expect(within(row).getByText('Rejected')).toBeInTheDocument();
+    });
+
+    const patchCall = global.fetch.mock.calls.find(([, options]) => options?.method === 'PATCH');
+    expect(patchCall[0]).toContain('/api/users/20/reject');
+  });
+
+  it('clicking Deactivate calls the deactivate endpoint and flips the row to Deactivated', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const activeStudent = { id: 21, name: 'Switch Off', email: 'switchoff@example.com', role: 'Student', status: 'Active' };
+    const deactivatedStudent = { ...activeStudent, status: 'Deactivated' };
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(deactivatedStudent) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse([activeStudent])) });
+    });
+
+    renderPage();
+    await screen.findByText('Switch Off');
+
+    fireEvent.click(screen.getByRole('button', { name: /^deactivate$/i }));
+
+    await waitFor(() => {
+      const row = screen.getByText('Switch Off').closest('tr');
+      expect(within(row).getByText('Deactivated')).toBeInTheDocument();
+      expect(within(row).getByRole('button', { name: /^reactivate$/i })).toBeInTheDocument();
+    });
+
+    const patchCall = global.fetch.mock.calls.find(([, options]) => options?.method === 'PATCH');
+    expect(patchCall[0]).toContain('/api/users/21/deactivate');
+  });
+
+  it('clicking Reactivate calls the reactivate endpoint and flips the row back to Active', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const deactivatedStudent = { id: 22, name: 'Switch Back On', email: 'switchbackon@example.com', role: 'Student', status: 'Deactivated' };
+    const activeStudent = { ...deactivatedStudent, status: 'Active' };
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(activeStudent) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse([deactivatedStudent])) });
+    });
+
+    renderPage();
+    await screen.findByText('Switch Back On');
+
+    fireEvent.click(screen.getByRole('button', { name: /^reactivate$/i }));
+
+    await waitFor(() => {
+      const row = screen.getByText('Switch Back On').closest('tr');
+      expect(within(row).getByText('Active')).toBeInTheDocument();
+      expect(within(row).getByRole('button', { name: /^deactivate$/i })).toBeInTheDocument();
+    });
+
+    const patchCall = global.fetch.mock.calls.find(([, options]) => options?.method === 'PATCH');
+    expect(patchCall[0]).toContain('/api/users/22/reactivate');
+  });
+
+  it('shows a deactivate-specific error message if the deactivate request fails', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const activeStudent = { id: 23, name: 'Wont Switch Off', email: 'wontswitchoff@example.com', role: 'Student', status: 'Active' };
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: false, status: 400 });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse([activeStudent])) });
+    });
+
+    renderPage();
+    await screen.findByText('Wont Switch Off');
+
+    fireEvent.click(screen.getByRole('button', { name: /^deactivate$/i }));
+
+    expect(await screen.findByText(/could not deactivate/i)).toBeInTheDocument();
+    // Still Active, button back to normal so the admin can retry.
+    expect(screen.getByRole('button', { name: /^deactivate$/i })).not.toBeDisabled();
+  });
 });

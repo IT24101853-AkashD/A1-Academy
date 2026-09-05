@@ -26,7 +26,7 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         _factory = factory;
     }
 
-    private async Task SeedUserAsync(string firstName, string lastName, string email, string password, string role, bool isApproved = true)
+    private async Task SeedUserAsync(string firstName, string lastName, string email, string password, string role, string accountStatus = AccountStatus.Active)
     {
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -38,7 +38,7 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
             Role = role,
             AuthProvider = "Local",
             IsEmailVerified = true,
-            IsApproved = isApproved,
+            AccountStatus = accountStatus,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password)
         });
         await context.SaveChangesAsync();
@@ -60,11 +60,14 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
 
         await SeedUserAsync("Ada", "Admin", $"ada.{suffix}@example.com", "AdminPass1!", "Admin");
         await SeedUserAsync("John", "Doe", $"john.{suffix}@example.com", "StudentPass1!", "Student");
-        await SeedUserAsync("Jane", "Smith", $"jane.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: true);
-        await SeedUserAsync("Pending", "Teacher", $"pending.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: false);
+        await SeedUserAsync("Jane", "Smith", $"jane.{suffix}@example.com", "TeacherPass1!", "Teacher");
+        await SeedUserAsync("Pending", "Teacher", $"pending.{suffix}@example.com", "TeacherPass1!", "Teacher", accountStatus: AccountStatus.Pending);
 
         var token = await LoginAsync(client, $"ada.{suffix}@example.com", "AdminPass1!");
-        var request = new HttpRequestMessage(HttpMethod.Get, "/api/users");
+        // pageSize big enough to guarantee our four freshly-seeded users land on this one page
+        // regardless of how many other users earlier tests in this class have already seeded
+        // into the shared in-memory database - this test only cares about its own rows.
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/users?pageSize=1000");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var response = await client.SendAsync(request);
@@ -119,7 +122,7 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
     {
         var client = _factory.CreateClient();
         var email = $"teacher.{Guid.NewGuid():N}@example.com";
-        await SeedUserAsync("Teacher", "User", email, "TeacherPass1!", "Teacher", isApproved: true);
+        await SeedUserAsync("Teacher", "User", email, "TeacherPass1!", "Teacher");
 
         var token = await LoginAsync(client, email, "TeacherPass1!");
         var request = new HttpRequestMessage(HttpMethod.Get, "/api/users");
@@ -230,9 +233,9 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         var suffix = Guid.NewGuid().ToString("N")[..8];
 
         await SeedUserAsync("Filter", "Admin", $"filteradmin.{suffix}@example.com", "AdminPass1!", "Admin");
-        await SeedUserAsync("Approved", "Teacher", $"approvedteacher.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: true);
-        await SeedUserAsync("Pending", "TeacherOne", $"pendingteacher1.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: false);
-        await SeedUserAsync("Pending", "TeacherTwo", $"pendingteacher2.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: false);
+        await SeedUserAsync("Approved", "Teacher", $"approvedteacher.{suffix}@example.com", "TeacherPass1!", "Teacher");
+        await SeedUserAsync("Pending", "TeacherOne", $"pendingteacher1.{suffix}@example.com", "TeacherPass1!", "Teacher", accountStatus: AccountStatus.Pending);
+        await SeedUserAsync("Pending", "TeacherTwo", $"pendingteacher2.{suffix}@example.com", "TeacherPass1!", "Teacher", accountStatus: AccountStatus.Pending);
         await SeedUserAsync("Some", "Student", $"filterstudent.{suffix}@example.com", "StudentPass1!", "Student");
 
         var token = await LoginAsync(client, $"filteradmin.{suffix}@example.com", "AdminPass1!");
@@ -267,8 +270,8 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         var suffix = Guid.NewGuid().ToString("N")[..8];
 
         await SeedUserAsync("RoleFilter", "Admin", $"rolefilteradmin.{suffix}@example.com", "AdminPass1!", "Admin");
-        await SeedUserAsync("Approved", "Teacher", $"roleapproved.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: true);
-        await SeedUserAsync("Pending", "Teacher", $"rolepending.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: false);
+        await SeedUserAsync("Approved", "Teacher", $"roleapproved.{suffix}@example.com", "TeacherPass1!", "Teacher");
+        await SeedUserAsync("Pending", "Teacher", $"rolepending.{suffix}@example.com", "TeacherPass1!", "Teacher", accountStatus: AccountStatus.Pending);
         await SeedUserAsync("Some", "Student", $"rolestudent.{suffix}@example.com", "StudentPass1!", "Student");
 
         var token = await LoginAsync(client, $"rolefilteradmin.{suffix}@example.com", "AdminPass1!");
@@ -291,7 +294,7 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         var suffix = Guid.NewGuid().ToString("N")[..8];
 
         await SeedUserAsync("StatusFilter", "Admin", $"statusfilteradmin.{suffix}@example.com", "AdminPass1!", "Admin");
-        await SeedUserAsync("Pending", "Teacher", $"statuspending.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: false);
+        await SeedUserAsync("Pending", "Teacher", $"statuspending.{suffix}@example.com", "TeacherPass1!", "Teacher", accountStatus: AccountStatus.Pending);
         await SeedUserAsync("Some", "Student", $"statusstudent.{suffix}@example.com", "StudentPass1!", "Student");
 
         var token = await LoginAsync(client, $"statusfilteradmin.{suffix}@example.com", "AdminPass1!");
@@ -313,7 +316,7 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         var suffix = Guid.NewGuid().ToString("N")[..8];
 
         await SeedUserAsync("Approve", "Admin", $"approveadmin.{suffix}@example.com", "AdminPass1!", "Admin");
-        await SeedUserAsync("Grace", "Green", $"gracegreen.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: false);
+        await SeedUserAsync("Grace", "Green", $"gracegreen.{suffix}@example.com", "TeacherPass1!", "Teacher", accountStatus: AccountStatus.Pending);
 
         var token = await LoginAsync(client, $"approveadmin.{suffix}@example.com", "AdminPass1!");
         var pendingId = await FindUserIdAsync(client, token, $"gracegreen.{suffix}@example.com");
@@ -344,7 +347,7 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         const string teacherPassword = "TeacherPass1!";
 
         await SeedUserAsync("Approve", "AdminSix", $"approveadmin6.{suffix}@example.com", "AdminPass1!", "Admin");
-        await SeedUserAsync("Unblock", "Teacher", teacherEmail, teacherPassword, "Teacher", isApproved: false);
+        await SeedUserAsync("Unblock", "Teacher", teacherEmail, teacherPassword, "Teacher", accountStatus: AccountStatus.Pending);
 
         // Can't log in yet - still Pending.
         var blockedResponse = await client.PostAsJsonAsync("/api/auth/login", new { email = teacherEmail, password = teacherPassword });
@@ -367,15 +370,17 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
     }
 
     [Fact]
-    public async Task ApproveTeacher_AlreadyApproved_IsANoOpAndStillReturnsOk()
+    public async Task ApproveTeacher_AlreadyActive_ReturnsBadRequest()
     {
-        // An admin double-clicking Approve (or two admins racing on the same stale page)
-        // shouldn't error out - the teacher is Active either way.
+        // The edge case called out on the ticket by name: approving an account that's already
+        // Active isn't a harmless no-op here, it's an invalid move - Approve only makes sense
+        // coming from Pending, so an admin double-clicking it (or hitting it on a stale page)
+        // gets told why instead of the request silently succeeding twice.
         var client = _factory.CreateClient();
         var suffix = Guid.NewGuid().ToString("N")[..8];
 
         await SeedUserAsync("Approve", "AdminTwo", $"approveadmin2.{suffix}@example.com", "AdminPass1!", "Admin");
-        await SeedUserAsync("Already", "Approved", $"alreadyapproved.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: true);
+        await SeedUserAsync("Already", "Approved", $"alreadyapproved.{suffix}@example.com", "TeacherPass1!", "Teacher");
 
         var token = await LoginAsync(client, $"approveadmin2.{suffix}@example.com", "AdminPass1!");
         var teacherId = await FindUserIdAsync(client, token, $"alreadyapproved.{suffix}@example.com");
@@ -384,9 +389,283 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var response = await client.SendAsync(request);
 
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        // Still Active, unchanged - the rejected request didn't do any partial damage.
+        var directory = await GetUsersAsync(client, token, "?pageSize=1000");
+        var stillActive = Assert.Single(directory.Items, u => u.Email == $"alreadyapproved.{suffix}@example.com");
+        Assert.Equal("Active", stillActive.Status);
+    }
+
+    [Fact]
+    public async Task ApproveTeacher_OnRejectedAccount_ReturnsBadRequest()
+    {
+        // Rejected is meant to be the end of the line for that application - approve isn't a
+        // way to walk it back, only a fresh registration is.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("Approve", "AdminSeven", $"approveadmin7.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Already", "Rejected", $"alreadyrejected.{suffix}@example.com", "TeacherPass1!", "Teacher", accountStatus: AccountStatus.Rejected);
+
+        var token = await LoginAsync(client, $"approveadmin7.{suffix}@example.com", "AdminPass1!");
+        var teacherId = await FindUserIdAsync(client, token, $"alreadyrejected.{suffix}@example.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{teacherId}/approve");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task RejectTeacher_AsAdmin_FlipsPendingTeacherToRejected()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("Reject", "Admin", $"rejectadmin.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Turned", "Down", $"turneddown.{suffix}@example.com", "TeacherPass1!", "Teacher", accountStatus: AccountStatus.Pending);
+
+        var token = await LoginAsync(client, $"rejectadmin.{suffix}@example.com", "AdminPass1!");
+        var teacherId = await FindUserIdAsync(client, token, $"turneddown.{suffix}@example.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{teacherId}/reject");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var updated = (await response.Content.ReadFromJsonAsync<UserSummaryDto>())!;
+        Assert.Equal("Rejected", updated.Status);
+
+        // A rejected teacher stays locked out of login, same as while they were Pending, just
+        // with a message that doesn't suggest waiting will help.
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new { email = $"turneddown.{suffix}@example.com", password = "TeacherPass1!" });
+        Assert.Equal(HttpStatusCode.Unauthorized, loginResponse.StatusCode);
+        var loginBody = await loginResponse.Content.ReadAsStringAsync();
+        Assert.Contains("not approved", loginBody, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task RejectTeacher_OnActiveAccount_ReturnsBadRequest()
+    {
+        // Invalid transition: Reject only makes sense for a Pending application, not an
+        // account that's already up and running.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("Reject", "AdminTwo", $"rejectadmin2.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Cant", "RejectMe", $"cantrejectme.{suffix}@example.com", "TeacherPass1!", "Teacher");
+
+        var token = await LoginAsync(client, $"rejectadmin2.{suffix}@example.com", "AdminPass1!");
+        var teacherId = await FindUserIdAsync(client, token, $"cantrejectme.{suffix}@example.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{teacherId}/reject");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task RejectTeacher_AsNonAdmin_ReturnsForbidden()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("Reject", "AdminThree", $"rejectadmin3.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Some", "PendingTeacher", $"rejecttarget.{suffix}@example.com", "TeacherPass1!", "Teacher", accountStatus: AccountStatus.Pending);
+        await SeedUserAsync("Sneaky", "StudentTwo", $"sneakystudent2.{suffix}@example.com", "StudentPass1!", "Student");
+
+        var adminToken = await LoginAsync(client, $"rejectadmin3.{suffix}@example.com", "AdminPass1!");
+        var targetId = await FindUserIdAsync(client, adminToken, $"rejecttarget.{suffix}@example.com");
+
+        var studentToken = await LoginAsync(client, $"sneakystudent2.{suffix}@example.com", "StudentPass1!");
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{targetId}/reject");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", studentToken);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeactivateUser_AsAdmin_FlipsActiveAccountToDeactivatedAndBlocksLogin()
+    {
+        // Deactivation isn't Teacher-specific - this one's a Student, on purpose.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var studentEmail = $"deactivateme.{suffix}@example.com";
+        const string studentPassword = "StudentPass1!";
+
+        await SeedUserAsync("Deactivate", "Admin", $"deactivateadmin.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Deactivate", "Me", studentEmail, studentPassword, "Student");
+
+        var token = await LoginAsync(client, $"deactivateadmin.{suffix}@example.com", "AdminPass1!");
+        var studentId = await FindUserIdAsync(client, token, studentEmail);
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{studentId}/deactivate");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var updated = (await response.Content.ReadFromJsonAsync<UserSummaryDto>())!;
+        Assert.Equal("Deactivated", updated.Status);
+
+        // Could log in a second ago, can't now.
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new { email = studentEmail, password = studentPassword });
+        Assert.Equal(HttpStatusCode.Unauthorized, loginResponse.StatusCode);
+        var loginBody = await loginResponse.Content.ReadAsStringAsync();
+        Assert.Contains("deactivated", loginBody, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task DeactivateUser_OnPendingAccount_ReturnsBadRequest()
+    {
+        // Invalid transition: there's no "Active" to switch off yet for a Pending application.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("Deactivate", "AdminTwo", $"deactivateadmin2.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Still", "Pending", $"stillpending.{suffix}@example.com", "TeacherPass1!", "Teacher", accountStatus: AccountStatus.Pending);
+
+        var token = await LoginAsync(client, $"deactivateadmin2.{suffix}@example.com", "AdminPass1!");
+        var teacherId = await FindUserIdAsync(client, token, $"stillpending.{suffix}@example.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{teacherId}/deactivate");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeactivateUser_AlreadyDeactivated_ReturnsBadRequest()
+    {
+        // Edge case in the same spirit as re-approving an Active account: deactivating an
+        // already-Deactivated account is a no-op that should be rejected, not silently allowed.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("Deactivate", "AdminThree", $"deactivateadmin3.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Already", "Off", $"alreadyoff.{suffix}@example.com", "StudentPass1!", "Student", accountStatus: AccountStatus.Deactivated);
+
+        var token = await LoginAsync(client, $"deactivateadmin3.{suffix}@example.com", "AdminPass1!");
+        var studentId = await FindUserIdAsync(client, token, $"alreadyoff.{suffix}@example.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{studentId}/deactivate");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeactivateUser_AsNonAdmin_ReturnsForbidden()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("Deactivate", "AdminFour", $"deactivateadmin4.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Deactivate", "Target", $"deactivatetarget.{suffix}@example.com", "StudentPass1!", "Student");
+        await SeedUserAsync("Sneaky", "StudentThree", $"sneakystudent3.{suffix}@example.com", "StudentPass1!", "Student");
+
+        var adminToken = await LoginAsync(client, $"deactivateadmin4.{suffix}@example.com", "AdminPass1!");
+        var targetId = await FindUserIdAsync(client, adminToken, $"deactivatetarget.{suffix}@example.com");
+
+        var studentToken = await LoginAsync(client, $"sneakystudent3.{suffix}@example.com", "StudentPass1!");
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{targetId}/deactivate");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", studentToken);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ReactivateUser_AsAdmin_FlipsDeactivatedAccountToActiveAndUnblocksLogin()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var teacherEmail = $"reactivateme.{suffix}@example.com";
+        const string teacherPassword = "TeacherPass1!";
+
+        await SeedUserAsync("Reactivate", "Admin", $"reactivateadmin.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Reactivate", "Me", teacherEmail, teacherPassword, "Teacher", accountStatus: AccountStatus.Deactivated);
+
+        var token = await LoginAsync(client, $"reactivateadmin.{suffix}@example.com", "AdminPass1!");
+        var teacherId = await FindUserIdAsync(client, token, teacherEmail);
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{teacherId}/reactivate");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var updated = (await response.Content.ReadFromJsonAsync<UserSummaryDto>())!;
         Assert.Equal("Active", updated.Status);
+
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new { email = teacherEmail, password = teacherPassword });
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task ReactivateUser_OnActiveAccount_ReturnsBadRequest()
+    {
+        // Invalid transition: Reactivate only means something coming from Deactivated.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("Reactivate", "AdminTwo", $"reactivateadmin2.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Already", "OnAndFine", $"alreadyfine.{suffix}@example.com", "StudentPass1!", "Student");
+
+        var token = await LoginAsync(client, $"reactivateadmin2.{suffix}@example.com", "AdminPass1!");
+        var studentId = await FindUserIdAsync(client, token, $"alreadyfine.{suffix}@example.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{studentId}/reactivate");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ReactivateUser_OnPendingAccount_ReturnsBadRequest()
+    {
+        // Invalid transition: a Pending application was never Deactivated in the first place -
+        // Approve or Reject are the only legal moves from here, not Reactivate.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("Reactivate", "AdminThree", $"reactivateadmin3.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Still", "PendingToo", $"stillpendingtoo.{suffix}@example.com", "TeacherPass1!", "Teacher", accountStatus: AccountStatus.Pending);
+
+        var token = await LoginAsync(client, $"reactivateadmin3.{suffix}@example.com", "AdminPass1!");
+        var teacherId = await FindUserIdAsync(client, token, $"stillpendingtoo.{suffix}@example.com");
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{teacherId}/reactivate");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ReactivateUser_AsNonAdmin_ReturnsForbidden()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        await SeedUserAsync("Reactivate", "AdminFour", $"reactivateadmin4.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Reactivate", "Target", $"reactivatetarget.{suffix}@example.com", "StudentPass1!", "Student", accountStatus: AccountStatus.Deactivated);
+        await SeedUserAsync("Sneaky", "StudentFour", $"sneakystudent4.{suffix}@example.com", "StudentPass1!", "Student");
+
+        var adminToken = await LoginAsync(client, $"reactivateadmin4.{suffix}@example.com", "AdminPass1!");
+        var targetId = await FindUserIdAsync(client, adminToken, $"reactivatetarget.{suffix}@example.com");
+
+        var studentToken = await LoginAsync(client, $"sneakystudent4.{suffix}@example.com", "StudentPass1!");
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{targetId}/reactivate");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", studentToken);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]
@@ -434,7 +713,7 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         var suffix = Guid.NewGuid().ToString("N")[..8];
 
         await SeedUserAsync("Approve", "AdminFive", $"approveadmin5.{suffix}@example.com", "AdminPass1!", "Admin");
-        await SeedUserAsync("Some", "Teacher", $"nonadmintarget.{suffix}@example.com", "TeacherPass1!", "Teacher", isApproved: false);
+        await SeedUserAsync("Some", "Teacher", $"nonadmintarget.{suffix}@example.com", "TeacherPass1!", "Teacher", accountStatus: AccountStatus.Pending);
         await SeedUserAsync("Sneaky", "Student", $"sneakystudent.{suffix}@example.com", "StudentPass1!", "Student");
 
         var adminToken = await LoginAsync(client, $"approveadmin5.{suffix}@example.com", "AdminPass1!");

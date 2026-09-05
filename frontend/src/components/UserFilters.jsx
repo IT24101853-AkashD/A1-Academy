@@ -1,7 +1,7 @@
 import React from 'react';
 
 const ROLE_OPTIONS = ['Student', 'Teacher', 'Admin'];
-const STATUS_OPTIONS = ['Active', 'Pending'];
+const STATUS_OPTIONS = ['Active', 'Pending', 'Rejected', 'Deactivated'];
 
 export default function UserFilters({ role, status, onRoleChange, onStatusChange, onShowPendingTeachers, onClear }) {
     const hasActiveFilter = Boolean(role || status);

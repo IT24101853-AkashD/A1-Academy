@@ -11,6 +11,7 @@ using A1Academy.API.Services;
 using Microsoft.Extensions.Caching.Memory;
 using BCrypt.Net;
 using Google.Apis.Auth;
+using AccountStatus = A1Academy.API.Data.Models.AccountStatus;
 
 namespace A1Academy.API.Controllers
 {
@@ -87,14 +88,18 @@ namespace A1Academy.API.Controllers
                 Qualifications = request.Role == "Teacher" ? request.Qualifications : null,
                 QualificationDocumentPath = documentPath,
                 IsEmailVerified = _cache.TryGetValue(request.Email + "_VERIFIED", out bool isVerified) && isVerified,
-                IsApproved = request.Role == "Teacher" ? false : true,
+                // Teachers start Pending and need an Admin's approval before they can log in;
+                // everyone else self-registerable (Students) goes straight to Active.
+                AccountStatus = request.Role == "Teacher" ? AccountStatus.Pending : AccountStatus.Active,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
             };
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "User registered successfully.", isApproved = user.IsApproved });
+            // "isApproved" is kept as the response key (rather than renamed to match the new
+            // AccountStatus field) since the frontend's signup flow already branches on it.
+            return Ok(new { message = "User registered successfully.", isApproved = user.AccountStatus == AccountStatus.Active });
         }
 
         public class LoginRequest
@@ -123,9 +128,9 @@ namespace A1Academy.API.Controllers
                 return Unauthorized("Invalid email or password.");
             }
 
-            if (!user.IsApproved)
+            if (user.AccountStatus != AccountStatus.Active)
             {
-                return Unauthorized("Your account is pending administrator approval.");
+                return Unauthorized(LoginBlockedMessage(user.AccountStatus));
             }
 
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -143,12 +148,22 @@ namespace A1Academy.API.Controllers
                 Audience = _configuration["Jwt:Audience"],
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
-            
+
             var token = tokenHandler.CreateToken(tokenDescriptor);
             var jwt = tokenHandler.WriteToken(token);
 
             return Ok(new { token = jwt, role = user.Role });
         }
+
+        // One message per non-Active status so the login screen can tell a Teacher still
+        // waiting on review apart from someone whose account got turned off.
+        private static string LoginBlockedMessage(string accountStatus) => accountStatus switch
+        {
+            AccountStatus.Pending => "Your account is pending administrator approval.",
+            AccountStatus.Rejected => "Your registration was not approved. Please contact support.",
+            AccountStatus.Deactivated => "Your account has been deactivated. Please contact support.",
+            _ => "Your account cannot log in at this time. Please contact support."
+        };
 
         public class GoogleLoginRequest
         {
@@ -183,7 +198,7 @@ namespace A1Academy.API.Controllers
                         PasswordHash = "",
                         Role = "Student",
                         AuthProvider = "Google",
-                        IsApproved = true
+                        AccountStatus = AccountStatus.Active
                     };
                     _context.Users.Add(user);
                     await _context.SaveChangesAsync();
@@ -200,9 +215,9 @@ namespace A1Academy.API.Controllers
                     }
                 }
 
-                if (!user.IsApproved)
+                if (user.AccountStatus != AccountStatus.Active)
                 {
-                    return Unauthorized("Your account is pending administrator approval.");
+                    return Unauthorized(LoginBlockedMessage(user.AccountStatus));
                 }
 
                 var tokenHandler = new JwtSecurityTokenHandler();

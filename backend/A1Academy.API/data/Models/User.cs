@@ -36,8 +36,13 @@ namespace A1Academy.API.Data.Models
         // Email Verification for OTP
         public bool IsEmailVerified { get; set; } = false;
 
-        // All teachers are pending until an admin approves them
-        public bool IsApproved { get; set; } = true;
+        // Replaces the old IsApproved bool - a bool can only tell you Pending vs Active, and
+        // once rejection/deactivation entered the picture that stopped being enough states.
+        // See AccountStatus for the full set of values and UsersController's transition
+        // endpoints (approve/reject/deactivate/reactivate) for what moves between them.
+        [Required]
+        [StringLength(20)]
+        public string AccountStatus { get; set; } = global::A1Academy.API.Data.Models.AccountStatus.Active;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
