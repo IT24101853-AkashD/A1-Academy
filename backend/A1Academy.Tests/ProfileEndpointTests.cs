@@ -214,6 +214,72 @@ public class ProfileEndpointTests : IClassFixture<ApiWebApplicationFactory>
     }
 
     [Fact]
+    public async Task UpdateMe_WithOverlongFirstName_ReturnsBadRequestInsteadOfServerError()
+    {
+        // Regression test: User.FirstName is capped at 50 chars at the database column level
+        // (character varying(50)) - without an application-level check ahead of it, a longer
+        // value sails past every other check here and only fails once SaveChangesAsync reaches
+        // Postgres, surfacing as an unhandled 500 instead of a clean 400.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var email = $"longfirst.{suffix}@example.com";
+        const string password = "ProfilePass1!";
+
+        await SeedUserAsync("Original", "Name", email, password, "Student");
+        var token = await LoginAsync(client, email, password);
+
+        var request = Authorized(HttpMethod.Put, "/api/auth/me", token);
+        request.Content = JsonContent.Create(new { firstName = new string('X', 51) });
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var getResponse = await client.SendAsync(Authorized(HttpMethod.Get, "/api/auth/me", token));
+        var profile = await getResponse.Content.ReadFromJsonAsync<ProfileDto>();
+        Assert.Equal("Original Name", profile!.Name);
+    }
+
+    [Fact]
+    public async Task UpdateMe_WithOverlongLastName_ReturnsBadRequestInsteadOfServerError()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var email = $"longlast.{suffix}@example.com";
+        const string password = "ProfilePass1!";
+
+        await SeedUserAsync("Original", "Name", email, password, "Student");
+        var token = await LoginAsync(client, email, password);
+
+        var request = Authorized(HttpMethod.Put, "/api/auth/me", token);
+        request.Content = JsonContent.Create(new { firstName = "Original", lastName = new string('Y', 51) });
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateMe_WithFirstNameAtExactly50Characters_Succeeds()
+    {
+        // The boundary itself is valid - only strictly over the column limit should be rejected.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var email = $"exactfifty.{suffix}@example.com";
+        const string password = "ProfilePass1!";
+
+        await SeedUserAsync("Original", "Name", email, password, "Student");
+        var token = await LoginAsync(client, email, password);
+
+        var request = Authorized(HttpMethod.Put, "/api/auth/me", token);
+        var exactlyFifty = new string('Z', 50);
+        request.Content = JsonContent.Create(new { firstName = exactlyFifty });
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var profile = await response.Content.ReadFromJsonAsync<ProfileDto>();
+        Assert.Equal(exactlyFifty, profile!.FirstName);
+    }
+
+    [Fact]
     public async Task UpdateMe_CannotModifyAnotherUsersProfile()
     {
         // Scenario 2 - Prevent Cross-User Modification. The strongest version of this test isn't
