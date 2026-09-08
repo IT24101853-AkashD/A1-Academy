@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -247,6 +248,56 @@ namespace A1Academy.API.Controllers
             {
                 return Unauthorized("Invalid Google credential.");
             }
+        }
+
+        public class ProfileResponse
+        {
+            public string Name { get; set; } = string.Empty;
+            public string Email { get; set; } = string.Empty;
+            public string Role { get; set; } = string.Empty;
+        }
+
+        // "View Profile Information" - any logged-in user (Student, Teacher, or Admin) can look
+        // up their own registered details, sourced fresh from the database rather than trusting
+        // whatever the JWT's claims happened to say at login time. [Authorize] here is deliberate
+        // and unqualified (no Roles=), unlike UsersController - this is every authenticated
+        // user's own record, not an admin-only directory. Kept in AuthController rather than
+        // UsersController for exactly that reason - UsersController's class-level
+        // [Authorize(Roles = "Admin")] would still apply even to an action there that added its
+        // own unrestricted [Authorize], since ASP.NET Core requires every authorization attribute
+        // on both the class and the action to pass, not just the most specific one.
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<IActionResult> Me()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            // Projected straight into ProfileResponse, same reasoning as UsersController's
+            // directory query - the password hash and everything else on User never leaves this
+            // method even by accident.
+            var profile = await _context.Users.AsNoTracking()
+                .Where(u => u.Id == userId)
+                .Select(u => new ProfileResponse
+                {
+                    Name = (u.FirstName + " " + (u.LastName ?? string.Empty)).Trim(),
+                    Email = u.Email,
+                    Role = u.Role
+                })
+                .SingleOrDefaultAsync();
+
+            // The token passed OnTokenValidated's live account-status check to get this far, so
+            // this is only reachable if the account was deleted outright in the instant between
+            // that check and this query - not a case worth a friendlier message than plain 404.
+            if (profile == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(profile);
         }
 
         public class OtpRequest { public string Email { get; set; } = string.Empty; public string FirstName { get; set; } = string.Empty; }

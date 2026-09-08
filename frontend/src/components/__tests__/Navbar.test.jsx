@@ -36,4 +36,16 @@ describe('Navbar', () => {
     renderNavbar();
     expect(screen.getByText(/user directory/i)).toBeInTheDocument();
   });
+
+  it('does not show My Profile when logged out', () => {
+    renderNavbar();
+    expect(screen.queryByText(/my profile/i)).not.toBeInTheDocument();
+  });
+
+  it('shows My Profile for any logged-in role once a token is stored', () => {
+    localStorage.setItem('role', 'Student');
+    localStorage.setItem('token', 'student-token');
+    renderNavbar();
+    expect(screen.getByText(/my profile/i)).toBeInTheDocument();
+  });
 });
