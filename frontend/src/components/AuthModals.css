@@ -1,0 +1,747 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lora:ital,wght@0,400;0,500;1,400;1,500&display=swap');
+
+/* Book-themed auth overlay. Adapted from a full-page "BookAuth" concept into a modal system:
+   same leather/parchment visual language, but presented as an overlay (like the rest of the
+   app's modals) rather than replacing the page underneath, and with a flexible height instead of
+   a fixed aspect-ratio so the taller forms (Teacher registration in particular) aren't clipped. */
+
+.book-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  transition: opacity 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+.book-modal-overlay.is-open {
+  opacity: 1;
+  backdrop-filter: blur(8px);
+  background: rgba(17, 11, 10, 0.55);
+}
+
+.book-modal-overlay.is-closed {
+  opacity: 0;
+  backdrop-filter: blur(0);
+  background: transparent;
+  pointer-events: none;
+}
+
+.book-auth-book {
+  --book-accent: #c9a227;
+  --book-cover: #5c2420;
+  --book-page: #f6efdd;
+  --book-ink: #3b2a20;
+  --book-muted: #7a6552;
+
+  box-sizing: border-box;
+  position: relative;
+  width: min(1180px, 100%);
+  max-height: min(880px, 92vh);
+  font-family: 'Lora', Georgia, serif;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.book-modal-overlay.is-closed .book-auth-book {
+  transform: scale(0.95) translateY(24px);
+  opacity: 0;
+}
+
+.book-auth-book *,
+.book-auth-book *::before,
+.book-auth-book *::after {
+  box-sizing: border-box;
+}
+
+.book-auth-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 20;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--book-page);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.book-auth-close:hover {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.book-auth-page-stack {
+  position: absolute;
+  top: 26px;
+  bottom: 26px;
+  width: 9px;
+  background: repeating-linear-gradient(to right, #efe6d0 0, #efe6d0 2px, #e2d7bd 2px, #e2d7bd 4px);
+}
+
+.book-auth-page-stack--left {
+  left: -9px;
+  border-radius: 3px 0 0 3px;
+  box-shadow: -2px 0 6px rgba(0, 0, 0, 0.28);
+}
+
+.book-auth-page-stack--right {
+  right: -9px;
+  border-radius: 0 3px 3px 0;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.28);
+}
+
+.book-auth-cover {
+  position: relative;
+  border-radius: 10px;
+  background: var(--book-cover);
+  box-shadow: 0 40px 70px rgba(0, 0, 0, 0.55), 0 10px 24px rgba(0, 0, 0, 0.4);
+  max-height: min(880px, 92vh);
+  display: flex;
+}
+
+.book-auth-pages {
+  position: relative;
+  margin: 16px;
+  border-radius: 6px;
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+  min-height: 0;
+}
+
+/* ---------- LEFT PAGE (decorative, static) ---------- */
+
+.book-auth-left-page {
+  flex: 1;
+  position: relative;
+  background: var(--book-page);
+  padding: clamp(24px, 4%, 48px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: inset -22px 0 34px -24px rgba(35, 20, 12, 0.4);
+  overflow-y: auto;
+}
+
+.book-auth-margin-line {
+  position: absolute;
+  left: 40px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(178, 44, 44, 0.28);
+}
+
+.book-auth-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  font-size: clamp(22px, 2.6vw, 36px);
+  color: var(--book-ink);
+  margin: 18px 0 6px;
+  letter-spacing: 0.5px;
+}
+
+.book-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 18px;
+}
+
+.book-auth-divider-line {
+  width: 40px;
+  height: 1px;
+  background: rgba(59, 42, 32, 0.4);
+}
+
+.book-auth-divider-diamond {
+  width: 6px;
+  height: 6px;
+  background: var(--book-accent);
+  transform: rotate(45deg);
+  flex: none;
+}
+
+.book-auth-tagline {
+  font-style: italic;
+  font-size: clamp(13px, 1.2vw, 16px);
+  line-height: 1.6;
+  color: var(--book-muted);
+  max-width: 320px;
+  margin: 0;
+}
+
+.book-auth-footnote {
+  margin: auto 0 4px;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(59, 42, 32, 0.45);
+}
+
+/* An info callout used on the left page for the Teacher application's "Pending Review" note. */
+.book-auth-callout {
+  margin-top: 20px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: rgba(59, 42, 32, 0.06);
+  border: 1px solid rgba(59, 42, 32, 0.12);
+  text-align: left;
+}
+
+.book-auth-callout-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--book-ink);
+  margin: 0 0 6px;
+}
+
+.book-auth-callout-text {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--book-muted);
+  margin: 0;
+}
+
+/* ---------- SPINE ---------- */
+
+.book-auth-spine {
+  width: clamp(14px, 2vw, 22px);
+  position: relative;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.55),
+    rgba(0, 0, 0, 0.15) 30%,
+    rgba(0, 0, 0, 0.15) 70%,
+    rgba(0, 0, 0, 0.55)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.book-auth-spine::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  bottom: 8%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(to bottom, transparent, var(--book-accent) 20%, var(--book-accent) 80%, transparent);
+  opacity: 0.55;
+}
+
+.book-auth-spine-label {
+  writing-mode: vertical-rl;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 12px;
+  letter-spacing: 4px;
+  color: var(--book-accent);
+  opacity: 0.85;
+}
+
+/* ---------- RIGHT PAGE / FLIP CARD ---------- */
+
+.book-auth-right-page {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
+/* A short bookmark ribbon peeking from the top of the page, tucked into the inner (spine-side)
+   margin rather than overlapping the heading text that starts at the face's own padding. */
+.book-auth-ribbon {
+  position: absolute;
+  left: 8px;
+  top: -6px;
+  width: 14px;
+  height: 30px;
+  background: var(--book-accent);
+  clip-path: polygon(0 0, 100% 0, 100% 75%, 50% 100%, 0 75%);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 3;
+}
+
+.book-auth-flip-wrap {
+  position: absolute;
+  inset: 0;
+  perspective: 2600px;
+}
+
+.book-auth-leaf {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.9s cubic-bezier(0.45, 0.05, 0.15, 1);
+  transform: rotateY(0deg);
+}
+
+.book-auth-leaf.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.book-auth-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  background: var(--book-page);
+  padding: clamp(22px, 4%, 44px) clamp(22px, 5%, 48px);
+  box-shadow: inset 22px 0 34px -24px rgba(35, 20, 12, 0.4);
+  overflow-y: auto;
+}
+
+.book-auth-face--back {
+  transform: rotateY(180deg);
+  box-shadow: inset -22px 0 34px -24px rgba(35, 20, 12, 0.4);
+}
+
+.book-auth-face.is-hidden-face {
+  visibility: hidden;
+}
+
+/* A single page shown without the flip mechanic (OTP, forgot password, success screens) - still
+   dresses as a page in the book, just not one half of a two-sided leaf. */
+.book-auth-single-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--book-page);
+  padding: clamp(22px, 4%, 44px) clamp(22px, 5%, 48px);
+  overflow-y: auto;
+}
+
+.book-auth-eyebrow {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--book-accent);
+  margin: 0 0 8px;
+}
+
+.book-auth-heading {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  font-size: clamp(20px, 2vw, 28px);
+  color: var(--book-ink);
+  margin: 0 0 6px;
+}
+
+.book-auth-subtext {
+  font-style: italic;
+  font-size: 14px;
+  color: var(--book-muted);
+  margin: 0 0 20px;
+}
+
+.book-auth-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.book-auth-field-row {
+  display: flex;
+  gap: 18px;
+}
+
+.book-auth-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--book-muted);
+}
+
+.book-auth-field input,
+.book-auth-field textarea {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 15px;
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--book-ink);
+  border: none;
+  border-bottom: 1.5px solid rgba(59, 42, 32, 0.32);
+  background: transparent;
+  padding: 8px 2px;
+  outline: none;
+  min-height: 40px;
+}
+
+.book-auth-field input:disabled {
+  color: rgba(59, 42, 32, 0.55);
+}
+
+.book-auth-field input::placeholder,
+.book-auth-field textarea::placeholder {
+  color: rgba(59, 42, 32, 0.32);
+  font-style: italic;
+}
+
+.book-auth-field input:focus,
+.book-auth-field textarea:focus {
+  border-bottom-color: rgba(59, 42, 32, 0.75);
+}
+
+/* A field with an inline action button (Verify email, upload document) alongside the input. */
+.book-auth-field-with-action {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.book-auth-field-with-action .book-auth-field {
+  flex: 1;
+}
+
+.book-auth-inline-button {
+  flex: none;
+  min-width: 96px;
+  height: 40px;
+  border: none;
+  border-radius: 999px;
+  background: var(--book-accent);
+  color: var(--book-ink);
+  font-family: 'Lora', Georgia, serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.book-auth-inline-button:hover {
+  filter: brightness(1.08);
+}
+
+.book-auth-inline-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.book-auth-inline-badge {
+  flex: none;
+  min-width: 96px;
+  height: 40px;
+  border-radius: 999px;
+  background: rgba(47, 133, 90, 0.12);
+  color: #2f855a;
+  border: 1px solid rgba(47, 133, 90, 0.3);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.book-auth-password-field {
+  position: relative;
+}
+
+.book-auth-password-toggle {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--book-muted);
+  cursor: pointer;
+  display: flex;
+  padding: 4px;
+}
+
+.book-auth-password-toggle:hover {
+  color: var(--book-ink);
+}
+
+.book-auth-hint {
+  font-size: 11px;
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: normal;
+  color: rgba(59, 42, 32, 0.5);
+  margin: 0;
+}
+
+.book-auth-error {
+  font-size: 12px;
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 700;
+  color: #b3261e;
+  margin: 0;
+}
+
+.book-auth-button {
+  margin-top: 22px;
+  width: 100%;
+  min-height: 46px;
+  border: none;
+  border-radius: 6px;
+  background: var(--book-cover);
+  color: var(--book-page);
+  font-family: 'Lora', Georgia, serif;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+  transition: filter 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.book-auth-button:hover:not(:disabled),
+.book-auth-button:focus-visible:not(:disabled) {
+  filter: brightness(1.07);
+}
+
+.book-auth-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.book-auth-button--google {
+  background: var(--book-page);
+  color: var(--book-ink);
+  border: 1.5px solid rgba(59, 42, 32, 0.25);
+  box-shadow: none;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 14px;
+}
+
+.book-auth-divider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 16px;
+}
+
+.book-auth-divider-row .book-auth-divider-line {
+  flex: 1;
+}
+
+.book-auth-divider-row span:not(.book-auth-divider-line) {
+  font-size: 12px;
+  color: var(--book-muted);
+}
+
+.book-auth-switch {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--book-muted);
+}
+
+.book-auth-forgot {
+  text-align: right;
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.book-auth-forgot a,
+.book-auth-forgot button {
+  color: var(--book-muted);
+  text-decoration: none;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.book-auth-forgot a:hover,
+.book-auth-forgot button:hover {
+  opacity: 0.75;
+}
+
+.book-auth-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  color: var(--book-accent);
+  font-weight: 600;
+  border-bottom: 1px solid var(--book-accent);
+}
+
+.book-auth-link:hover {
+  opacity: 0.75;
+}
+
+/* ---------- ROLE PICKER (register-modal) ---------- */
+
+.book-auth-role-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-top: 8px;
+}
+
+.book-auth-role-card {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1.5px solid rgba(59, 42, 32, 0.15);
+  border-radius: 12px;
+  padding: 22px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.book-auth-role-card:hover {
+  border-color: var(--book-accent);
+  transform: translateY(-2px);
+}
+
+.book-auth-role-avatar {
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(59, 42, 32, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.book-auth-role-avatar img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.book-auth-role-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--book-ink);
+  margin: 0 0 6px;
+}
+
+.book-auth-role-text {
+  font-size: 12px;
+  color: var(--book-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ---------- OTP ---------- */
+
+.book-auth-otp-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 0 8px;
+}
+
+.book-auth-otp-box {
+  width: 46px;
+  height: 54px;
+  text-align: center;
+  font-size: 22px;
+  font-family: 'Playfair Display', Georgia, serif;
+  color: var(--book-ink);
+  background: rgba(255, 255, 255, 0.5);
+  border: 1.5px solid rgba(59, 42, 32, 0.25);
+  border-radius: 8px;
+  outline: none;
+}
+
+.book-auth-otp-box:focus {
+  border-color: var(--book-accent);
+}
+
+.book-auth-icon-badge {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 18px;
+  border-radius: 999px;
+  background: rgba(201, 162, 39, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--book-ink);
+  flex: none;
+}
+
+/* ---------- COMPACT / SUCCESS SCREENS ---------- */
+
+.book-single-modal .book-auth-book {
+  width: min(480px, 100%);
+}
+
+.book-single-page {
+  background: var(--book-page);
+  border-radius: 10px;
+  padding: clamp(32px, 6%, 48px) clamp(24px, 6%, 40px);
+  text-align: center;
+  box-shadow: 0 40px 70px rgba(0, 0, 0, 0.45);
+  position: relative;
+}
+
+.book-single-page .book-auth-close {
+  background: rgba(59, 42, 32, 0.12);
+  color: var(--book-ink);
+}
+
+.book-single-page .book-auth-close:hover {
+  background: rgba(59, 42, 32, 0.22);
+}
+
+/* ---------- RESPONSIVE ---------- */
+
+@media (max-width: 860px) {
+  .book-auth-page-stack {
+    display: none;
+  }
+
+  .book-auth-left-page {
+    display: none;
+  }
+
+  .book-auth-spine {
+    display: none;
+  }
+
+  .book-auth-pages {
+    margin: 10px;
+  }
+
+  .book-auth-right-page {
+    min-height: 60vh;
+  }
+}
