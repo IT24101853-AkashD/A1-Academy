@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import Pagination from '../components/Pagination';
 import UserFilters from '../components/UserFilters';
+import { clearSession } from '../utils/session';
 
 const STATUS_STYLES = {
     Active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -30,7 +31,7 @@ export default function AdminUsersPage() {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
     const [totalCount, setTotalCount] = useState(0);
-    const [viewState, setViewState] = useState('idle'); // idle | loading | success | denied | error
+    const [viewState, setViewState] = useState('idle'); // idle | loading | success | denied | sessionEnded | error
     const [roleFilter, setRoleFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
@@ -56,7 +57,18 @@ export default function AdminUsersPage() {
             headers: { Authorization: `Bearer ${token}` },
         })
             .then(async (res) => {
-                if (res.status === 401 || res.status === 403) {
+                // 401 means this specific token is dead - expired, or the account behind it was
+                // deactivated/otherwise changed status since it was issued (see Program.cs's
+                // OnTokenValidated). That's different from 403 (a real Admin session, just not
+                // allowed here): the token itself is no good, so the stale role/token shouldn't
+                // keep telling the rest of the app (e.g. the Navbar) that this browser is still
+                // signed in.
+                if (res.status === 401) {
+                    clearSession();
+                    setViewState('sessionEnded');
+                    return null;
+                }
+                if (res.status === 403) {
                     setViewState('denied');
                     return null;
                 }
@@ -118,6 +130,16 @@ export default function AdminUsersPage() {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
+            // The admin's own session can die mid-use too - e.g. a second Admin deactivates them
+            // in another tab while this page is still open. That's not "this action failed",
+            // it's "you're not signed in anymore", so it gets the same full-page Session Ended
+            // state as the initial load rather than a per-row error message.
+            if (res.status === 401) {
+                clearSession();
+                setViewState('sessionEnded');
+                return;
+            }
+
             if (!res.ok) {
                 throw new Error(`${action} failed with status ${res.status}`);
             }
@@ -164,6 +186,24 @@ export default function AdminUsersPage() {
                         <p className="text-base font-medium text-slate-500">
                             The User Directory is restricted to Administrators. Sign in with an Administrator account to view it.
                         </p>
+                    </div>
+                )}
+
+                {viewState === 'sessionEnded' && (
+                    <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[32px] text-amber-500">lock_clock</span>
+                        </div>
+                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Session Ended</h2>
+                        <p className="text-base font-medium text-slate-500 mb-6">
+                            You've been signed out - this can happen if your account's status changed. Please sign in again to continue.
+                        </p>
+                        <a
+                            href="/"
+                            className="inline-block px-6 py-3 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 transition-colors"
+                        >
+                            Back to Home
+                        </a>
                     </div>
                 )}
 

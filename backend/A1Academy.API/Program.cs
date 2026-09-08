@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Security.Claims;
 using A1Academy.API.Services;
+using A1Academy.API.Data.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +38,44 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        };
+
+        // Immediate Session Termination: signature/expiry validation above only proves a token
+        // was genuinely issued by us and hasn't timed out yet - it says nothing about whether the
+        // account is still in good standing *right now*. Without this, deactivating a user
+        // wouldn't touch any token they already have; it would just keep working, unaffected,
+        // until it naturally expires up to 7 days later. This re-checks the account's live
+        // status and security stamp on every authenticated request, so a token that predates a
+        // deactivation (or any other status change, which rotates the stamp) is rejected on the
+        // very next call instead of eventually.
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var userIdClaim = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+                var tokenStamp = context.Principal?.FindFirstValue(User.SecurityStampClaimType);
+
+                if (userIdClaim == null || !int.TryParse(userIdClaim, out var userId))
+                {
+                    context.Fail("Invalid token.");
+                    return;
+                }
+
+                var dbContext = context.HttpContext.RequestServices
+                    .GetRequiredService<A1Academy.API.Data.AppDbContext>();
+
+                var current = await dbContext.Users.AsNoTracking()
+                    .Where(u => u.Id == userId)
+                    .Select(u => new { u.AccountStatus, u.SecurityStamp })
+                    .SingleOrDefaultAsync();
+
+                if (current == null
+                    || current.AccountStatus != AccountStatus.Active
+                    || current.SecurityStamp != tokenStamp)
+                {
+                    context.Fail("This session is no longer valid.");
+                }
+            }
         };
     });
 
