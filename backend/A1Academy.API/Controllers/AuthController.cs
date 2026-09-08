@@ -319,6 +319,13 @@ namespace A1Academy.API.Controllers
         private static readonly System.Text.RegularExpressions.Regex PhoneNumberPattern =
             new(@"^[0-9+()\-\s]{7,20}$");
 
+        // Mirrors User.FirstName/LastName's [StringLength(50)]. Without this check, a name longer
+        // than the column allows would sail past every check here and only fail once
+        // SaveChangesAsync hits Postgres - an unhandled "value too long for type character
+        // varying(50)" error surfacing as a raw 500, instead of the clean 400 an oversized-but-
+        // otherwise-ordinary input deserves.
+        private const int MaxNameLength = 50;
+
         // "Edit Profile & Cross-User Protection". Scenario 1 (successful update) is the body of
         // this method; Scenario 2 (cross-user modification is rejected) is handled by what this
         // method deliberately does NOT do - there is no user id anywhere in this endpoint's route
@@ -344,6 +351,16 @@ namespace A1Academy.API.Controllers
             if (string.IsNullOrWhiteSpace(request.FirstName))
             {
                 return BadRequest("First name is required.");
+            }
+
+            if (request.FirstName.Trim().Length > MaxNameLength)
+            {
+                return BadRequest($"First name must be {MaxNameLength} characters or fewer.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.LastName) && request.LastName.Trim().Length > MaxNameLength)
+            {
+                return BadRequest($"Last name must be {MaxNameLength} characters or fewer.");
             }
 
             if (!string.IsNullOrWhiteSpace(request.PhoneNumber) && !PhoneNumberPattern.IsMatch(request.PhoneNumber))
