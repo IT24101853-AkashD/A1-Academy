@@ -102,6 +102,45 @@ describe('AdminUsersPage', () => {
     expect(await screen.findByText(/access denied/i)).toBeInTheDocument();
   });
 
+  it('shows Session Ended and clears localStorage when the directory request comes back 401', async () => {
+    // Distinct from the 403 case above: 401 means this specific token is dead (e.g. the account
+    // behind it was deactivated after the token was issued), not just "wrong role for this page".
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'now-dead-token');
+    global.fetch = vi.fn(() => Promise.resolve({ ok: false, status: 401 }));
+
+    renderPage();
+
+    expect(await screen.findByText(/session ended/i)).toBeInTheDocument();
+    expect(screen.queryByText(/access denied/i)).not.toBeInTheDocument();
+    expect(localStorage.getItem('token')).toBeNull();
+    expect(localStorage.getItem('role')).toBeNull();
+  });
+
+  it('shows Session Ended and clears localStorage when an account action comes back 401 mid-session', async () => {
+    // Covers a second Admin deactivating this one while their directory page is still open -
+    // the next action they take should look like "you're signed out", not "that action failed".
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'about-to-die-token');
+    const activeStudent = { id: 30, name: 'Mid Session', email: 'midsession@example.com', role: 'Student', status: 'Active' };
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: false, status: 401 });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse([activeStudent])) });
+    });
+
+    renderPage();
+    await screen.findByText('Mid Session');
+
+    fireEvent.click(screen.getByRole('button', { name: /^deactivate$/i }));
+
+    expect(await screen.findByText(/session ended/i)).toBeInTheDocument();
+    expect(localStorage.getItem('token')).toBeNull();
+    expect(localStorage.getItem('role')).toBeNull();
+  });
+
   it('does not render pagination controls when everything fits on one page', async () => {
     localStorage.setItem('role', 'Admin');
     localStorage.setItem('token', 'admin-token');
