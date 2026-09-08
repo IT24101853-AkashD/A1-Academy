@@ -12,7 +12,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 10px;
   transition: opacity 0.3s ease, backdrop-filter 0.3s ease;
 }
 
@@ -38,8 +38,9 @@
 
   box-sizing: border-box;
   position: relative;
-  width: min(1180px, 100%);
-  max-height: min(880px, 92vh);
+  width: min(1400px, 100%);
+  height: min(1200px, 98vh);
+  max-height: min(1200px, 98vh);
   font-family: 'Lora', Georgia, serif;
   transition: transform 0.3s ease, opacity 0.3s ease;
 }
@@ -102,7 +103,8 @@
   border-radius: 10px;
   background: var(--book-cover);
   box-shadow: 0 40px 70px rgba(0, 0, 0, 0.55), 0 10px 24px rgba(0, 0, 0, 0.4);
-  max-height: min(880px, 92vh);
+  height: 100%;
+  max-height: min(1200px, 98vh);
   display: flex;
 }
 
