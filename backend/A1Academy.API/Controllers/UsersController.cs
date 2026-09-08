@@ -159,6 +159,14 @@ namespace A1Academy.API.Controllers
             }
 
             user.AccountStatus = resultingStatus;
+
+            // Rotating the security stamp is what actually terminates any session this account
+            // already has open - see User.SecurityStampClaimType and Program.cs's
+            // OnTokenValidated. Without this, a token issued before the transition (most
+            // importantly, before a deactivate) would keep working until its own 7-day expiry
+            // regardless of the account's new status.
+            user.SecurityStamp = Guid.NewGuid().ToString("N");
+
             await _context.SaveChangesAsync();
 
             return Ok(new UserSummary

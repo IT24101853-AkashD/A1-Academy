@@ -519,6 +519,94 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
     }
 
     [Fact]
+    public async Task DeactivateUser_TerminatesTheirExistingSessionImmediately()
+    {
+        // This is the "Immediate Session Termination" ticket itself: blocking future logins
+        // (covered above) isn't enough on its own, since a JWT issued before the deactivation is
+        // otherwise still perfectly valid for up to 7 more days. Two Admins are used here (rather
+        // than an Admin deactivating a Student) specifically so the still-unexpired token is
+        // tried against an Admin-only endpoint - that isolates a 401 (session killed) from a 403
+        // (wrong role), which a Student's token could never distinguish.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var targetEmail = $"sessiontarget.{suffix}@example.com";
+        const string targetPassword = "AdminPass1!";
+
+        await SeedUserAsync("Session", "Target", targetEmail, targetPassword, "Admin");
+        await SeedUserAsync("Session", "Operator", $"sessionoperator.{suffix}@example.com", "AdminPass1!", "Admin");
+
+        var targetToken = await LoginAsync(client, targetEmail, targetPassword);
+        var operatorToken = await LoginAsync(client, $"sessionoperator.{suffix}@example.com", "AdminPass1!");
+
+        // Sanity check: the token is genuinely good right up until the deactivation.
+        var beforeRequest = new HttpRequestMessage(HttpMethod.Get, "/api/users");
+        beforeRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", targetToken);
+        var beforeResponse = await client.SendAsync(beforeRequest);
+        Assert.Equal(HttpStatusCode.OK, beforeResponse.StatusCode);
+
+        var targetId = await FindUserIdAsync(client, operatorToken, targetEmail);
+        var deactivateRequest = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{targetId}/deactivate");
+        deactivateRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", operatorToken);
+        var deactivateResponse = await client.SendAsync(deactivateRequest);
+        Assert.Equal(HttpStatusCode.OK, deactivateResponse.StatusCode);
+
+        // Same token, same endpoint, no re-login in between - the only thing that changed is the
+        // account's status. A 403 here would mean the role check alone is running and the
+        // account-status recheck isn't; this must be 401, proving the session itself was killed.
+        var afterRequest = new HttpRequestMessage(HttpMethod.Get, "/api/users");
+        afterRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", targetToken);
+        var afterResponse = await client.SendAsync(afterRequest);
+        Assert.Equal(HttpStatusCode.Unauthorized, afterResponse.StatusCode);
+
+        // The operator's own, unaffected token still works fine - deactivation only invalidates
+        // the targeted account's session, not every session in the system.
+        var operatorStillWorks = new HttpRequestMessage(HttpMethod.Get, "/api/users");
+        operatorStillWorks.Headers.Authorization = new AuthenticationHeaderValue("Bearer", operatorToken);
+        var operatorStillWorksResponse = await client.SendAsync(operatorStillWorks);
+        Assert.Equal(HttpStatusCode.OK, operatorStillWorksResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task ReactivateUser_DoesNotResurrectTheOldPreDeactivationToken()
+    {
+        // Reactivating unblocks *login* (covered elsewhere), but it must not retroactively make
+        // the token from before the deactivation good again - that token's security stamp is
+        // still the old one, and reactivation rotates the stamp again rather than restoring it.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var targetEmail = $"reactivatesession.{suffix}@example.com";
+        const string targetPassword = "AdminPass1!";
+
+        await SeedUserAsync("Reactivate", "SessionTarget", targetEmail, targetPassword, "Admin");
+        await SeedUserAsync("Reactivate", "SessionOperator", $"reactivatesessionop.{suffix}@example.com", "AdminPass1!", "Admin");
+
+        var oldToken = await LoginAsync(client, targetEmail, targetPassword);
+        var operatorToken = await LoginAsync(client, $"reactivatesessionop.{suffix}@example.com", "AdminPass1!");
+        var targetId = await FindUserIdAsync(client, operatorToken, targetEmail);
+
+        async Task PatchAsOperatorAsync(string action)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{targetId}/{action}");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", operatorToken);
+            var response = await client.SendAsync(request);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        await PatchAsOperatorAsync("deactivate");
+        await PatchAsOperatorAsync("reactivate");
+
+        // A fresh login works again post-reactivation...
+        var freshLoginResponse = await client.PostAsJsonAsync("/api/auth/login", new { email = targetEmail, password = targetPassword });
+        Assert.Equal(HttpStatusCode.OK, freshLoginResponse.StatusCode);
+
+        // ...but the token minted before any of this happened stays dead.
+        var oldTokenRequest = new HttpRequestMessage(HttpMethod.Get, "/api/users");
+        oldTokenRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", oldToken);
+        var oldTokenResponse = await client.SendAsync(oldTokenRequest);
+        Assert.Equal(HttpStatusCode.Unauthorized, oldTokenResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task DeactivateUser_OnPendingAccount_ReturnsBadRequest()
     {
         // Invalid transition: there's no "Active" to switch off yet for a Pending application.

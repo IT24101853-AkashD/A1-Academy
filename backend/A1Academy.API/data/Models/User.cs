@@ -44,6 +44,21 @@ namespace A1Academy.API.Data.Models
         [StringLength(20)]
         public string AccountStatus { get; set; } = global::A1Academy.API.Data.Models.AccountStatus.Active;
 
+        // Stamped into every JWT issued at login as a custom claim, and re-checked against this
+        // column on every authenticated request (see Program.cs's OnTokenValidated). Rotating it
+        // - which UsersController does on every account status transition - is what makes a
+        // token issued before a deactivation stop working immediately instead of staying valid
+        // until its normal 7-day expiry. A GUID rather than a counter since nothing needs to
+        // read the value, only compare it for equality.
+        [Required]
+        [StringLength(64)]
+        public string SecurityStamp { get; set; } = Guid.NewGuid().ToString("N");
+
+        // Claim type the security stamp is stored under in the JWT. Kept here, next to the
+        // column it's checked against, so Login/GoogleLogin (issuing) and Program.cs (validating)
+        // can't drift apart on the literal string.
+        public const string SecurityStampClaimType = "security_stamp";
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
