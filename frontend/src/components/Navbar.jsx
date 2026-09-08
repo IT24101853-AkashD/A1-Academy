@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { clearSession } from '../utils/session';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -22,6 +23,15 @@ export default function Navbar() {
     setIsAdmin(localStorage.getItem('role') === 'Admin');
     setIsLoggedIn(Boolean(localStorage.getItem('token')));
   }, []);
+
+  // A full navigation (not client-side routing) rather than just updating this component's own
+  // state - every page that reads localStorage.role/token directly (AdminUsersPage, ProfilePage,
+  // CategoryManagementPage) does so once on mount, so a hard reload is what actually gets all of
+  // them - and this Navbar - back in sync with the now-cleared session in one move.
+  const handleLogout = () => {
+    clearSession();
+    window.location.href = '/';
+  };
 
   return (
     <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'shadow-sm bg-white/90 backdrop-blur-md border-b border-slate-200 py-2' : 'bg-transparent py-4'}`}>
@@ -52,16 +62,26 @@ export default function Navbar() {
               My Profile
             </Link>
           )}
-          <button
-            onClick={() => window.openReactModal && window.openReactModal('login-modal')}
-            className="text-slate-600 font-semibold hover:text-slate-900 transition-colors px-4">
-            Login
-          </button>
-          <button 
-            onClick={() => window.openReactModal && window.openReactModal('register-modal')}
-            className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-full font-semibold transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5">
-            Register
-          </button>
+          {isLoggedIn ? (
+            <button
+              onClick={handleLogout}
+              className="text-slate-600 font-semibold hover:text-slate-900 transition-colors px-4 cursor-pointer">
+              Log Out
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => window.openReactModal && window.openReactModal('login-modal')}
+                className="text-slate-600 font-semibold hover:text-slate-900 transition-colors px-4">
+                Login
+              </button>
+              <button
+                onClick={() => window.openReactModal && window.openReactModal('register-modal')}
+                className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-full font-semibold transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5">
+                Register
+              </button>
+            </>
+          )}
         </div>
       </div>
     </nav>
