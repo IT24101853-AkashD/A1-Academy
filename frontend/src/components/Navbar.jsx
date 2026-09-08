@@ -38,6 +38,13 @@ export default function Navbar() {
               User Directory
             </Link>
           )}
+          {isAdmin && (
+            <Link
+              to="/admin/categories"
+              className="text-slate-600 font-semibold hover:text-slate-900 transition-colors px-4">
+              Categories
+            </Link>
+          )}
           {isLoggedIn && (
             <Link
               to="/profile"
