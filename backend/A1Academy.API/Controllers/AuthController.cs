@@ -253,8 +253,11 @@ namespace A1Academy.API.Controllers
         public class ProfileResponse
         {
             public string Name { get; set; } = string.Empty;
+            public string FirstName { get; set; } = string.Empty;
+            public string? LastName { get; set; }
             public string Email { get; set; } = string.Empty;
             public string Role { get; set; } = string.Empty;
+            public string? PhoneNumber { get; set; }
         }
 
         // "View Profile Information" - any logged-in user (Student, Teacher, or Admin) can look
@@ -284,8 +287,11 @@ namespace A1Academy.API.Controllers
                 .Select(u => new ProfileResponse
                 {
                     Name = (u.FirstName + " " + (u.LastName ?? string.Empty)).Trim(),
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
                     Email = u.Email,
-                    Role = u.Role
+                    Role = u.Role,
+                    PhoneNumber = u.PhoneNumber
                 })
                 .SingleOrDefaultAsync();
 
@@ -298,6 +304,80 @@ namespace A1Academy.API.Controllers
             }
 
             return Ok(profile);
+        }
+
+        public class UpdateProfileRequest
+        {
+            public string FirstName { get; set; } = string.Empty;
+            public string? LastName { get; set; }
+            public string? PhoneNumber { get; set; }
+        }
+
+        // Lenient on purpose - digits, spaces, and the punctuation real phone numbers actually
+        // use (+, -, parentheses) - this is a display field, not something dialed programmatically,
+        // so it's a sanity check against garbage input rather than a strict international format.
+        private static readonly System.Text.RegularExpressions.Regex PhoneNumberPattern =
+            new(@"^[0-9+()\-\s]{7,20}$");
+
+        // "Edit Profile & Cross-User Protection". Scenario 1 (successful update) is the body of
+        // this method; Scenario 2 (cross-user modification is rejected) is handled by what this
+        // method deliberately does NOT do - there is no user id anywhere in this endpoint's route
+        // or request body, so there is no field a caller could set to point the update at anyone
+        // else's account. The target is always resolved from the caller's own JWT, the same way
+        // GET /me does it, which makes cross-user modification structurally impossible rather
+        // than something checked for and rejected after the fact.
+        [Authorize]
+        [HttpPut("me")]
+        public async Task<IActionResult> UpdateMe([FromBody] UpdateProfileRequest request)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            // Only Name and Contact Info are editable here, per the ticket - Email is the login
+            // identifier and changing it deserves its own re-verification flow, and Role/
+            // AccountStatus stay exclusively Admin-controlled (UsersController). Neither of those
+            // even appears on UpdateProfileRequest, so there's nothing to strip out here - a
+            // caller physically cannot smuggle a role change through this endpoint.
+            if (string.IsNullOrWhiteSpace(request.FirstName))
+            {
+                return BadRequest("First name is required.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.PhoneNumber) && !PhoneNumberPattern.IsMatch(request.PhoneNumber))
+            {
+                return BadRequest("Enter a valid phone number.");
+            }
+
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            user.FirstName = request.FirstName.Trim();
+            user.LastName = string.IsNullOrWhiteSpace(request.LastName) ? null : request.LastName.Trim();
+            user.PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim();
+
+            // Deliberately NOT rotating SecurityStamp here, unlike every transition in
+            // UsersController. Those rotate it because they're admin actions taken against
+            // someone else's account, meant to kill whatever session that account already has
+            // open. This is a user editing their own name/phone - rotating the stamp would
+            // invalidate the very session that just made this request, logging them out the
+            // instant they saved their own profile.
+            await _context.SaveChangesAsync();
+
+            return Ok(new ProfileResponse
+            {
+                Name = (user.FirstName + " " + (user.LastName ?? string.Empty)).Trim(),
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                Role = user.Role,
+                PhoneNumber = user.PhoneNumber
+            });
         }
 
         public class OtpRequest { public string Email { get; set; } = string.Empty; public string FirstName { get; set; } = string.Empty; }
