@@ -8,6 +8,7 @@ import HelpPage from './pages/HelpPage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
+import ProfilePage from './pages/ProfilePage';
 import AuthModals from './components/AuthModals';
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
         <Route path="/privacy.html" element={<PrivacyPage />} />
         <Route path="/terms.html" element={<TermsPage />} />
         <Route path="/admin/users" element={<AdminUsersPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Routes>
     </BrowserRouter>
   );
