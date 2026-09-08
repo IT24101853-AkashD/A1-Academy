@@ -32,6 +32,12 @@ namespace A1Academy.API.Data.Models
         // Teacher specific fields
         public string? Qualifications { get; set; }
         public string? QualificationDocumentPath { get; set; }
+
+        // Contact info a user can edit about themselves after registration (see AuthController's
+        // PUT /api/auth/me) - optional since it isn't collected at signup and plenty of accounts
+        // will never set it.
+        [StringLength(20)]
+        public string? PhoneNumber { get; set; }
         
         // Email Verification for OTP
         public bool IsEmailVerified { get; set; } = false;
