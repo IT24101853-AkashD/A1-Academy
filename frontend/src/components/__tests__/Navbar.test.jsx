@@ -37,6 +37,18 @@ describe('Navbar', () => {
     expect(screen.getByText(/user directory/i)).toBeInTheDocument();
   });
 
+  it('shows the Categories link for an Admin', () => {
+    localStorage.setItem('role', 'Admin');
+    renderNavbar();
+    expect(screen.getByText(/categories/i)).toBeInTheDocument();
+  });
+
+  it('does not show the Categories link for a Student', () => {
+    localStorage.setItem('role', 'Student');
+    renderNavbar();
+    expect(screen.queryByText(/categories/i)).not.toBeInTheDocument();
+  });
+
   it('does not show My Profile when logged out', () => {
     renderNavbar();
     expect(screen.queryByText(/my profile/i)).not.toBeInTheDocument();
