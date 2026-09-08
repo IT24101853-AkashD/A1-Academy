@@ -69,18 +69,14 @@ export default function Navbar() {
               Log Out
             </button>
           ) : (
-            <>
-              <button
-                onClick={() => window.openReactModal && window.openReactModal('login-modal')}
-                className="text-slate-600 font-semibold hover:text-slate-900 transition-colors px-4">
-                Login
-              </button>
-              <button
-                onClick={() => window.openReactModal && window.openReactModal('register-modal')}
-                className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-full font-semibold transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5">
-                Register
-              </button>
-            </>
+            // Single entry point into the book - it already has "Create an Account" / "Sign In"
+            // links on its own pages to move between login and registration, so a separate
+            // Register button here would just be a second door into the same room.
+            <button
+              onClick={() => window.openReactModal && window.openReactModal('login-modal')}
+              className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-full font-semibold transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5">
+              Login
+            </button>
           )}
         </div>
       </div>
