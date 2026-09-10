@@ -18,6 +18,15 @@ export default function CategoryManagementPage() {
     const [formError, setFormError] = useState('');
     const [savedJustNow, setSavedJustNow] = useState(false);
 
+    // Editing an existing category is a separate, per-row mode from the "New Category" form
+    // above - only one category can be mid-edit at a time, tracked by id rather than index so it
+    // survives the list re-sorting after a save.
+    const [editingId, setEditingId] = useState(null);
+    const [editName, setEditName] = useState('');
+    const [editDescription, setEditDescription] = useState('');
+    const [isEditSaving, setIsEditSaving] = useState(false);
+    const [editError, setEditError] = useState('');
+
     const loadCategories = () => {
         const token = localStorage.getItem('token');
         setViewState('loading');
@@ -101,6 +110,60 @@ export default function CategoryManagementPage() {
             setFormError('Server connection error. Please try again.');
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const startEditingCategory = (category) => {
+        setEditingId(category.id);
+        setEditName(category.name);
+        setEditDescription(category.description);
+        setEditError('');
+    };
+
+    const cancelEditingCategory = () => {
+        setEditingId(null);
+        setEditError('');
+    };
+
+    const saveEditedCategory = async (e) => {
+        e.preventDefault();
+        setIsEditSaving(true);
+        setEditError('');
+        const token = localStorage.getItem('token');
+
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories/${editingId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ name: editName, description: editDescription }),
+            });
+
+            if (res.status === 401) {
+                clearSession();
+                setViewState('sessionEnded');
+                return;
+            }
+
+            if (!res.ok) {
+                const body = await res.json().catch(() => null);
+                setEditError(body?.message || 'Could not save these changes. Please try again.');
+                return;
+            }
+
+            const updated = await res.json();
+            // Reflected in this list immediately, the same way a new category is - the Student
+            // browsing grid and any Teacher scheduling form pick it up on their own next fetch,
+            // since nothing here caches the old value for them.
+            setCategories((current) =>
+                current
+                    .map((category) => (category.id === updated.id ? updated : category))
+                    .sort((a, b) => a.name.localeCompare(b.name))
+            );
+            setEditingId(null);
+        } catch {
+            setEditError('Server connection error. Please try again.');
+        } finally {
+            setIsEditSaving(false);
         }
     };
 
@@ -223,8 +286,72 @@ export default function CategoryManagementPage() {
                                 <ul className="divide-y divide-slate-100">
                                     {categories.map((category) => (
                                         <li key={category.id} className="px-6 py-4">
-                                            <p className="font-bold text-slate-900">{category.name}</p>
-                                            <p className="text-sm text-slate-500 mt-1">{category.description}</p>
+                                            {editingId === category.id ? (
+                                                <form onSubmit={saveEditedCategory} className="space-y-4">
+                                                    {editError && (
+                                                        <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-600">
+                                                            {editError}
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <label htmlFor={`edit-name-${category.id}`} className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
+                                                            Category Name
+                                                        </label>
+                                                        <input
+                                                            id={`edit-name-${category.id}`}
+                                                            type="text"
+                                                            value={editName}
+                                                            onChange={(e) => setEditName(e.target.value)}
+                                                            required
+                                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label htmlFor={`edit-description-${category.id}`} className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
+                                                            Description
+                                                        </label>
+                                                        <textarea
+                                                            id={`edit-description-${category.id}`}
+                                                            value={editDescription}
+                                                            onChange={(e) => setEditDescription(e.target.value)}
+                                                            required
+                                                            rows={2}
+                                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 resize-none"
+                                                        />
+                                                    </div>
+                                                    <div className="flex gap-3">
+                                                        <button
+                                                            type="submit"
+                                                            disabled={isEditSaving}
+                                                            className="px-5 py-2 rounded-full text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                        >
+                                                            {isEditSaving ? 'Saving…' : 'Save Changes'}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={cancelEditingCategory}
+                                                            disabled={isEditSaving}
+                                                            className="px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            ) : (
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div>
+                                                        <p className="font-bold text-slate-900">{category.name}</p>
+                                                        <p className="text-sm text-slate-500 mt-1">{category.description}</p>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => startEditingCategory(category)}
+                                                        className="flex-none px-4 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                </div>
+                                            )}
                                         </li>
                                     ))}
                                 </ul>
