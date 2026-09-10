@@ -7,10 +7,10 @@ using A1Academy.API.Data.Models;
 namespace A1Academy.API.Controllers
 {
     /// <summary>
-    /// Academic subject categories Teachers group their classes under. Creation is
-    /// Administrator-only (the actual "Category Creation" ticket); reading the list is open to
-    /// any authenticated role, since Teachers - not just Admins - are the ones who need to see
-    /// what categories exist to schedule classes under them.
+    /// Academic subject categories Teachers group their classes under. Creation and updates are
+    /// Administrator-only; reading the list is open to any authenticated role, since Teachers -
+    /// not just Admins - are the ones who need to see what categories exist to schedule classes
+    /// under them.
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
@@ -32,6 +32,12 @@ namespace A1Academy.API.Controllers
         }
 
         public class CreateCategoryRequest
+        {
+            public string Name { get; set; } = string.Empty;
+            public string Description { get; set; } = string.Empty;
+        }
+
+        public class UpdateCategoryRequest
         {
             public string Name { get; set; } = string.Empty;
             public string Description { get; set; } = string.Empty;
@@ -112,6 +118,60 @@ namespace A1Academy.API.Controllers
 
             var summary = new CategorySummary { Id = category.Id, Name = category.Name, Description = category.Description };
             return CreatedAtAction(nameof(GetCategoryById), new { id = category.Id }, summary);
+        }
+
+        // The "Category Update" ticket - an Administrator corrects a typo or updates the
+        // curriculum on an existing category. Same validation as creation, saved the same way
+        // (no caching layer in front of GET /api/categories), so the Student browsing grid and
+        // any Teacher scheduling form pick up the change on their very next fetch.
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id}")]
+        public async Task<ActionResult<CategorySummary>> UpdateCategory(int id, [FromBody] UpdateCategoryRequest request)
+        {
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null)
+            {
+                return NotFound(new { message = "Category not found." });
+            }
+
+            var name = (request.Name ?? string.Empty).Trim();
+            var description = (request.Description ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return BadRequest(new { message = "Category name is required." });
+            }
+
+            if (name.Length > MaxNameLength)
+            {
+                return BadRequest(new { message = $"Category name must be {MaxNameLength} characters or fewer." });
+            }
+
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                return BadRequest(new { message = "Category description is required." });
+            }
+
+            if (description.Length > MaxDescriptionLength)
+            {
+                return BadRequest(new { message = $"Category description must be {MaxDescriptionLength} characters or fewer." });
+            }
+
+            // Same case-insensitive uniqueness rule as creation - but a category is naturally
+            // still "unchanged" if it keeps its own current name, so that one match is excluded
+            // from the clash check instead of the update rejecting itself.
+            var nameTaken = await _context.Categories.AnyAsync(c => c.Id != id && c.Name.ToLower() == name.ToLower());
+            if (nameTaken)
+            {
+                return BadRequest(new { message = "A category with this name already exists." });
+            }
+
+            category.Name = name;
+            category.Description = description;
+            await _context.SaveChangesAsync();
+
+            var summary = new CategorySummary { Id = category.Id, Name = category.Name, Description = category.Description };
+            return Ok(summary);
         }
     }
 }

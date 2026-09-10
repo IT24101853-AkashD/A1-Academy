@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import CategoryManagementPage from '../CategoryManagementPage';
 
@@ -149,6 +149,128 @@ describe('CategoryManagementPage', () => {
 
     expect(await screen.findByText(/already exists/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/category name/i)).toHaveValue('Mathematics');
+  });
+
+  it('editing a category posts to the API with a PUT and updates it in the list immediately', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const updated = { id: 1, name: 'Mathematics (Updated)', description: 'Corrected description.' };
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PUT') {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(updated) });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve([{ id: 1, name: 'Mathematics', description: 'Algebra and calculus.' }]),
+      });
+    });
+
+    renderPage();
+    await screen.findByText('Mathematics');
+
+    fireEvent.click(screen.getByRole('button', { name: /edit/i }));
+
+    const editForm = screen.getByRole('button', { name: /save changes/i }).closest('form');
+    fireEvent.change(within(editForm).getByLabelText(/category name/i), { target: { value: 'Mathematics (Updated)' } });
+    fireEvent.change(within(editForm).getByLabelText(/description/i), { target: { value: 'Corrected description.' } });
+    fireEvent.click(within(editForm).getByRole('button', { name: /save changes/i }));
+
+    await waitFor(() => expect(screen.getByText('Mathematics (Updated)')).toBeInTheDocument());
+    expect(screen.getByText('Corrected description.')).toBeInTheDocument();
+    // Edit form closes back into the plain row on success.
+    expect(screen.queryByRole('button', { name: /save changes/i })).not.toBeInTheDocument();
+
+    const putCall = global.fetch.mock.calls.find(([, options]) => options?.method === 'PUT');
+    expect(putCall[0]).toContain('/api/categories/1');
+    expect(putCall[1].headers.Authorization).toBe('Bearer admin-token');
+    expect(JSON.parse(putCall[1].body)).toEqual({ name: 'Mathematics (Updated)', description: 'Corrected description.' });
+  });
+
+  it('clicking Cancel while editing discards changes and leaves the category untouched', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve([{ id: 1, name: 'Mathematics', description: 'Algebra and calculus.' }]),
+      })
+    );
+
+    renderPage();
+    await screen.findByText('Mathematics');
+
+    fireEvent.click(screen.getByRole('button', { name: /edit/i }));
+    const editForm = screen.getByRole('button', { name: /cancel/i }).closest('form');
+    fireEvent.change(within(editForm).getByLabelText(/category name/i), { target: { value: 'Something Else' } });
+    fireEvent.click(within(editForm).getByRole('button', { name: /cancel/i }));
+
+    expect(screen.getByText('Mathematics')).toBeInTheDocument();
+    expect(screen.queryByText('Something Else')).not.toBeInTheDocument();
+    // No PUT was ever sent - only the initial GET.
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the backend validation message when editing to a duplicate name and stays in edit mode', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PUT') {
+        return Promise.resolve({
+          ok: false,
+          status: 400,
+          json: () => Promise.resolve({ message: 'A category with this name already exists.' }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve([
+          { id: 1, name: 'Mathematics', description: 'Algebra and calculus.' },
+          { id: 2, name: 'Science', description: 'Physics, chemistry, and biology.' },
+        ]),
+      });
+    });
+
+    renderPage();
+    await screen.findByText('Mathematics');
+
+    fireEvent.click(screen.getAllByRole('button', { name: /edit/i })[0]);
+    const editForm = screen.getByRole('button', { name: /save changes/i }).closest('form');
+    fireEvent.change(within(editForm).getByLabelText(/category name/i), { target: { value: 'Science' } });
+    fireEvent.click(within(editForm).getByRole('button', { name: /save changes/i }));
+
+    expect(await screen.findByText(/already exists/i)).toBeInTheDocument();
+    // Still mid-edit - the original name in the list is untouched.
+    expect(within(editForm).getByLabelText(/category name/i)).toHaveValue('Science');
+  });
+
+  it('shows Session Ended if editing itself comes back 401', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'about-to-die-token');
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PUT') {
+        return Promise.resolve({ ok: false, status: 401 });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve([{ id: 1, name: 'Mathematics', description: 'Algebra and calculus.' }]),
+      });
+    });
+
+    renderPage();
+    await screen.findByText('Mathematics');
+
+    fireEvent.click(screen.getByRole('button', { name: /edit/i }));
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+
+    expect(await screen.findByText(/session ended/i)).toBeInTheDocument();
+    expect(localStorage.getItem('token')).toBeNull();
   });
 
   it('shows Session Ended if creation itself comes back 401 mid-form', async () => {
