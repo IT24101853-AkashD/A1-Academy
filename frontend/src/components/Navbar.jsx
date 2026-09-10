@@ -7,6 +7,8 @@ export default function Navbar() {
   // UX nicety only - hiding this link from non-Admins is not the access control. The real
   // restriction is server-side, on GET /api/users (see UsersController).
   const [isAdmin, setIsAdmin] = useState(false);
+  // Same UX-nicety-only story as isAdmin, for StudentCategoriesPage's own client-side gate.
+  const [isStudent, setIsStudent] = useState(false);
   // Any logged-in role can view their own profile (GET /api/auth/me) - a stored token is a good
   // enough signal to show the link; the page itself re-checks against the live token on load.
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -21,6 +23,7 @@ export default function Navbar() {
 
   useEffect(() => {
     setIsAdmin(localStorage.getItem('role') === 'Admin');
+    setIsStudent(localStorage.getItem('role') === 'Student');
     setIsLoggedIn(Boolean(localStorage.getItem('token')));
   }, []);
 
@@ -51,6 +54,13 @@ export default function Navbar() {
           {isAdmin && (
             <Link
               to="/admin/categories"
+              className="text-slate-600 font-semibold hover:text-slate-900 transition-colors px-4">
+              Categories
+            </Link>
+          )}
+          {isStudent && (
+            <Link
+              to="/student/categories"
               className="text-slate-600 font-semibold hover:text-slate-900 transition-colors px-4">
               Categories
             </Link>
