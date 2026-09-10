@@ -231,4 +231,159 @@ public class CategoriesEndpointTests : IClassFixture<ApiWebApplicationFactory>
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    private async Task<CategoryDto> CreateCategoryAsync(HttpClient client, string token, string name, string description)
+    {
+        var request = Authorized(HttpMethod.Post, "/api/categories", token);
+        request.Content = JsonContent.Create(new { name, description });
+        var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<CategoryDto>())!;
+    }
+
+    [Fact]
+    public async Task UpdateCategory_AsAdmin_SavesItAndMakesItImmediatelyAvailable()
+    {
+        // Scenario 1 - Successful Category Update. "Immediately reflected" is proven the same
+        // way as creation: a separate GET after the PUT, not just trusting its own response.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        await SeedUserAsync("Cat", $"catupdate.{suffix}@example.com", "AdminPass1!", "Admin");
+        var token = await LoginAsync(client, $"catupdate.{suffix}@example.com", "AdminPass1!");
+
+        var created = await CreateCategoryAsync(client, token, $"Mathematics-{suffix}", "Old description.");
+
+        var updateRequest = Authorized(HttpMethod.Put, $"/api/categories/{created.Id}", token);
+        var newName = $"Mathematics-{suffix}-Updated";
+        updateRequest.Content = JsonContent.Create(new { name = newName, description = "Corrected description." });
+        var updateResponse = await client.SendAsync(updateRequest);
+
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+        var updated = await updateResponse.Content.ReadFromJsonAsync<CategoryDto>();
+        Assert.Equal(newName, updated!.Name);
+        Assert.Equal("Corrected description.", updated.Description);
+        Assert.Equal(created.Id, updated.Id);
+
+        var byIdResponse = await client.SendAsync(Authorized(HttpMethod.Get, $"/api/categories/{created.Id}", token));
+        var fetched = await byIdResponse.Content.ReadFromJsonAsync<CategoryDto>();
+        Assert.Equal(newName, fetched!.Name);
+        Assert.Equal("Corrected description.", fetched.Description);
+    }
+
+    [Fact]
+    public async Task UpdateCategory_KeepingItsOwnName_DoesNotRejectItselfAsADuplicate()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        await SeedUserAsync("Cat", $"keepname.{suffix}@example.com", "AdminPass1!", "Admin");
+        var token = await LoginAsync(client, $"keepname.{suffix}@example.com", "AdminPass1!");
+
+        var name = $"Science-{suffix}";
+        var created = await CreateCategoryAsync(client, token, name, "Old description.");
+
+        var updateRequest = Authorized(HttpMethod.Put, $"/api/categories/{created.Id}", token);
+        updateRequest.Content = JsonContent.Create(new { name, description = "Only the description changed." });
+        var updateResponse = await client.SendAsync(updateRequest);
+
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("Student")]
+    [InlineData("Teacher")]
+    public async Task UpdateCategory_AsNonAdmin_ReturnsForbidden(string role)
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        await SeedUserAsync("Cat", $"catupdateadmin.{suffix}@example.com", "AdminPass1!", "Admin");
+        var adminToken = await LoginAsync(client, $"catupdateadmin.{suffix}@example.com", "AdminPass1!");
+        var created = await CreateCategoryAsync(client, adminToken, $"History-{suffix}", "Original description.");
+
+        var email = $"catupdatenonadmin.{role.ToLowerInvariant()}.{suffix}@example.com";
+        await SeedUserAsync("NonAdmin", email, "Pass1!", role);
+        var token = await LoginAsync(client, email, "Pass1!");
+
+        var request = Authorized(HttpMethod.Put, $"/api/categories/{created.Id}", token);
+        request.Content = JsonContent.Create(new { name = "ShouldNotApply", description = "Nope." });
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+
+        var byIdResponse = await client.SendAsync(Authorized(HttpMethod.Get, $"/api/categories/{created.Id}", adminToken));
+        var fetched = await byIdResponse.Content.ReadFromJsonAsync<CategoryDto>();
+        Assert.Equal("Original description.", fetched!.Description);
+    }
+
+    [Fact]
+    public async Task UpdateCategory_Unauthenticated_ReturnsUnauthorized()
+    {
+        var client = _factory.CreateClient();
+
+        var request = new HttpRequestMessage(HttpMethod.Put, "/api/categories/1")
+        {
+            Content = JsonContent.Create(new { name = "Nope", description = "Nope." })
+        };
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateCategory_UnknownId_ReturnsNotFound()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        await SeedUserAsync("Cat", $"updatenotfound.{suffix}@example.com", "AdminPass1!", "Admin");
+        var token = await LoginAsync(client, $"updatenotfound.{suffix}@example.com", "AdminPass1!");
+
+        var request = Authorized(HttpMethod.Put, "/api/categories/999999", token);
+        request.Content = JsonContent.Create(new { name = "Anything", description = "Anything." });
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateCategory_WithBlankName_ReturnsBadRequestAndDoesNotSave()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        await SeedUserAsync("Cat", $"updateblankname.{suffix}@example.com", "AdminPass1!", "Admin");
+        var token = await LoginAsync(client, $"updateblankname.{suffix}@example.com", "AdminPass1!");
+        var created = await CreateCategoryAsync(client, token, $"Geography-{suffix}", "Original description.");
+
+        var request = Authorized(HttpMethod.Put, $"/api/categories/{created.Id}", token);
+        request.Content = JsonContent.Create(new { name = "   ", description = "A description." });
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var byIdResponse = await client.SendAsync(Authorized(HttpMethod.Get, $"/api/categories/{created.Id}", token));
+        var fetched = await byIdResponse.Content.ReadFromJsonAsync<CategoryDto>();
+        Assert.Equal($"Geography-{suffix}", fetched!.Name);
+    }
+
+    [Fact]
+    public async Task UpdateCategory_WithDuplicateNameOfAnotherCategory_ReturnsBadRequestCaseInsensitively()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        await SeedUserAsync("Cat", $"updatedupe.{suffix}@example.com", "AdminPass1!", "Admin");
+        var token = await LoginAsync(client, $"updatedupe.{suffix}@example.com", "AdminPass1!");
+
+        var takenName = $"Art-{suffix}";
+        await CreateCategoryAsync(client, token, takenName, "Already exists.");
+        var toUpdate = await CreateCategoryAsync(client, token, $"Music-{suffix}", "About to be renamed.");
+
+        var request = Authorized(HttpMethod.Put, $"/api/categories/{toUpdate.Id}", token);
+        // Different case, and different whitespace - still the same category name to a human.
+        request.Content = JsonContent.Create(new { name = $"  {takenName.ToUpperInvariant()}  ", description = "Renamed." });
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var byIdResponse = await client.SendAsync(Authorized(HttpMethod.Get, $"/api/categories/{toUpdate.Id}", token));
+        var fetched = await byIdResponse.Content.ReadFromJsonAsync<CategoryDto>();
+        Assert.Equal($"Music-{suffix}", fetched!.Name);
+    }
 }
