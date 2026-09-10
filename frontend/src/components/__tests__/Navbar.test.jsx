@@ -43,8 +43,14 @@ describe('Navbar', () => {
     expect(screen.getByText(/categories/i)).toBeInTheDocument();
   });
 
-  it('does not show the Categories link for a Student', () => {
+  it('shows a Categories browsing link for a Student, pointing at the Student route (not the Admin one)', () => {
     localStorage.setItem('role', 'Student');
+    renderNavbar();
+    expect(screen.getByRole('link', { name: /categories/i })).toHaveAttribute('href', '/student/categories');
+  });
+
+  it('does not show the Categories link for a Teacher', () => {
+    localStorage.setItem('role', 'Teacher');
     renderNavbar();
     expect(screen.queryByText(/categories/i)).not.toBeInTheDocument();
   });

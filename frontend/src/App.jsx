@@ -10,6 +10,8 @@ import TermsPage from './pages/TermsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import ProfilePage from './pages/ProfilePage';
 import CategoryManagementPage from './pages/CategoryManagementPage';
+import StudentCategoriesPage from './pages/StudentCategoriesPage';
+import ClassesPage from './pages/ClassesPage';
 import AuthModals from './components/AuthModals';
 
 function App() {
@@ -33,6 +35,8 @@ function App() {
         <Route path="/admin/users" element={<AdminUsersPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/admin/categories" element={<CategoryManagementPage />} />
+        <Route path="/student/categories" element={<StudentCategoriesPage />} />
+        <Route path="/classes" element={<ClassesPage />} />
       </Routes>
     </BrowserRouter>
   );
