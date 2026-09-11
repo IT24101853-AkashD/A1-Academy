@@ -22,6 +22,8 @@ namespace A1Academy.Tests.E2E
     ///   1. docker-compose up -d postgres kafka zookeeper
     ///   2. dotnet run --project backend/A1Academy.API   (defaults to http://localhost:5123, ASPNETCORE_ENVIRONMENT=Development)
     ///   3. npm run dev --prefix frontend                (defaults to http://localhost:5173)
+    ///   4. Set E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD to an active Admin account for the
+    ///      Teacher_CanRegister_AdminCanApprove_ThenTeacherCanLogIn test.
     ///
     /// Run only this suite with:  dotnet test --filter Category=E2E
     /// (it is excluded from the default/CI `dotnet test` run - see ci.yml)
@@ -40,10 +42,8 @@ namespace A1Academy.Tests.E2E
     /// suite reads the pending OTP from the Development/Testing-only GET /api/auth/debug-otp
     /// endpoint instead of an inbox. That endpoint 404s outside those environments.
     ///
-    /// Scope note: Teacher signups start unapproved and cannot log in until an admin approves
-    /// them, so only the Student path is covered here. The app also has no dashboard route yet
-    /// (see App.jsx) - success is the existing post-login "success-login-modal" plus the
-    /// correct role recorded in localStorage.
+    /// The app also has no dashboard route yet (see App.jsx) - success is the existing
+    /// post-login "success-login-modal" plus the correct role recorded in localStorage.
     /// </summary>
     [Trait("Category", "E2E")]
     public class AuthenticationFlowE2ETests : IDisposable
@@ -169,6 +169,96 @@ namespace A1Academy.Tests.E2E
             WaitForModalOpen(wait, "success-login-modal");
             wait.Until(d => !string.IsNullOrEmpty(GetLocalStorageItem(d, "token")));
             Assert.Equal("Student", GetLocalStorageItem(_driver, "role"));
+        }
+
+        [Fact]
+        public async Task Teacher_CanRegister_AdminCanApprove_ThenTeacherCanLogIn()
+        {
+            var wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(20));
+            var uniqueId = Guid.NewGuid().ToString("N").Substring(0, 10);
+            var teacherEmail = $"selenium.teacher.{uniqueId}@example.com";
+            const string teacherPassword = "E2eTeacher!12345";
+            var adminEmail = Environment.GetEnvironmentVariable("E2E_ADMIN_EMAIL");
+            var adminPassword = Environment.GetEnvironmentVariable("E2E_ADMIN_PASSWORD");
+            Assert.False(string.IsNullOrWhiteSpace(adminEmail), "E2E_ADMIN_EMAIL must identify an active Admin account.");
+            Assert.False(string.IsNullOrWhiteSpace(adminPassword), "E2E_ADMIN_PASSWORD must be supplied for the Admin UI login.");
+
+            var certificatePath = Path.Combine(Path.GetTempPath(), $"a1academy-{uniqueId}.txt");
+            File.WriteAllText(certificatePath, "Selenium E2E qualification document");
+
+            try
+            {
+                // --- Register the Teacher through the real browser form ---
+                _driver.Navigate().GoToUrl(_frontendUrl);
+                ClickNavButton(wait, "Login");
+                WaitForModalOpen(wait, "login-modal");
+                ClickWithinModal(wait, "login-modal", "button", "Create an Account");
+                WaitForModalOpen(wait, "register-modal");
+                ClickWithinModal(wait, "register-modal", "h3", "Register as a Teacher");
+                WaitForModalOpen(wait, "register-teacher-modal");
+
+                _driver.FindElement(By.Id("teacher-firstname")).SendKeys("Selenium");
+                _driver.FindElement(By.Id("teacher-lastname")).SendKeys("Teacher");
+                _driver.FindElement(By.Id("teacher-email")).SendKeys(teacherEmail);
+                _driver.FindElement(By.Id("teacher-verify-btn")).Click();
+                WaitForModalOpen(wait, "otp-modal");
+
+                var otp = await FetchOtpAsync(teacherEmail);
+                Assert.False(string.IsNullOrWhiteSpace(otp), "The registration OTP was not available.");
+                for (var i = 0; i < otp!.Length; i++)
+                {
+                    _driver.FindElement(By.Id($"otp-{i}")).SendKeys(otp[i].ToString());
+                }
+                ClickWithinModal(wait, "otp-modal", "button", "Verify Code");
+                WaitForModalOpen(wait, "register-teacher-modal");
+
+                _driver.FindElement(By.Id("teacher-qualifications")).SendKeys("BSc. Computer Science");
+                _driver.FindElement(By.Id("teacher-qual-file")).SendKeys(certificatePath);
+                wait.Until(d => d.FindElement(By.Id("teacher-upload-text")).Text.Contains("Uploaded", StringComparison.OrdinalIgnoreCase));
+                _driver.FindElement(By.Id("teacher-password")).SendKeys(teacherPassword);
+                _driver.FindElement(By.Id("teacher-confirm-password")).SendKeys(teacherPassword);
+                ClickWithinModal(wait, "register-teacher-modal", "button", "Submit Teacher Application");
+                WaitForModalOpen(wait, "pending-teacher-modal");
+
+                // --- Log in as Admin and approve this exact pending account ---
+                _driver.Navigate().GoToUrl(_frontendUrl);
+                ClickNavButton(wait, "Login");
+                WaitForModalOpen(wait, "login-modal");
+                _driver.FindElement(By.Id("login-email")).SendKeys(adminEmail!);
+                _driver.FindElement(By.Id("login-password")).SendKeys(adminPassword!);
+                ClickWithinModal(wait, "login-modal", "button", "Log In");
+                WaitForModalOpen(wait, "success-login-modal");
+                Assert.Equal("Admin", GetLocalStorageItem(_driver, "role"));
+
+                _driver.Navigate().GoToUrl($"{_frontendUrl}/admin/users");
+                var teacherRow = wait.Until(d => d.FindElements(By.XPath(
+                    $"//tr[td[normalize-space()='{teacherEmail}']]")).FirstOrDefault());
+                Assert.NotNull(teacherRow);
+                var approveButton = teacherRow!.FindElement(By.XPath(".//button[normalize-space()='Approve']"));
+                approveButton.Click();
+                wait.Until(d => d.FindElements(By.XPath(
+                    $"//tr[td[normalize-space()='{teacherEmail}']]/td[normalize-space()='Active']")).Count == 1);
+
+                // --- Start a clean browser session and log in as the approved Teacher ---
+                ((IJavaScriptExecutor)_driver).ExecuteScript("window.localStorage.clear();");
+                _driver.Navigate().GoToUrl(_frontendUrl);
+                ClickNavButton(wait, "Login");
+                WaitForModalOpen(wait, "login-modal");
+                _driver.FindElement(By.Id("login-email")).SendKeys(teacherEmail);
+                _driver.FindElement(By.Id("login-password")).SendKeys(teacherPassword);
+                ClickWithinModal(wait, "login-modal", "button", "Log In");
+                WaitForModalOpen(wait, "success-login-modal");
+
+                Assert.Equal("Teacher", GetLocalStorageItem(_driver, "role"));
+                Assert.False(string.IsNullOrWhiteSpace(GetLocalStorageItem(_driver, "token")));
+            }
+            finally
+            {
+                if (File.Exists(certificatePath))
+                {
+                    File.Delete(certificatePath);
+                }
+            }
         }
 
         private async Task<string?> FetchOtpAsync(string email)
