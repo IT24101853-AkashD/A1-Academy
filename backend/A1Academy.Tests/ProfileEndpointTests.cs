@@ -282,12 +282,8 @@ public class ProfileEndpointTests : IClassFixture<ApiWebApplicationFactory>
     [Fact]
     public async Task UpdateMe_CannotModifyAnotherUsersProfile()
     {
-        // Scenario 2 - Prevent Cross-User Modification. The strongest version of this test isn't
-        // "a spoofed id in the body gets rejected" - PUT /api/auth/me has no id field on
-        // UpdateProfileRequest at all, so there is nothing to spoof. This proves that directly:
-        // even a request body carrying extra JSON properties that look like an attempt to target
-        // someone else only ever changes the caller's own record, and the victim's record is
-        // completely untouched.
+        // Scenario 2 - Prevent Cross-User Modification: a valid token for User A must not be
+        // usable to target User B by database id.
         var client = _factory.CreateClient();
         var suffix = Guid.NewGuid().ToString("N")[..8];
         var attackerEmail = $"attacker.{suffix}@example.com";
@@ -300,30 +296,22 @@ public class ProfileEndpointTests : IClassFixture<ApiWebApplicationFactory>
         var attackerToken = await LoginAsync(client, attackerEmail, password);
         var victimToken = await LoginAsync(client, victimEmail, password);
 
-        // Fetch the victim's id (as the victim would only reveal to an Admin's directory in
-        // reality, but the point here is that even knowing it does the attacker no good).
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var victimId = context.Users.Single(u => u.Email == victimEmail).Id;
+
         var meResponse = await client.SendAsync(Authorized(HttpMethod.Get, "/api/auth/me", victimToken));
         var victimProfile = await meResponse.Content.ReadFromJsonAsync<ProfileDto>();
 
         var attackRequest = Authorized(HttpMethod.Put, "/api/auth/me", attackerToken);
-        // Extra properties an attacker might hope get bound onto some id/userId parameter the
-        // endpoint doesn't have - UpdateProfileRequest only has FirstName/LastName/PhoneNumber,
-        // so System.Text.Json's default model binding just ignores anything else in the body.
         attackRequest.Content = JsonContent.Create(new
         {
             firstName = "Hacked",
             lastName = "TheVictim",
-            userId = "not-the-attackers-id",
-            id = 999999,
-            email = victimEmail
+            userId = victimId
         });
         var attackResponse = await client.SendAsync(attackRequest);
-        Assert.Equal(HttpStatusCode.OK, attackResponse.StatusCode);
-
-        // The attacker's own record changed - that part of the request was legitimate...
-        var attackerProfile = await attackResponse.Content.ReadFromJsonAsync<ProfileDto>();
-        Assert.Equal("Hacked TheVictim", attackerProfile!.Name);
-        Assert.Equal(attackerEmail, attackerProfile.Email);
+        Assert.Equal(HttpStatusCode.Forbidden, attackResponse.StatusCode);
 
         // ...but the victim's record is completely untouched.
         var victimAfter = await client.SendAsync(Authorized(HttpMethod.Get, "/api/auth/me", victimToken));

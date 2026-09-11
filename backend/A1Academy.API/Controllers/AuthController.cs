@@ -308,6 +308,7 @@ namespace A1Academy.API.Controllers
 
         public class UpdateProfileRequest
         {
+            public int? UserId { get; set; }
             public string FirstName { get; set; } = string.Empty;
             public string? LastName { get; set; }
             public string? PhoneNumber { get; set; }
@@ -341,6 +342,11 @@ namespace A1Academy.API.Controllers
             if (userIdClaim == null || !int.TryParse(userIdClaim, out var userId))
             {
                 return Unauthorized();
+            }
+
+            if (request.UserId.HasValue && request.UserId.Value != userId)
+            {
+                return Forbid();
             }
 
             // Only Name and Contact Info are editable here, per the ticket - Email is the login
