@@ -15,3 +15,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Start Test Environment
+        run: docker-compose -f docker-compose.e2e.yml up -d --build
