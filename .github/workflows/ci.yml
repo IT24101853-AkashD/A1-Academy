@@ -45,4 +45,6 @@ jobs:
         context: ./backend/A1Academy.API
         file: ./backend/A1Academy.API/Dockerfile
         push: true
-        tags: a1academy-api:latest
+        tags: |
+          a1academy-api:latest
+          a1academy-api:${{ github.sha }}
