@@ -3,8 +3,8 @@
  * Tests the complete teacher login process with newly created account
  */
 
-const { fillInput, clickElement, waitForElement, waitForText } = require('../../utils/helpers');
-const { BASE_URL, TEST_USER, ROUTES, SELECTORS } = require('../../config/testData');
+const { fillInput, clickElement, waitForElement, waitForText } = require('../utils/helpers');
+const { BASE_URL, TEST_USER, ROUTES, SELECTORS } = require('../config/testData');
 
 describe('E2E: Teacher Login Flow', () => {
     

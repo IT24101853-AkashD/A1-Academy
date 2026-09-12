@@ -18,6 +18,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: npm-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: npm-
+
       - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
@@ -27,6 +34,8 @@ jobs:
         working-directory: ./frontend
         run: |
           npm install
+          npm run lint
+          npm run test:unit --if-present
           npm run build --if-present
 
       - name: Upload artifact for deployment job

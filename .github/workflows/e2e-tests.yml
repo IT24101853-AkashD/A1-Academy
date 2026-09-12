@@ -1,0 +1,52 @@
+name: End-to-End Tests
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Override Frontend Env for Local Testing
+        working-directory: ./frontend
+        run: echo "VITE_API_URL=http://localhost:5123" > .env.production
+
+      - name: Start Test Environment
+        run: docker compose -f docker-compose.e2e.yml up -d --build
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for Backend API..."
+          timeout 60 bash -c 'until curl -s http://localhost:5123/api/categories > /dev/null; do sleep 2; done'
+          echo "Waiting for Frontend..."
+          timeout 60 bash -c 'until curl -s http://localhost:4173 > /dev/null; do sleep 2; done'
+
+      - name: Install WebdriverIO Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run E2E Test Suite
+        working-directory: ./frontend
+        env:
+          BASE_URL: http://localhost:4173
+        run: npx wdio run wdio.conf.cjs
+
+      - name: Upload Test Artifacts (Screenshots/Logs)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wdio-error-logs
+          path: ./frontend/errorShots/
+
+      - name: Tear Down Test Environment
+        if: always()
+        run: docker compose -f docker-compose.e2e.yml down -v

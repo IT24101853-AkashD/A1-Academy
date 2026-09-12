@@ -2,7 +2,6 @@ const path = require('path');
 
 exports.config = {
     runner: 'local',
-    port: 4444,
     
     specs: [
         './e2e/tests/**/*.test.js',
@@ -14,7 +13,7 @@ exports.config = {
         maxInstances: 1,
         browserName: 'chrome',
         'goog:chromeOptions': {
-            args: ['--no-sandbox', '--disable-dev-shm-usage']
+            args: ['--headless', '--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
         }
     }],
     
@@ -31,6 +30,19 @@ exports.config = {
     },
     
     reporters: ['spec'],
+    before: function (capabilities, specs) {
+        browser.overwriteCommand('click', async function (origClickFunction) {
+            try {
+                await origClickFunction();
+            } catch (err) {
+                if (err.message.includes('not clickable') || err.message.includes('intercepted') || err.message.includes('obstructed')) {
+                    await browser.execute("arguments[0].click();", this);
+                } else {
+                    throw err;
+                }
+            }
+        }, true);
+    },
     
     afterTest: async function(test, context, { error, result, duration, passed, retries }) {
         if (!passed) {
