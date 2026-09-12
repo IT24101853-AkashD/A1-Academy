@@ -16,6 +16,10 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Override Frontend Env for Local Testing
+        working-directory: ./frontend
+        run: echo "VITE_API_URL=http://localhost:5123" > .env.production
+
       - name: Start Test Environment
         run: docker-compose -f docker-compose.e2e.yml up -d --build
 
