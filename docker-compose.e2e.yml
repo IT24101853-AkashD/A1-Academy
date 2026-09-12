@@ -25,7 +25,7 @@ services:
       - Jwt__Issuer=A1Academy
       - Jwt__Audience=A1AcademyUsers
     ports:
-      - "5123:80"
+      - "5123:8080"
     depends_on:
       postgres:
         condition: service_healthy
