@@ -18,3 +18,10 @@ jobs:
 
       - name: Start Test Environment
         run: docker-compose -f docker-compose.e2e.yml up -d --build
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for Backend API..."
+          timeout 60 bash -c 'until curl -s http://localhost:5123/swagger/index.html > /dev/null; do sleep 2; done'
+          echo "Waiting for Frontend..."
+          timeout 60 bash -c 'until curl -s http://localhost:4173 > /dev/null; do sleep 2; done'
