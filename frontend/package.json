@@ -11,10 +11,10 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "e2e": "wdio run wdio.conf.js",
-    "e2e:teacher": "wdio run wdio.conf.js --grep 'E2E: Teacher'",
-    "e2e:login": "wdio run wdio.conf.js --grep 'Login Flow'",
-    "e2e:dashboard": "wdio run wdio.conf.js --grep 'Dashboard'"
+    "e2e": "wdio run wdio.conf.cjs",
+    "e2e:teacher": "wdio run wdio.conf.cjs --grep 'E2E: Teacher'",
+    "e2e:login": "wdio run wdio.conf.cjs --grep 'Login Flow'",
+    "e2e:dashboard": "wdio run wdio.conf.cjs --grep 'Dashboard'"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.5",

@@ -36,7 +36,7 @@ jobs:
 
       - name: Run E2E Test Suite
         working-directory: ./frontend
-        run: npx wdio run wdio.conf.js
+        run: npx wdio run wdio.conf.cjs
 
       - name: Upload Test Artifacts (Screenshots/Logs)
         if: failure()
