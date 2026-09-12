@@ -25,3 +25,11 @@ jobs:
           timeout 60 bash -c 'until curl -s http://localhost:5123/swagger/index.html > /dev/null; do sleep 2; done'
           echo "Waiting for Frontend..."
           timeout 60 bash -c 'until curl -s http://localhost:4173 > /dev/null; do sleep 2; done'
+
+      - name: Install WebdriverIO Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run E2E Test Suite
+        working-directory: ./frontend
+        run: npx wdio run wdio.conf.js
