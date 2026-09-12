@@ -29,3 +29,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      - VITE_API_URL=http://localhost:5123
+    ports:
+      - "4173:80"
+    depends_on:
+      - api
