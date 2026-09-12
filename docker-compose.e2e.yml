@@ -13,3 +13,19 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  api:
+    build:
+      context: ./backend/A1Academy.API
+      dockerfile: Dockerfile
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=e2edb;Username=appuser;Password=apppassword
+      - ASPNETCORE_ENVIRONMENT=Testing
+      - Jwt__Key=SuperSecretTestingKey12345678901234567890
+      - Jwt__Issuer=A1Academy
+      - Jwt__Audience=A1AcademyUsers
+    ports:
+      - "5123:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
