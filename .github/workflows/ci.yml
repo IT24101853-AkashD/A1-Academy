@@ -38,5 +38,5 @@ jobs:
       with:
         context: ./backend/A1Academy.API
         file: ./backend/A1Academy.API/Dockerfile
-        push: false
+        push: true
         tags: a1academy-api:latest
