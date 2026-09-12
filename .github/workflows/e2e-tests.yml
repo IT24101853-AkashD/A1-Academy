@@ -1,0 +1,10 @@
+name: End-to-End Tests
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    steps:
