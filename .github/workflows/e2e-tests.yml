@@ -21,7 +21,7 @@ jobs:
         run: echo "VITE_API_URL=http://localhost:5123" > .env.production
 
       - name: Start Test Environment
-        run: docker-compose -f docker-compose.e2e.yml up -d --build
+        run: docker compose -f docker-compose.e2e.yml up -d --build
 
       - name: Wait for services to be ready
         run: |
@@ -47,4 +47,4 @@ jobs:
 
       - name: Tear Down Test Environment
         if: always()
-        run: docker-compose -f docker-compose.e2e.yml down -v
+        run: docker compose -f docker-compose.e2e.yml down -v
