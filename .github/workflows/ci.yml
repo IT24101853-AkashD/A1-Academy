@@ -46,5 +46,5 @@ jobs:
         file: ./backend/A1Academy.API/Dockerfile
         push: true
         tags: |
-          a1academy-api:latest
-          a1academy-api:${{ github.sha }}
+          ${{ secrets.DOCKER_USERNAME }}/a1academy-api:latest
+          ${{ secrets.DOCKER_USERNAME }}/a1academy-api:${{ github.sha }}
