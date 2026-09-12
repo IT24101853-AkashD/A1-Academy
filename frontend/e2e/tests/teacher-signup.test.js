@@ -3,8 +3,8 @@
  * Tests the complete teacher signup process
  */
 
-const { fillInput, clickElement, waitForElement, waitForNavigation, isElementVisible } = require('../../utils/helpers');
-const { BASE_URL, TEST_USER, ROUTES, SELECTORS } = require('../../config/testData');
+const { fillInput, clickElement, waitForElement, waitForNavigation, isElementVisible } = require('../utils/helpers');
+const { BASE_URL, TEST_USER, ROUTES, SELECTORS } = require('../config/testData');
 
 describe('E2E: Teacher Registration Flow', () => {
     
