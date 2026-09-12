@@ -2,7 +2,6 @@ const path = require('path');
 
 exports.config = {
     runner: 'local',
-    port: 4444,
     
     specs: [
         './e2e/tests/**/*.test.js',
@@ -14,7 +13,7 @@ exports.config = {
         maxInstances: 1,
         browserName: 'chrome',
         'goog:chromeOptions': {
-            args: ['--no-sandbox', '--disable-dev-shm-usage']
+            args: ['--headless', '--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
         }
     }],
     
