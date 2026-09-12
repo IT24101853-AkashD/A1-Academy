@@ -16,7 +16,7 @@ describe('E2E: Teacher Registration Flow', () => {
 
     it('should display teacher registration modal', async () => {
         // Look for role selection or teacher link
-        const teacherLinks = await $$('a:contains("Teacher"), button:contains("Teacher")');
+        const teacherLinks = await $('//*[contains(text(), "Teacher") and (local-name()="a" or local-name()="button")]');
         
         if (teacherLinks.length > 0) {
             await teacherLinks[0].click();

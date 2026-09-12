@@ -30,6 +30,19 @@ exports.config = {
     },
     
     reporters: ['spec'],
+    before: function (capabilities, specs) {
+        browser.overwriteCommand('click', async function (origClickFunction) {
+            try {
+                await origClickFunction();
+            } catch (err) {
+                if (err.message.includes('not clickable') || err.message.includes('intercepted') || err.message.includes('obstructed')) {
+                    await browser.execute("arguments[0].click();", this);
+                } else {
+                    throw err;
+                }
+            }
+        }, true);
+    },
     
     afterTest: async function(test, context, { error, result, duration, passed, retries }) {
         if (!passed) {
