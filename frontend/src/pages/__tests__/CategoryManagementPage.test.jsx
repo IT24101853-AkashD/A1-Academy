@@ -294,4 +294,118 @@ describe('CategoryManagementPage', () => {
     expect(await screen.findByText(/session ended/i)).toBeInTheDocument();
     expect(localStorage.getItem('token')).toBeNull();
   });
+
+  it('deleting a category asks for confirmation, then sends a DELETE and removes it immediately', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'DELETE') {
+        return Promise.resolve({ ok: true, status: 204, json: () => Promise.resolve(null) });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve([
+          { id: 1, name: 'Mathematics', description: 'Algebra and calculus.' },
+          { id: 2, name: 'Science', description: 'Physics, chemistry, and biology.' },
+        ]),
+      });
+    });
+
+    renderPage();
+    await screen.findByText('Mathematics');
+
+    // Clicking Delete asks for confirmation rather than deleting right away.
+    fireEvent.click(screen.getAllByRole('button', { name: /delete/i })[0]);
+    expect(screen.getByText(/delete "mathematics"/i)).toBeInTheDocument();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
+
+    await waitFor(() => expect(screen.queryByText('Mathematics')).not.toBeInTheDocument());
+    expect(screen.getByText('Science')).toBeInTheDocument();
+
+    const deleteCall = global.fetch.mock.calls.find(([, options]) => options?.method === 'DELETE');
+    expect(deleteCall[0]).toContain('/api/categories/1');
+    expect(deleteCall[1].headers.Authorization).toBe('Bearer admin-token');
+  });
+
+  it('clicking Cancel on the delete confirmation leaves the category untouched', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve([{ id: 1, name: 'Mathematics', description: 'Algebra and calculus.' }]),
+      })
+    );
+
+    renderPage();
+    await screen.findByText('Mathematics');
+
+    fireEvent.click(screen.getByRole('button', { name: /delete/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }));
+
+    expect(screen.getByText('Mathematics')).toBeInTheDocument();
+    expect(screen.queryByText(/this can't be undone/i)).not.toBeInTheDocument();
+    // No DELETE was ever sent - only the initial GET.
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the backend error message if deletion is rejected and keeps the category', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'DELETE') {
+        return Promise.resolve({
+          ok: false,
+          status: 409,
+          json: () => Promise.resolve({ message: 'This category still has active classes attached to it.' }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve([{ id: 1, name: 'Mathematics', description: 'Algebra and calculus.' }]),
+      });
+    });
+
+    renderPage();
+    await screen.findByText('Mathematics');
+
+    fireEvent.click(screen.getByRole('button', { name: /delete/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
+
+    expect(await screen.findByText(/still has active classes/i)).toBeInTheDocument();
+    // Still showing the (failed) delete confirmation for this category, not silently removed.
+    expect(screen.getByText(/delete "mathematics"/i)).toBeInTheDocument();
+  });
+
+  it('shows Session Ended if deletion itself comes back 401', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'about-to-die-token');
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'DELETE') {
+        return Promise.resolve({ ok: false, status: 401 });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve([{ id: 1, name: 'Mathematics', description: 'Algebra and calculus.' }]),
+      });
+    });
+
+    renderPage();
+    await screen.findByText('Mathematics');
+
+    fireEvent.click(screen.getByRole('button', { name: /delete/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
+
+    expect(await screen.findByText(/session ended/i)).toBeInTheDocument();
+    expect(localStorage.getItem('token')).toBeNull();
+  });
 });

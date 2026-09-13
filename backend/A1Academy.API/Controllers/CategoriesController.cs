@@ -173,5 +173,28 @@ namespace A1Academy.API.Controllers
             var summary = new CategorySummary { Id = category.Id, Name = category.Name, Description = category.Description };
             return Ok(summary);
         }
+
+        // The "Category Deletion" ticket - an Administrator removes a category that's no longer
+        // needed. Scenario 1 (an empty category) is a straightforward permanent delete; there's
+        // no Class/Course entity yet for a category to have active classes attached to (see the
+        // comment on the Category model), so the "zero active classes" guard has nothing to
+        // check against today and every existing category qualifies. Once classes exist, that
+        // check belongs right here, before SaveChangesAsync, returning a 409/400 instead of
+        // deleting.
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCategory(int id)
+        {
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null)
+            {
+                return NotFound(new { message = "Category not found." });
+            }
+
+            _context.Categories.Remove(category);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 }

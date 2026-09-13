@@ -27,6 +27,12 @@ export default function CategoryManagementPage() {
     const [isEditSaving, setIsEditSaving] = useState(false);
     const [editError, setEditError] = useState('');
 
+    // Deleting is confirmed inline, per row - the same "only one thing active at a time, tracked
+    // by id" approach as editing above, rather than a blocking window.confirm() popup.
+    const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState('');
+
     const loadCategories = () => {
         const token = localStorage.getItem('token');
         setViewState('loading');
@@ -164,6 +170,50 @@ export default function CategoryManagementPage() {
             setEditError('Server connection error. Please try again.');
         } finally {
             setIsEditSaving(false);
+        }
+    };
+
+    const startDeletingCategory = (category) => {
+        setConfirmingDeleteId(category.id);
+        setDeleteError('');
+    };
+
+    const cancelDeletingCategory = () => {
+        setConfirmingDeleteId(null);
+        setDeleteError('');
+    };
+
+    const confirmDeleteCategory = async (id) => {
+        setIsDeleting(true);
+        setDeleteError('');
+        const token = localStorage.getItem('token');
+
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (res.status === 401) {
+                clearSession();
+                setViewState('sessionEnded');
+                return;
+            }
+
+            if (!res.ok) {
+                const body = await res.json().catch(() => null);
+                setDeleteError(body?.message || 'Could not delete this category. Please try again.');
+                return;
+            }
+
+            // Permanently removed - reflected here immediately, same as a create or edit, so the
+            // catalog reads as clean without waiting on a full reload.
+            setCategories((current) => current.filter((category) => category.id !== id));
+            setConfirmingDeleteId(null);
+        } catch {
+            setDeleteError('Server connection error. Please try again.');
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -337,19 +387,57 @@ export default function CategoryManagementPage() {
                                                         </button>
                                                     </div>
                                                 </form>
+                                            ) : confirmingDeleteId === category.id ? (
+                                                <div className="space-y-4">
+                                                    {deleteError && (
+                                                        <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-600">
+                                                            {deleteError}
+                                                        </div>
+                                                    )}
+                                                    <p className="text-sm font-bold text-slate-700">
+                                                        Delete "{category.name}"? This can't be undone.
+                                                    </p>
+                                                    <div className="flex gap-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => confirmDeleteCategory(category.id)}
+                                                            disabled={isDeleting}
+                                                            className="px-5 py-2 rounded-full text-sm font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                        >
+                                                            {isDeleting ? 'Deleting…' : 'Confirm Delete'}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={cancelDeletingCategory}
+                                                            disabled={isDeleting}
+                                                            className="px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             ) : (
                                                 <div className="flex items-start justify-between gap-4">
                                                     <div>
                                                         <p className="font-bold text-slate-900">{category.name}</p>
                                                         <p className="text-sm text-slate-500 mt-1">{category.description}</p>
                                                     </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => startEditingCategory(category)}
-                                                        className="flex-none px-4 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors"
-                                                    >
-                                                        Edit
-                                                    </button>
+                                                    <div className="flex-none flex gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => startEditingCategory(category)}
+                                                            className="px-4 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => startDeletingCategory(category)}
+                                                            className="px-4 py-2 rounded-full text-sm font-bold bg-white border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             )}
                                         </li>

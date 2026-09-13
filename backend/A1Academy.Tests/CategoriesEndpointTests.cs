@@ -386,4 +386,77 @@ public class CategoriesEndpointTests : IClassFixture<ApiWebApplicationFactory>
         var fetched = await byIdResponse.Content.ReadFromJsonAsync<CategoryDto>();
         Assert.Equal($"Music-{suffix}", fetched!.Name);
     }
+
+    [Fact]
+    public async Task DeleteCategory_AsAdmin_RemovesItPermanently()
+    {
+        // Scenario 1 - Successful Deletion of Empty Category. There's no Class entity yet for a
+        // category to have active classes attached to, so every category is "empty" today - the
+        // deletion itself, and it sticking, is proven with a separate GET after the DELETE, not
+        // just trusting the DELETE's own response.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        await SeedUserAsync("Cat", $"catdelete.{suffix}@example.com", "AdminPass1!", "Admin");
+        var token = await LoginAsync(client, $"catdelete.{suffix}@example.com", "AdminPass1!");
+
+        var name = $"Obsolete-{suffix}";
+        var created = await CreateCategoryAsync(client, token, name, "No longer needed.");
+
+        var deleteResponse = await client.SendAsync(Authorized(HttpMethod.Delete, $"/api/categories/{created.Id}", token));
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+        var byIdResponse = await client.SendAsync(Authorized(HttpMethod.Get, $"/api/categories/{created.Id}", token));
+        Assert.Equal(HttpStatusCode.NotFound, byIdResponse.StatusCode);
+
+        var listResponse = await client.SendAsync(Authorized(HttpMethod.Get, "/api/categories", token));
+        var list = await listResponse.Content.ReadFromJsonAsync<List<CategoryDto>>();
+        Assert.DoesNotContain(list!, c => c.Name == name);
+    }
+
+    [Theory]
+    [InlineData("Student")]
+    [InlineData("Teacher")]
+    public async Task DeleteCategory_AsNonAdmin_ReturnsForbiddenAndDoesNotDelete(string role)
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        await SeedUserAsync("Cat", $"catdeleteadmin.{suffix}@example.com", "AdminPass1!", "Admin");
+        var adminToken = await LoginAsync(client, $"catdeleteadmin.{suffix}@example.com", "AdminPass1!");
+        var name = $"Protected-{suffix}";
+        var created = await CreateCategoryAsync(client, adminToken, name, "Should survive.");
+
+        var email = $"catdeletenonadmin.{role.ToLowerInvariant()}.{suffix}@example.com";
+        await SeedUserAsync("NonAdmin", email, "Pass1!", role);
+        var token = await LoginAsync(client, email, "Pass1!");
+
+        var response = await client.SendAsync(Authorized(HttpMethod.Delete, $"/api/categories/{created.Id}", token));
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+
+        var byIdResponse = await client.SendAsync(Authorized(HttpMethod.Get, $"/api/categories/{created.Id}", adminToken));
+        Assert.Equal(HttpStatusCode.OK, byIdResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteCategory_Unauthenticated_ReturnsUnauthorized()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Delete, "/api/categories/1"));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteCategory_UnknownId_ReturnsNotFound()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        await SeedUserAsync("Cat", $"deletenotfound.{suffix}@example.com", "AdminPass1!", "Admin");
+        var token = await LoginAsync(client, $"deletenotfound.{suffix}@example.com", "AdminPass1!");
+
+        var response = await client.SendAsync(Authorized(HttpMethod.Delete, "/api/categories/999999", token));
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
 }
