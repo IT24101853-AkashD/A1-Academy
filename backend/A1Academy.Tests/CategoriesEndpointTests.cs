@@ -39,6 +39,22 @@ public class CategoriesEndpointTests : IClassFixture<ApiWebApplicationFactory>
         await context.SaveChangesAsync();
     }
 
+    // There's no /api/classes yet to create one through the real pipeline the way the other
+    // seed helper goes through /api/auth - a Class is deliberately minimal (see Class.cs) and
+    // exists purely to give this guard a real dependency to check, so it's seeded directly.
+    private async Task SeedClassAsync(int categoryId, string status)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        context.Classes.Add(new Class
+        {
+            Name = "Seeded Class",
+            CategoryId = categoryId,
+            Status = status
+        });
+        await context.SaveChangesAsync();
+    }
+
     private async Task<string> LoginAsync(HttpClient client, string email, string password)
     {
         var response = await client.PostAsJsonAsync("/api/auth/login", new { email, password });
@@ -411,6 +427,51 @@ public class CategoriesEndpointTests : IClassFixture<ApiWebApplicationFactory>
         var listResponse = await client.SendAsync(Authorized(HttpMethod.Get, "/api/categories", token));
         var list = await listResponse.Content.ReadFromJsonAsync<List<CategoryDto>>();
         Assert.DoesNotContain(list!, c => c.Name == name);
+    }
+
+    [Fact]
+    public async Task DeleteCategory_WithActiveClass_ReturnsConflictAndDoesNotDelete()
+    {
+        // "Block Category Deletion" Scenario 1 - a category with one or more active classes
+        // linked to it is left alone: the delete is aborted (409, not 204) and a follow-up GET
+        // proves it's still there, not just trusting the DELETE response.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        await SeedUserAsync("Cat", $"catblockdelete.{suffix}@example.com", "AdminPass1!", "Admin");
+        var token = await LoginAsync(client, $"catblockdelete.{suffix}@example.com", "AdminPass1!");
+
+        var name = $"InUse-{suffix}";
+        var created = await CreateCategoryAsync(client, token, name, "Has a running class.");
+        await SeedClassAsync(created.Id, ClassStatus.Active);
+
+        var deleteResponse = await client.SendAsync(Authorized(HttpMethod.Delete, $"/api/categories/{created.Id}", token));
+        Assert.Equal(HttpStatusCode.Conflict, deleteResponse.StatusCode);
+
+        var body = await deleteResponse.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        Assert.Contains("reassigned or canceled", body.GetProperty("message").GetString());
+
+        var byIdResponse = await client.SendAsync(Authorized(HttpMethod.Get, $"/api/categories/{created.Id}", token));
+        Assert.Equal(HttpStatusCode.OK, byIdResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteCategory_WithOnlyCancelledClasses_StillDeletes()
+    {
+        // A cancelled class isn't "active" - it shouldn't leave a phantom dependency blocking
+        // an otherwise-empty category from being cleaned up.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        await SeedUserAsync("Cat", $"catcancelledclass.{suffix}@example.com", "AdminPass1!", "Admin");
+        var token = await LoginAsync(client, $"catcancelledclass.{suffix}@example.com", "AdminPass1!");
+
+        var created = await CreateCategoryAsync(client, token, $"OnlyCancelled-{suffix}", "Its one class was cancelled.");
+        await SeedClassAsync(created.Id, ClassStatus.Cancelled);
+
+        var deleteResponse = await client.SendAsync(Authorized(HttpMethod.Delete, $"/api/categories/{created.Id}", token));
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+        var byIdResponse = await client.SendAsync(Authorized(HttpMethod.Get, $"/api/categories/{created.Id}", token));
+        Assert.Equal(HttpStatusCode.NotFound, byIdResponse.StatusCode);
     }
 
     [Theory]

@@ -3,9 +3,9 @@ using System.ComponentModel.DataAnnotations;
 namespace A1Academy.API.Data.Models
 {
     // An academic subject category (e.g. "Mathematics", "Computer Science") that Teachers group
-    // their classes under. Deliberately just a name and a description right now - there's no
-    // Class/Course entity yet for a category to actually be attached to, so this is the
-    // foundation "Category Creation" lays down for that scheduling feature to build on later.
+    // their classes under. See Class.cs for the (deliberately minimal) entity that attaches to
+    // one of these - added by the "Block Category Deletion" ticket so that ticket's guard has a
+    // real dependency to check.
     public class Category
     {
         [Key]

@@ -15,18 +15,15 @@ describe('E2E: Teacher Registration Flow', () => {
     });
 
     it('should display teacher registration modal', async () => {
-        // Look for role selection or teacher link
-        const teacherLinks = await $('//*[contains(text(), "Teacher") and (local-name()="a" or local-name()="button")]');
-        
-        if (teacherLinks.length > 0) {
-            await teacherLinks[0].click();
-            await browser.pause(300);
-        }
+        // Open the modal through the app's own test hook (App.jsx exposes
+        // window.openReactModal) rather than an XPath text scan - that scan used `$` (a single
+        // element) instead of `$$` (a list), so `.length` was always undefined and the "click
+        // if found" branch never ran, leaving the modal closed before the assertion below.
+        await browser.execute(() => window.openReactModal('register-teacher-modal'));
 
-        // Check if teacher registration modal is visible
-        const teacherModal = await $(SELECTORS.TEACHER_MODAL);
+        const teacherModal = await waitForElement(SELECTORS.TEACHER_MODAL);
         const isVisible = await teacherModal.isDisplayed().catch(() => false);
-        
+
         expect(isVisible).toBe(true);
     });
 

@@ -21,35 +21,15 @@ describe('E2E: Teacher Login Flow', () => {
     });
 
     it('should display login modal when navigating to login', async () => {
-        // Look for login button/link
-        const allElements = await $$('*');
-        let loginClicked = false;
+        // Open the modal through the app's own test hook (App.jsx exposes
+        // window.openReactModal) rather than scanning every element on the page for text -
+        // that scan was matching hidden "...to Login" buttons inside AuthModals before it ever
+        // reached the real Navbar button, so the click landed on the wrong (offscreen) element.
+        await browser.execute(() => window.openReactModal('login-modal'));
 
-        for (const elem of allElements) {
-            try {
-                const text = await elem.getText();
-                if (text.toLowerCase().includes('login') || text.toLowerCase().includes('sign in')) {
-                    await elem.click();
-                    loginClicked = true;
-                    await browser.pause(300);
-                    break;
-                }
-            } catch (e) {
-                // Element might not be clickable, continue
-            }
-        }
-
-        if (!loginClicked) {
-            // Try direct navigation
-            await browser.navigateTo(BASE_URL + ROUTES.HOME);
-        }
-
-        // Check if login modal appears
-        const loginModal = await $(SELECTORS.LOGIN_MODAL).catch(() => null);
-        if (loginModal) {
-            const isVisible = await loginModal.isDisplayed().catch(() => false);
-            expect(isVisible).toBe(true);
-        }
+        const loginModal = await waitForElement(SELECTORS.LOGIN_MODAL);
+        const isVisible = await loginModal.isDisplayed().catch(() => false);
+        expect(isVisible).toBe(true);
     });
 
     it('should successfully login with valid teacher credentials', async () => {

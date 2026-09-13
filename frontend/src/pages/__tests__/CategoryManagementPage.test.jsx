@@ -384,6 +384,39 @@ describe('CategoryManagementPage', () => {
     expect(screen.getByText(/delete "mathematics"/i)).toBeInTheDocument();
   });
 
+  it('"Block Category Deletion" Scenario 1 - shows the real 409 wording for a category with active classes', async () => {
+    // Same generic error-rendering path as the test above, exercised with the exact message
+    // CategoriesController.DeleteCategory sends for this specific guard - proves the UI's error
+    // display actually satisfies this ticket's own acceptance criterion, not just "some 409".
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'DELETE') {
+        return Promise.resolve({
+          ok: false,
+          status: 409,
+          json: () => Promise.resolve({ message: 'This category cannot be deleted until all associated classes are reassigned or canceled.' }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve([{ id: 1, name: 'Mathematics', description: 'Algebra and calculus.' }]),
+      });
+    });
+
+    renderPage();
+    await screen.findByText('Mathematics');
+
+    fireEvent.click(screen.getByRole('button', { name: /delete/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
+
+    expect(await screen.findByText(/reassigned or canceled/i)).toBeInTheDocument();
+    // Aborted, not deleted - the category is still in the list, not silently removed.
+    expect(screen.getByText(/delete "mathematics"/i)).toBeInTheDocument();
+  });
+
   it('shows Session Ended if deletion itself comes back 401', async () => {
     localStorage.setItem('role', 'Admin');
     localStorage.setItem('token', 'about-to-die-token');
