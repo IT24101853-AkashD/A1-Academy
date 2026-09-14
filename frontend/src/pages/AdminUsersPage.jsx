@@ -22,6 +22,25 @@ const ACTION_ERROR_MESSAGES = {
 
 const PAGE_SIZE = 10;
 
+// The JWT's own payload already carries the caller's email (see AuthController.Login, which
+// puts ClaimTypes.Email on every token) - decoded client-side here rather than fetched from
+// /api/auth/me, purely so "whose row is this admin's own" doesn't cost a second network request.
+// Never trusted for anything security-sensitive; the server independently rejects a self-action
+// regardless of what this returns.
+function getEmailFromToken(token) {
+    if (!token) return null;
+    try {
+        const payloadSegment = token.split('.')[1];
+        if (!payloadSegment) return null;
+        const base64 = payloadSegment.replace(/-/g, '+').replace(/_/g, '/');
+        const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+        const claims = JSON.parse(atob(padded));
+        return claims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || claims.email || null;
+    } catch {
+        return null;
+    }
+}
+
 export default function AdminUsersPage() {
     // Client-side gate is a UX nicety only - GET /api/users is protected server-side by
     // [Authorize(Roles = "Admin")], so a Student/Teacher (or a tampered localStorage value)
@@ -39,6 +58,13 @@ export default function AdminUsersPage() {
     // so we can disable just that one button instead of freezing the whole table.
     const [pendingActionId, setPendingActionId] = useState(null);
     const [actionError, setActionError] = useState('');
+    // Whose row is "you" - read straight out of the JWT already sitting in localStorage (see
+    // getEmailFromToken below) rather than a separate /api/auth/me round trip, so this doesn't
+    // add another fetch for the directory-loading effect below to race against. Purely a UX
+    // nicety: the Deactivate button just won't be offered on the signed-in Admin's own row. The
+    // API rejects a self-deactivate either way (see UsersController), so a token that fails to
+    // decode - or simply isn't a real JWT - just leaves every row's button showing as normal.
+    const [currentUserEmail] = useState(() => getEmailFromToken(localStorage.getItem('token')));
 
     useEffect(() => {
         if (role !== 'Admin') {
@@ -289,7 +315,12 @@ export default function AdminUsersPage() {
                                                         </button>
                                                     </>
                                                 )}
-                                                {user.status === 'Active' && (
+                                                {user.status === 'Active' && user.email === currentUserEmail && (
+                                                    <span className="px-3 py-1.5 text-xs font-bold text-slate-400" title="You can't deactivate your own account.">
+                                                        You
+                                                    </span>
+                                                )}
+                                                {user.status === 'Active' && user.email !== currentUserEmail && (
                                                     <button
                                                         type="button"
                                                         onClick={() => runAccountAction(user, 'deactivate')}
