@@ -18,6 +18,7 @@ const ACTION_ERROR_MESSAGES = {
     reject: 'Could not reject this application. Please try again.',
     deactivate: 'Could not deactivate this account. Please try again.',
     reactivate: 'Could not reactivate this account. Please try again.',
+    delete: 'Could not delete this account. Please try again.',
 };
 
 const PAGE_SIZE = 10;
@@ -65,6 +66,11 @@ export default function AdminUsersPage() {
     // API rejects a self-deactivate either way (see UsersController), so a token that fails to
     // decode - or simply isn't a real JWT - just leaves every row's button showing as normal.
     const [currentUserEmail] = useState(() => getEmailFromToken(localStorage.getItem('token')));
+    // Which row is mid-delete-confirmation, tracked by id the same one-at-a-time way as
+    // pendingActionId above - delete is permanent (unlike the status transitions, which are all
+    // at least nominally reversible), so it gets its own explicit confirm step before the
+    // request goes out at all.
+    const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
 
     useEffect(() => {
         if (role !== 'Admin') {
@@ -192,6 +198,41 @@ export default function AdminUsersPage() {
         }
     };
 
+    // Permanently removes a Student or Teacher account - separate from runAccountAction above
+    // since this hits DELETE, not PATCH, and drops the row outright rather than updating it in
+    // place with whatever the response body comes back as (there isn't one - 204 No Content).
+    const deleteUser = async (user) => {
+        setPendingActionId(user.id);
+        setActionError('');
+        const token = localStorage.getItem('token');
+
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${user.id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (res.status === 401) {
+                clearSession();
+                setViewState('sessionEnded');
+                return;
+            }
+
+            if (!res.ok) {
+                throw new Error(`delete failed with status ${res.status}`);
+            }
+
+            setUsers((current) => current.filter((u) => u.id !== user.id));
+            setTotalCount((count) => Math.max(count - 1, 0));
+            setConfirmingDeleteId(null);
+        } catch {
+            setActionError(ACTION_ERROR_MESSAGES.delete);
+            setConfirmingDeleteId(null);
+        } finally {
+            setPendingActionId(null);
+        }
+    };
+
     return (
         <Layout>
             <section className="py-24 px-6 max-w-6xl mx-auto w-full min-h-[60vh]">
@@ -294,55 +335,92 @@ export default function AdminUsersPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex gap-2">
-                                                {user.status === 'Pending' && (
-                                                    <>
+                                            {confirmingDeleteId === user.id ? (
+                                                <div className="flex flex-col gap-2 min-w-[180px]">
+                                                    <p className="text-xs font-bold text-slate-700">Delete this account? This can't be undone.</p>
+                                                    <div className="flex gap-2">
                                                         <button
                                                             type="button"
-                                                            onClick={() => runAccountAction(user, 'approve')}
+                                                            onClick={() => deleteUser(user)}
+                                                            disabled={pendingActionId === user.id}
+                                                            className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                        >
+                                                            {pendingActionId === user.id ? 'Deleting…' : 'Confirm'}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setConfirmingDeleteId(null)}
+                                                            disabled={pendingActionId === user.id}
+                                                            className="px-3 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex gap-2">
+                                                    {user.status === 'Pending' && (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => runAccountAction(user, 'approve')}
+                                                                disabled={pendingActionId === user.id}
+                                                                className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                            >
+                                                                {pendingActionId === user.id ? 'Working…' : 'Approve'}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => runAccountAction(user, 'reject')}
+                                                                disabled={pendingActionId === user.id}
+                                                                className="px-3 py-1.5 rounded-full text-xs font-bold bg-white border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                            >
+                                                                Reject
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    {user.status === 'Active' && user.email === currentUserEmail && (
+                                                        <span className="px-3 py-1.5 text-xs font-bold text-slate-400" title="You can't deactivate your own account.">
+                                                            You
+                                                        </span>
+                                                    )}
+                                                    {user.status === 'Active' && user.email !== currentUserEmail && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => runAccountAction(user, 'deactivate')}
+                                                            disabled={pendingActionId === user.id}
+                                                            className="px-3 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                        >
+                                                            {pendingActionId === user.id ? 'Working…' : 'Deactivate'}
+                                                        </button>
+                                                    )}
+                                                    {user.status === 'Deactivated' && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => runAccountAction(user, 'reactivate')}
                                                             disabled={pendingActionId === user.id}
                                                             className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
                                                         >
-                                                            {pendingActionId === user.id ? 'Working…' : 'Approve'}
+                                                            {pendingActionId === user.id ? 'Working…' : 'Reactivate'}
                                                         </button>
+                                                    )}
+                                                    {/* Rejected has no status-transition action of its own by design - see
+                                                        AccountStatusTransitions. A rejected applicant re-registers instead;
+                                                        Delete (below) is the only thing left to do with the row itself. */}
+                                                    {(user.role === 'Student' || user.role === 'Teacher') && (
                                                         <button
                                                             type="button"
-                                                            onClick={() => runAccountAction(user, 'reject')}
+                                                            onClick={() => setConfirmingDeleteId(user.id)}
                                                             disabled={pendingActionId === user.id}
-                                                            className="px-3 py-1.5 rounded-full text-xs font-bold bg-white border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                            className="px-3 py-1.5 rounded-full text-xs font-bold bg-white border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
                                                         >
-                                                            Reject
+                                                            Delete
                                                         </button>
-                                                    </>
-                                                )}
-                                                {user.status === 'Active' && user.email === currentUserEmail && (
-                                                    <span className="px-3 py-1.5 text-xs font-bold text-slate-400" title="You can't deactivate your own account.">
-                                                        You
-                                                    </span>
-                                                )}
-                                                {user.status === 'Active' && user.email !== currentUserEmail && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => runAccountAction(user, 'deactivate')}
-                                                        disabled={pendingActionId === user.id}
-                                                        className="px-3 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                                                    >
-                                                        {pendingActionId === user.id ? 'Working…' : 'Deactivate'}
-                                                    </button>
-                                                )}
-                                                {user.status === 'Deactivated' && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => runAccountAction(user, 'reactivate')}
-                                                        disabled={pendingActionId === user.id}
-                                                        className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                                                    >
-                                                        {pendingActionId === user.id ? 'Working…' : 'Reactivate'}
-                                                    </button>
-                                                )}
-                                                {/* Rejected is a dead end by design - see AccountStatusTransitions - so no
-                                                    action renders here. A rejected applicant re-registers instead. */}
-                                            </div>
+                                                    )}
+                                                    {/* Admin rows never get a Delete button - see UsersController.DeleteUser,
+                                                        which rejects Role "Admin" outright regardless of who's asking. */}
+                                                </div>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

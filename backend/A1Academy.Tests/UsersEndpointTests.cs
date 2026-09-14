@@ -6,6 +6,7 @@ using System.Text.Json;
 using A1Academy.API.Data;
 using A1Academy.API.Data.Models;
 using A1Academy.Tests.Fixtures;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -888,6 +889,209 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         var response = await client.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteUser_AsAdmin_RemovesAStudentAccountFromTheDirectory()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var studentEmail = $"deleteme.{suffix}@example.com";
+
+        await SeedUserAsync("Delete", "Admin", $"deleteadmin.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Delete", "Me", studentEmail, "StudentPass1!", "Student");
+
+        var token = await LoginAsync(client, $"deleteadmin.{suffix}@example.com", "AdminPass1!");
+        var studentId = await FindUserIdAsync(client, token, studentEmail);
+
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/users/{studentId}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var directory = await GetUsersAsync(client, token, "?pageSize=1000");
+        Assert.DoesNotContain(directory.Items, u => u.Email == studentEmail);
+    }
+
+    [Fact]
+    public async Task DeleteUser_AsAdmin_RemovesAPendingTeacherAccount()
+    {
+        // Delete isn't limited to Active accounts - a Pending application an Admin never wants
+        // to review can be removed outright instead of only Rejected.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var teacherEmail = $"deletepending.{suffix}@example.com";
+
+        await SeedUserAsync("Delete", "AdminTwo", $"deleteadmin2.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Delete", "PendingTeacher", teacherEmail, "TeacherPass1!", "Teacher", accountStatus: AccountStatus.Pending);
+
+        var token = await LoginAsync(client, $"deleteadmin2.{suffix}@example.com", "AdminPass1!");
+        var teacherId = await FindUserIdAsync(client, token, teacherEmail);
+
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/users/{teacherId}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteUser_RemovesTheirTeacherSubjectsToo()
+    {
+        // TeacherSubject.TeacherId cascades on delete (see AppDbContext) - proven here directly
+        // rather than just trusting the FK config, since an unhandled FK-constraint error would
+        // otherwise surface as a raw 500 instead of a clean 204.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var teacherEmail = $"deletewithSubjects.{suffix}@example.com";
+
+        await SeedUserAsync("Delete", "AdminThree", $"deleteadmin3.{suffix}@example.com", "AdminPass1!", "Admin");
+        var teacherId = await SeedUserWithSubjectAsync(teacherEmail, "TeacherPass1!", $"Chemistry-{suffix}");
+
+        var token = await LoginAsync(client, $"deleteadmin3.{suffix}@example.com", "AdminPass1!");
+
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/users/{teacherId}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.False(await context.TeacherSubjects.AnyAsync(ts => ts.TeacherId == teacherId));
+    }
+
+    [Fact]
+    public async Task DeleteUser_OnAnAdminAccount_ReturnsBadRequestAndLeavesItInPlace()
+    {
+        // Delete is scoped to Student/Teacher only - even another Admin can't remove a fellow
+        // Admin's account through this endpoint.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var targetEmail = $"deletetargetadmin.{suffix}@example.com";
+
+        await SeedUserAsync("Delete", "AdminFour", $"deleteadmin4.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Delete", "TargetAdmin", targetEmail, "AdminPass1!", "Admin");
+
+        var token = await LoginAsync(client, $"deleteadmin4.{suffix}@example.com", "AdminPass1!");
+        var targetId = await FindUserIdAsync(client, token, targetEmail);
+
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/users/{targetId}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var directory = await GetUsersAsync(client, token, "?pageSize=1000");
+        Assert.Contains(directory.Items, u => u.Email == targetEmail);
+    }
+
+    [Fact]
+    public async Task DeleteUser_UnknownId_ReturnsNotFound()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        await SeedUserAsync("Delete", "AdminFive", $"deleteadmin5.{suffix}@example.com", "AdminPass1!", "Admin");
+
+        var token = await LoginAsync(client, $"deleteadmin5.{suffix}@example.com", "AdminPass1!");
+
+        var request = new HttpRequestMessage(HttpMethod.Delete, "/api/users/999999");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteUser_AsNonAdmin_ReturnsForbidden()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var targetEmail = $"deletetarget2.{suffix}@example.com";
+
+        await SeedUserAsync("Delete", "AdminSix", $"deleteadmin6.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Delete", "Target2", targetEmail, "StudentPass1!", "Student");
+        await SeedUserAsync("Sneaky", "StudentFive", $"sneakystudent5.{suffix}@example.com", "StudentPass1!", "Student");
+
+        var adminToken = await LoginAsync(client, $"deleteadmin6.{suffix}@example.com", "AdminPass1!");
+        var targetId = await FindUserIdAsync(client, adminToken, targetEmail);
+
+        var studentToken = await LoginAsync(client, $"sneakystudent5.{suffix}@example.com", "StudentPass1!");
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/users/{targetId}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", studentToken);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+
+        // Never even reached the database - the account is still there.
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.True(await context.Users.AnyAsync(u => u.Email == targetEmail));
+    }
+
+    [Fact]
+    public async Task DeleteUser_Unauthenticated_ReturnsUnauthorized()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.DeleteAsync("/api/users/1");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteUser_TerminatesAnyExistingSessionImmediately()
+    {
+        // The deleted account's own row is gone entirely, not just its status flipped - proven
+        // here the same way DeactivateUser_TerminatesTheirExistingSessionImmediately proves it:
+        // the same still-unexpired token, same endpoint, no re-login, must now fail.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var targetEmail = $"deletesession.{suffix}@example.com";
+        const string targetPassword = "StudentPass1!";
+
+        await SeedUserAsync("Delete", "AdminSeven", $"deleteadmin7.{suffix}@example.com", "AdminPass1!", "Admin");
+        await SeedUserAsync("Delete", "SessionTarget", targetEmail, targetPassword, "Student");
+
+        var targetToken = await LoginAsync(client, targetEmail, targetPassword);
+        var operatorToken = await LoginAsync(client, $"deleteadmin7.{suffix}@example.com", "AdminPass1!");
+        var targetId = await FindUserIdAsync(client, operatorToken, targetEmail);
+
+        var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, $"/api/users/{targetId}");
+        deleteRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", operatorToken);
+        var deleteResponse = await client.SendAsync(deleteRequest);
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+        var afterRequest = new HttpRequestMessage(HttpMethod.Get, "/api/users");
+        afterRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", targetToken);
+        var afterResponse = await client.SendAsync(afterRequest);
+        Assert.Equal(HttpStatusCode.Unauthorized, afterResponse.StatusCode);
+    }
+
+    // Seeds a Teacher plus one TeacherSubject row declared against a freshly seeded Category, for
+    // the cascade-delete test above. Returns the Teacher's id.
+    private async Task<int> SeedUserWithSubjectAsync(string email, string password, string categoryName)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var teacher = new User
+        {
+            FirstName = "Teach",
+            Email = email,
+            Role = "Teacher",
+            AuthProvider = "Local",
+            IsEmailVerified = true,
+            AccountStatus = AccountStatus.Active,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password)
+        };
+        var category = new Category { Name = categoryName, Description = "Seeded for DeleteUser cascade test." };
+        context.Users.Add(teacher);
+        context.Categories.Add(category);
+        await context.SaveChangesAsync();
+        context.TeacherSubjects.Add(new TeacherSubject { TeacherId = teacher.Id, CategoryId = category.Id });
+        await context.SaveChangesAsync();
+        return teacher.Id;
     }
 
     private async Task<int> FindUserIdAsync(HttpClient client, string adminToken, string email)

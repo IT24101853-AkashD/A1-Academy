@@ -370,7 +370,7 @@ describe('AdminUsersPage', () => {
     await waitFor(() => expect(screen.queryByText('Pending Teacher')).not.toBeInTheDocument());
   });
 
-  it('shows Approve and Reject on Pending rows, Deactivate on Active rows, Reactivate on Deactivated rows, and nothing on Rejected', async () => {
+  it('shows Approve and Reject on Pending rows, Deactivate on Active rows, Reactivate on Deactivated rows, and only Delete on Rejected', async () => {
     localStorage.setItem('role', 'Admin');
     localStorage.setItem('token', 'admin-token');
     const allStatuses = [
@@ -393,8 +393,135 @@ describe('AdminUsersPage', () => {
 
     expect(within(screen.getByText('Deactivated Person').closest('tr')).getByRole('button', { name: /^reactivate$/i })).toBeInTheDocument();
 
-    // Rejected is a dead end - no action button on that row at all.
-    expect(within(screen.getByText('Rejected Person').closest('tr')).queryByRole('button')).not.toBeInTheDocument();
+    // Rejected has no status-transition action of its own - Delete is the only thing left to do
+    // with the row itself.
+    const rejectedRow = screen.getByText('Rejected Person').closest('tr');
+    expect(within(rejectedRow).queryByRole('button', { name: /^(approve|reject|deactivate|reactivate)$/i })).not.toBeInTheDocument();
+    expect(within(rejectedRow).getByRole('button', { name: /^delete$/i })).toBeInTheDocument();
+  });
+
+  it('shows Delete on every Student/Teacher row regardless of status, but never on an Admin row', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse(mockUsers)) })
+    );
+
+    renderPage();
+    await screen.findByText('Admin One');
+
+    expect(within(screen.getByText('John Doe').closest('tr')).getByRole('button', { name: /^delete$/i })).toBeInTheDocument();
+    expect(within(screen.getByText('Jane Smith').closest('tr')).getByRole('button', { name: /^delete$/i })).toBeInTheDocument();
+    // mockUsers' Admin One is an Admin row - matches UsersController.DeleteUser's own
+    // Student/Teacher-only rule, so no Delete button should ever appear here.
+    expect(within(screen.getByText('Admin One').closest('tr')).queryByRole('button', { name: /^delete$/i })).not.toBeInTheDocument();
+  });
+
+  it('clicking Delete asks for confirmation before sending the DELETE request', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse(mockUsers)) })
+    );
+
+    renderPage();
+    await screen.findByText('John Doe');
+
+    const row = screen.getByText('John Doe').closest('tr');
+    fireEvent.click(within(row).getByRole('button', { name: /^delete$/i }));
+
+    expect(within(row).getByText(/delete this account/i)).toBeInTheDocument();
+    // No DELETE was ever sent - only the initial GET.
+    expect(global.fetch.mock.calls.some(([, options]) => options?.method === 'DELETE')).toBe(false);
+  });
+
+  it('clicking Cancel on the delete confirmation leaves the account untouched', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse(mockUsers)) })
+    );
+
+    renderPage();
+    await screen.findByText('John Doe');
+
+    const row = screen.getByText('John Doe').closest('tr');
+    fireEvent.click(within(row).getByRole('button', { name: /^delete$/i }));
+    fireEvent.click(within(row).getByRole('button', { name: /^cancel$/i }));
+
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
+    expect(within(row).getByRole('button', { name: /^delete$/i })).toBeInTheDocument();
+    expect(global.fetch.mock.calls.some(([, options]) => options?.method === 'DELETE')).toBe(false);
+  });
+
+  it('confirming Delete sends the DELETE request and removes the row entirely', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'DELETE') {
+        return Promise.resolve({ ok: true, status: 204 });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse(mockUsers)) });
+    });
+
+    renderPage();
+    await screen.findByText('John Doe');
+
+    const row = screen.getByText('John Doe').closest('tr');
+    fireEvent.click(within(row).getByRole('button', { name: /^delete$/i }));
+    fireEvent.click(within(row).getByRole('button', { name: /^confirm$/i }));
+
+    await waitFor(() => expect(screen.queryByText('John Doe')).not.toBeInTheDocument());
+    // Untouched rows are still there.
+    expect(screen.getByText('Jane Smith')).toBeInTheDocument();
+
+    const deleteCall = global.fetch.mock.calls.find(([, options]) => options?.method === 'DELETE');
+    expect(deleteCall[0]).toContain('/api/users/1');
+    expect(deleteCall[1].headers.Authorization).toBe('Bearer admin-token');
+  });
+
+  it('shows an error message and keeps the row if the delete request fails', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'DELETE') {
+        return Promise.resolve({ ok: false, status: 400 });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse(mockUsers)) });
+    });
+
+    renderPage();
+    await screen.findByText('John Doe');
+
+    const row = screen.getByText('John Doe').closest('tr');
+    fireEvent.click(within(row).getByRole('button', { name: /^delete$/i }));
+    fireEvent.click(within(row).getByRole('button', { name: /^confirm$/i }));
+
+    expect(await screen.findByText(/could not delete/i)).toBeInTheDocument();
+    // Still there, confirmation closed back to the normal row so the admin can retry.
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
+    expect(within(row).getByRole('button', { name: /^delete$/i })).toBeInTheDocument();
+  });
+
+  it('shows Session Ended if the delete request comes back 401', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'about-to-die-token');
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'DELETE') {
+        return Promise.resolve({ ok: false, status: 401 });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse(mockUsers)) });
+    });
+
+    renderPage();
+    await screen.findByText('John Doe');
+
+    const row = screen.getByText('John Doe').closest('tr');
+    fireEvent.click(within(row).getByRole('button', { name: /^delete$/i }));
+    fireEvent.click(within(row).getByRole('button', { name: /^confirm$/i }));
+
+    expect(await screen.findByText(/session ended/i)).toBeInTheDocument();
+    expect(localStorage.getItem('token')).toBeNull();
   });
 
   it('clicking Reject calls the reject endpoint and flips the row to Rejected', async () => {

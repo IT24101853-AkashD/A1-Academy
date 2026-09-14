@@ -142,6 +142,36 @@ namespace A1Academy.API.Controllers
         public Task<ActionResult<UserSummary>> ReactivateUser(int id) =>
             ApplyTransitionAsync(id, AccountStatusTransitions.Reactivate);
 
+        // Permanently removes a Student or Teacher account. Unlike Deactivate - which just
+        // switches login off and is meant to be reversible via Reactivate - this deletes the row
+        // outright, so there's nothing left to undo. Deliberately scoped to Student/Teacher only:
+        // an Admin account is never a valid target here, whether it's someone else's (removing an
+        // Admin is a decision this directory doesn't make unilaterally) or the caller's own
+        // (already structurally impossible - nobody signed in as an Admin has Role "Student" or
+        // "Teacher" on their own row, so no separate self-check is needed the way the status
+        // transitions above require one). TeacherSubject/TeacherSubjectRequest rows cascade-delete
+        // automatically (see AppDbContext), so a Teacher's declared subjects and any pending
+        // "Other" request are removed with them instead of being left orphaned.
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found." });
+            }
+
+            if (user.Role != "Student" && user.Role != "Teacher")
+            {
+                return BadRequest(new { message = "Only Student and Teacher accounts can be deleted." });
+            }
+
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
         // Shared by all four actions above - looks up the account, asks the state machine
         // whether the move is legal from wherever the account currently is, and only touches
         // the database if it is. AccountStatusTransitions is what actually decides what's valid;
