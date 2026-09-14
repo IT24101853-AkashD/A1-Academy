@@ -1,365 +1,546 @@
-import React, { useEffect, useState } from 'react';
-import Layout from '../components/Layout';
-import Pagination from '../components/Pagination';
-import UserFilters from '../components/UserFilters';
-import { clearSession } from '../utils/session';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import AdminUsersPage from '../AdminUsersPage';
 
-const STATUS_STYLES = {
-    Active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    Pending: 'bg-amber-50 text-amber-700 border-amber-200',
-    Rejected: 'bg-red-50 text-red-700 border-red-200',
-    Deactivated: 'bg-slate-100 text-slate-600 border-slate-200',
-};
+const renderPage = () => render(
+  <MemoryRouter>
+    <AdminUsersPage />
+  </MemoryRouter>
+);
 
-// What the account status API errors would call "not a valid action from here" messages, kept
-// friendly per action instead of surfacing the raw status code to whoever's clicking the button.
-const ACTION_ERROR_MESSAGES = {
-    approve: 'Could not approve this teacher. Please try again.',
-    reject: 'Could not reject this application. Please try again.',
-    deactivate: 'Could not deactivate this account. Please try again.',
-    reactivate: 'Could not reactivate this account. Please try again.',
-};
+const mockUsers = [
+  { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Student', status: 'Active' },
+  { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'Teacher', status: 'Active' },
+  { id: 3, name: 'Admin One', email: 'admin@example.com', role: 'Admin', status: 'Active' },
+];
 
-const PAGE_SIZE = 10;
+// Shape returned by GET /api/users?page=&pageSize= once pagination was added server-side.
+const pagedResponse = (items, overrides = {}) => ({
+  items,
+  page: 1,
+  pageSize: 10,
+  totalCount: items.length,
+  totalPages: 1,
+  ...overrides,
+});
 
-// The JWT's own payload already carries the caller's email (see AuthController.Login, which
-// puts ClaimTypes.Email on every token) - decoded client-side here rather than fetched from
-// /api/auth/me, purely so "whose row is this admin's own" doesn't cost a second network request.
-// Never trusted for anything security-sensitive; the server independently rejects a self-action
-// regardless of what this returns.
-function getEmailFromToken(token) {
-    if (!token) return null;
-    try {
-        const payloadSegment = token.split('.')[1];
-        if (!payloadSegment) return null;
-        const base64 = payloadSegment.replace(/-/g, '+').replace(/_/g, '/');
-        const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
-        const claims = JSON.parse(atob(padded));
-        return claims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || claims.email || null;
-    } catch {
-        return null;
-    }
-}
+describe('AdminUsersPage', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
 
-export default function AdminUsersPage() {
-    // Client-side gate is a UX nicety only - GET /api/users is protected server-side by
-    // [Authorize(Roles = "Admin")], so a Student/Teacher (or a tampered localStorage value)
-    // gets a real 403 from the API regardless of what this component decides to render.
-    const [role] = useState(() => localStorage.getItem('role'));
-    const [users, setUsers] = useState([]);
-    const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(0);
-    const [totalCount, setTotalCount] = useState(0);
-    const [viewState, setViewState] = useState('idle'); // idle | loading | success | denied | sessionEnded | error
-    const [roleFilter, setRoleFilter] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
-    const [errorMessage, setErrorMessage] = useState('');
-    // Tracks which row has an account-action (approve/reject/deactivate/reactivate) mid-request,
-    // so we can disable just that one button instead of freezing the whole table.
-    const [pendingActionId, setPendingActionId] = useState(null);
-    const [actionError, setActionError] = useState('');
-    // Whose row is "you" - read straight out of the JWT already sitting in localStorage (see
-    // getEmailFromToken below) rather than a separate /api/auth/me round trip, so this doesn't
-    // add another fetch for the directory-loading effect below to race against. Purely a UX
-    // nicety: the Deactivate button just won't be offered on the signed-in Admin's own row. The
-    // API rejects a self-deactivate either way (see UsersController), so a token that fails to
-    // decode - or simply isn't a real JWT - just leaves every row's button showing as normal.
-    const [currentUserEmail] = useState(() => getEmailFromToken(localStorage.getItem('token')));
+  it('shows Access Denied and never calls the API for a Student', async () => {
+    localStorage.setItem('role', 'Student');
+    localStorage.setItem('token', 'student-token');
+    global.fetch = vi.fn();
 
-    useEffect(() => {
-        if (role !== 'Admin') {
-            setViewState('denied');
-            return;
-        }
+    renderPage();
 
-        const token = localStorage.getItem('token');
-        setViewState('loading');
+    expect(await screen.findByText(/access denied/i)).toBeInTheDocument();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
 
-        const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
-        if (roleFilter) params.set('role', roleFilter);
-        if (statusFilter) params.set('status', statusFilter);
+  it('shows Access Denied and never calls the API for a Teacher', async () => {
+    localStorage.setItem('role', 'Teacher');
+    localStorage.setItem('token', 'teacher-token');
+    global.fetch = vi.fn();
 
-        fetch(`${import.meta.env.VITE_API_URL}/api/users?${params.toString()}`, {
-            headers: { Authorization: `Bearer ${token}` },
-        })
-            .then(async (res) => {
-                // 401 means this specific token is dead - expired, or the account behind it was
-                // deactivated/otherwise changed status since it was issued (see Program.cs's
-                // OnTokenValidated). That's different from 403 (a real Admin session, just not
-                // allowed here): the token itself is no good, so the stale role/token shouldn't
-                // keep telling the rest of the app (e.g. the Navbar) that this browser is still
-                // signed in.
-                if (res.status === 401) {
-                    clearSession();
-                    setViewState('sessionEnded');
-                    return null;
-                }
-                if (res.status === 403) {
-                    setViewState('denied');
-                    return null;
-                }
-                if (!res.ok) {
-                    throw new Error(`Request failed with status ${res.status}`);
-                }
-                return res.json();
-            })
-            .then((data) => {
-                if (data) {
-                    setUsers(data.items ?? []);
-                    setTotalPages(data.totalPages ?? 0);
-                    setTotalCount(data.totalCount ?? 0);
-                    setViewState('success');
-                }
-            })
-            .catch((err) => {
-                setErrorMessage(err.message || 'Server connection error.');
-                setViewState('error');
-            });
-    }, [role, page, roleFilter, statusFilter]);
+    renderPage();
 
-    // Any filter change invalidates the current page number - jumping straight to a filtered
-    // set's page 4 when it might only have 1 page now would just show an empty table.
-    const applyRoleFilter = (value) => {
-        setPage(1);
-        setRoleFilter(value);
-    };
+    expect(await screen.findByText(/access denied/i)).toBeInTheDocument();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
 
-    const applyStatusFilter = (value) => {
-        setPage(1);
-        setStatusFilter(value);
-    };
+  it('shows Access Denied with no token/role at all (logged out)', async () => {
+    global.fetch = vi.fn();
 
-    const showPendingTeachers = () => {
-        setPage(1);
-        setRoleFilter('Teacher');
-        setStatusFilter('Pending');
-    };
+    renderPage();
 
-    const clearFilters = () => {
-        setPage(1);
-        setRoleFilter('');
-        setStatusFilter('');
-    };
+    expect(await screen.findByText(/access denied/i)).toBeInTheDocument();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
 
-    // Runs one of the account actions (approve/reject/deactivate/reactivate) against a single
-    // row. All four work the same way on the frontend - hit PATCH /api/users/{id}/{action} and
-    // either update the row in place or drop it from view, depending on whether it still
-    // matches whatever status filter the admin currently has selected.
-    const runAccountAction = async (user, action) => {
-        setPendingActionId(user.id);
-        setActionError('');
-        const token = localStorage.getItem('token');
-
-        try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${user.id}/${action}`, {
-                method: 'PATCH',
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            // The admin's own session can die mid-use too - e.g. a second Admin deactivates them
-            // in another tab while this page is still open. That's not "this action failed",
-            // it's "you're not signed in anymore", so it gets the same full-page Session Ended
-            // state as the initial load rather than a per-row error message.
-            if (res.status === 401) {
-                clearSession();
-                setViewState('sessionEnded');
-                return;
-            }
-
-            if (!res.ok) {
-                throw new Error(`${action} failed with status ${res.status}`);
-            }
-
-            const updated = await res.json();
-            // If a status filter is active and the account's new status no longer matches it,
-            // the row doesn't belong on screen anymore - e.g. approving out of a "Pending" view.
-            const dropsOutOfView = Boolean(statusFilter) && updated.status !== statusFilter;
-
-            setUsers((current) =>
-                dropsOutOfView
-                    ? current.filter((u) => u.id !== user.id)
-                    : current.map((u) => (u.id === user.id ? updated : u))
-            );
-            if (dropsOutOfView) {
-                setTotalCount((count) => Math.max(count - 1, 0));
-            }
-        } catch {
-            // Whatever went wrong (network blip, 4xx/5xx), the admin doesn't need the raw
-            // status code - just a plain "it didn't work, try again" message.
-            setActionError(ACTION_ERROR_MESSAGES[action] || 'That action could not be completed. Please try again.');
-        } finally {
-            setPendingActionId(null);
-        }
-    };
-
-    return (
-        <Layout>
-            <section className="py-24 px-6 max-w-6xl mx-auto w-full min-h-[60vh]">
-                <div className="mb-10 text-center">
-                    <div className="inline-block mb-4 px-5 py-2 rounded-full bg-white/80 backdrop-blur-md text-slate-600 text-sm font-bold tracking-widest uppercase shadow-sm border border-slate-200">
-                        Administrator
-                    </div>
-                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-3">User Directory</h1>
-                    <p className="text-lg font-medium text-slate-500">All registered students, teachers, and administrators on the platform.</p>
-                </div>
-
-                {viewState === 'denied' && (
-                    <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-[32px] text-red-500">block</span>
-                        </div>
-                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h2>
-                        <p className="text-base font-medium text-slate-500">
-                            The User Directory is restricted to Administrators. Sign in with an Administrator account to view it.
-                        </p>
-                    </div>
-                )}
-
-                {viewState === 'sessionEnded' && (
-                    <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-[32px] text-amber-500">lock_clock</span>
-                        </div>
-                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Session Ended</h2>
-                        <p className="text-base font-medium text-slate-500 mb-6">
-                            You've been signed out - this can happen if your account's status changed. Please sign in again to continue.
-                        </p>
-                        <a
-                            href="/"
-                            className="inline-block px-6 py-3 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 transition-colors"
-                        >
-                            Back to Home
-                        </a>
-                    </div>
-                )}
-
-                {(viewState === 'loading' || viewState === 'error' || viewState === 'success') && (
-                    <UserFilters
-                        role={roleFilter}
-                        status={statusFilter}
-                        onRoleChange={applyRoleFilter}
-                        onStatusChange={applyStatusFilter}
-                        onShowPendingTeachers={showPendingTeachers}
-                        onClear={clearFilters}
-                    />
-                )}
-
-                {viewState === 'loading' && (
-                    <div className="text-center py-20">
-                        <span className="material-symbols-outlined text-[40px] text-slate-400 animate-spin">progress_activity</span>
-                    </div>
-                )}
-
-                {viewState === 'error' && (
-                    <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
-                        <p className="text-base font-bold text-red-500">{errorMessage}</p>
-                    </div>
-                )}
-
-                {viewState === 'success' && (
-                    <div className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 overflow-hidden">
-                        {actionError && (
-                            <div className="px-6 py-3 bg-red-50 border-b border-red-100 text-sm font-bold text-red-600">
-                                {actionError}
-                            </div>
-                        )}
-                        <table className="w-full text-left">
-                            <thead className="bg-slate-50 border-b border-slate-100">
-                                <tr>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Name</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Email</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Role</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Status</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {users.length === 0 && (
-                                    <tr>
-                                        <td colSpan={5} className="px-6 py-10 text-center text-slate-500 font-medium">
-                                            {roleFilter || statusFilter
-                                                ? 'No users match the current filter.'
-                                                : 'No registered users yet.'}
-                                        </td>
-                                    </tr>
-                                )}
-                                {users.map((user) => (
-                                    <tr key={user.email} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-6 py-4 font-bold text-slate-900">{user.name}</td>
-                                        <td className="px-6 py-4 text-slate-600">{user.email}</td>
-                                        <td className="px-6 py-4 text-slate-600">{user.role}</td>
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${STATUS_STYLES[user.status] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
-                                                {user.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex gap-2">
-                                                {user.status === 'Pending' && (
-                                                    <>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => runAccountAction(user, 'approve')}
-                                                            disabled={pendingActionId === user.id}
-                                                            className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                                                        >
-                                                            {pendingActionId === user.id ? 'Working…' : 'Approve'}
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => runAccountAction(user, 'reject')}
-                                                            disabled={pendingActionId === user.id}
-                                                            className="px-3 py-1.5 rounded-full text-xs font-bold bg-white border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                                                        >
-                                                            Reject
-                                                        </button>
-                                                    </>
-                                                )}
-                                                {user.status === 'Active' && user.email === currentUserEmail && (
-                                                    <span className="px-3 py-1.5 text-xs font-bold text-slate-400" title="You can't deactivate your own account.">
-                                                        You
-                                                    </span>
-                                                )}
-                                                {user.status === 'Active' && user.email !== currentUserEmail && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => runAccountAction(user, 'deactivate')}
-                                                        disabled={pendingActionId === user.id}
-                                                        className="px-3 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                                                    >
-                                                        {pendingActionId === user.id ? 'Working…' : 'Deactivate'}
-                                                    </button>
-                                                )}
-                                                {user.status === 'Deactivated' && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => runAccountAction(user, 'reactivate')}
-                                                        disabled={pendingActionId === user.id}
-                                                        className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                                                    >
-                                                        {pendingActionId === user.id ? 'Working…' : 'Reactivate'}
-                                                    </button>
-                                                )}
-                                                {/* Rejected is a dead end by design - see AccountStatusTransitions - so no
-                                                    action renders here. A rejected applicant re-registers instead. */}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        {totalCount > 0 && (
-                            <div className="px-6 py-4 border-t border-slate-100 flex flex-col items-center gap-1">
-                                <p className="text-sm font-medium text-slate-500">
-                                    Showing page {page} of {totalPages} &middot; {totalCount} total users
-                                </p>
-                                <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-                            </div>
-                        )}
-                    </div>
-                )}
-            </section>
-        </Layout>
+  it('fetches and renders the directory table for an Admin', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(pagedResponse(mockUsers)),
+      })
     );
-}
+
+    renderPage();
+
+    expect(await screen.findByText('John Doe')).toBeInTheDocument();
+    expect(screen.getByText('jane@example.com')).toBeInTheDocument();
+    expect(screen.getByText('Admin One')).toBeInTheDocument();
+    // Scoped to the table: the role/status filter dropdowns also render an "Active" option.
+    expect(within(screen.getByRole('table')).getAllByText('Active')).toHaveLength(3);
+
+    // Called with an Authorization header carrying the admin's token.
+    const [url, options] = global.fetch.mock.calls[0];
+    expect(options.headers.Authorization).toBe('Bearer admin-token');
+    // Requests page 1 by default.
+    expect(url).toContain('page=1');
+  });
+
+  it('falls back to Access Denied if the backend itself rejects the request (403)', async () => {
+    // Covers a tampered/stale localStorage role: the UI trusts localStorage optimistically,
+    // but the server-side check in UsersController is what actually decides access.
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'not-really-an-admin-token');
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: false, status: 403 })
+    );
+
+    renderPage();
+
+    expect(await screen.findByText(/access denied/i)).toBeInTheDocument();
+  });
+
+  it('shows Session Ended and clears localStorage when the directory request comes back 401', async () => {
+    // Distinct from the 403 case above: 401 means this specific token is dead (e.g. the account
+    // behind it was deactivated after the token was issued), not just "wrong role for this page".
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'now-dead-token');
+    global.fetch = vi.fn(() => Promise.resolve({ ok: false, status: 401 }));
+
+    renderPage();
+
+    expect(await screen.findByText(/session ended/i)).toBeInTheDocument();
+    expect(screen.queryByText(/access denied/i)).not.toBeInTheDocument();
+    expect(localStorage.getItem('token')).toBeNull();
+    expect(localStorage.getItem('role')).toBeNull();
+  });
+
+  it('shows Session Ended and clears localStorage when an account action comes back 401 mid-session', async () => {
+    // Covers a second Admin deactivating this one while their directory page is still open -
+    // the next action they take should look like "you're signed out", not "that action failed".
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'about-to-die-token');
+    const activeStudent = { id: 30, name: 'Mid Session', email: 'midsession@example.com', role: 'Student', status: 'Active' };
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: false, status: 401 });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse([activeStudent])) });
+    });
+
+    renderPage();
+    await screen.findByText('Mid Session');
+
+    fireEvent.click(screen.getByRole('button', { name: /^deactivate$/i }));
+
+    expect(await screen.findByText(/session ended/i)).toBeInTheDocument();
+    expect(localStorage.getItem('token')).toBeNull();
+    expect(localStorage.getItem('role')).toBeNull();
+  });
+
+  it('does not render pagination controls when everything fits on one page', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(pagedResponse(mockUsers, { totalPages: 1 })),
+      })
+    );
+
+    renderPage();
+
+    await screen.findByText('John Doe');
+    expect(screen.queryByRole('navigation', { name: /pagination/i })).not.toBeInTheDocument();
+  });
+
+  it('renders page numbers and Next/Previous controls, and fetches the next page on click', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn((url) => {
+      const isPageTwo = url.includes('page=2');
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve(
+            pagedResponse(isPageTwo ? [mockUsers[2]] : mockUsers.slice(0, 2), {
+              page: isPageTwo ? 2 : 1,
+              pageSize: 2,
+              totalCount: 3,
+              totalPages: 2,
+            })
+          ),
+      });
+    });
+
+    renderPage();
+
+    await screen.findByText('John Doe');
+    expect(screen.getByText(/showing page 1 of 2/i)).toBeInTheDocument();
+
+    const nextButton = screen.getByRole('button', { name: /^next$/i });
+    const previousButton = screen.getByRole('button', { name: /^previous$/i });
+    expect(previousButton).toBeDisabled();
+    expect(nextButton).not.toBeDisabled();
+
+    fireEvent.click(nextButton);
+
+    await waitFor(() => expect(screen.getByText(/showing page 2 of 2/i)).toBeInTheDocument());
+    expect(screen.getByText('Admin One')).toBeInTheDocument();
+    expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
+
+    // Second call requested page 2.
+    const secondCallUrl = global.fetch.mock.calls[1][0];
+    expect(secondCallUrl).toContain('page=2');
+  });
+
+  it('the Pending Teacher Applications button requests role=Teacher&status=Pending', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const pendingTeacher = { name: 'Pending Teacher', email: 'pending@example.com', role: 'Teacher', status: 'Pending' };
+    global.fetch = vi.fn((url) => {
+      const isFiltered = url.includes('role=Teacher') && url.includes('status=Pending');
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(pagedResponse(isFiltered ? [pendingTeacher] : mockUsers)),
+      });
+    });
+
+    renderPage();
+    await screen.findByText('John Doe');
+
+    fireEvent.click(screen.getByRole('button', { name: /pending teacher applications/i }));
+
+    await waitFor(() => expect(screen.getByText('Pending Teacher')).toBeInTheDocument());
+    expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
+
+    const filteredCallUrl = global.fetch.mock.calls[1][0];
+    expect(filteredCallUrl).toContain('role=Teacher');
+    expect(filteredCallUrl).toContain('status=Pending');
+    // A filter change resets back to page 1.
+    expect(filteredCallUrl).toContain('page=1');
+  });
+
+  it('selecting a role/status from the dropdowns refetches with those query params', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse(mockUsers)) })
+    );
+
+    renderPage();
+    await screen.findByText('John Doe');
+
+    fireEvent.change(screen.getByLabelText(/filter by role/i), { target: { value: 'Teacher' } });
+    await waitFor(() => expect(global.fetch.mock.calls[1][0]).toContain('role=Teacher'));
+
+    fireEvent.change(screen.getByLabelText(/filter by status/i), { target: { value: 'Active' } });
+    await waitFor(() => {
+      const lastCallUrl = global.fetch.mock.calls.at(-1)[0];
+      expect(lastCallUrl).toContain('role=Teacher');
+      expect(lastCallUrl).toContain('status=Active');
+    });
+  });
+
+  it('Clear filters resets both filters and refetches unfiltered', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse(mockUsers)) })
+    );
+
+    renderPage();
+    await screen.findByText('John Doe');
+
+    fireEvent.click(screen.getByRole('button', { name: /pending teacher applications/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /clear filters/i })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /clear filters/i }));
+
+    await waitFor(() => {
+      const lastCallUrl = global.fetch.mock.calls.at(-1)[0];
+      expect(lastCallUrl).not.toContain('role=');
+      expect(lastCallUrl).not.toContain('status=');
+    });
+    expect(screen.queryByRole('button', { name: /clear filters/i })).not.toBeInTheDocument();
+  });
+
+  it('shows an Approve button only for Pending rows', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const pendingTeacher = { id: 4, name: 'Pending Teacher', email: 'pending@example.com', role: 'Teacher', status: 'Pending' };
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse([...mockUsers, pendingTeacher])) })
+    );
+
+    renderPage();
+    await screen.findByText('Pending Teacher');
+
+    // Only one row is Pending, so there should be exactly one Approve button.
+    expect(screen.getAllByRole('button', { name: /^approve$/i })).toHaveLength(1);
+  });
+
+  it('clicking Approve calls the approve endpoint and flips the row to Active', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const pendingTeacher = { id: 4, name: 'Pending Teacher', email: 'pending@example.com', role: 'Teacher', status: 'Pending' };
+    const approvedTeacher = { ...pendingTeacher, status: 'Active' };
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(approvedTeacher) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse([...mockUsers, pendingTeacher])) });
+    });
+
+    renderPage();
+    await screen.findByText('Pending Teacher');
+
+    fireEvent.click(screen.getByRole('button', { name: /^approve$/i }));
+
+    await waitFor(() => expect(screen.queryByRole('button', { name: /^approve$/i })).not.toBeInTheDocument());
+
+    // Hit the right endpoint with PATCH and the admin's auth header.
+    const patchCall = global.fetch.mock.calls.find(([, options]) => options?.method === 'PATCH');
+    expect(patchCall[0]).toContain('/api/users/4/approve');
+    expect(patchCall[1].headers.Authorization).toBe('Bearer admin-token');
+
+    // Row now shows Active instead of Pending, still no Approve button on it.
+    const row = screen.getByText('Pending Teacher').closest('tr');
+    expect(within(row).getByText('Active')).toBeInTheDocument();
+  });
+
+  it('shows an error message and re-enables Approve if the approval request fails', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const pendingTeacher = { id: 4, name: 'Pending Teacher', email: 'pending@example.com', role: 'Teacher', status: 'Pending' };
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: false, status: 500 });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse([...mockUsers, pendingTeacher])) });
+    });
+
+    renderPage();
+    await screen.findByText('Pending Teacher');
+
+    fireEvent.click(screen.getByRole('button', { name: /^approve$/i }));
+
+    expect(await screen.findByText(/could not approve/i)).toBeInTheDocument();
+    // Still Pending, button back to normal so the admin can retry.
+    expect(screen.getByRole('button', { name: /^approve$/i })).not.toBeDisabled();
+  });
+
+  it('removes the row entirely when approving from the Pending-only filtered view', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const pendingTeacher = { id: 4, name: 'Pending Teacher', email: 'pending@example.com', role: 'Teacher', status: 'Pending' };
+    const approvedTeacher = { ...pendingTeacher, status: 'Active' };
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(approvedTeacher) });
+      }
+      const isPendingFilter = url.includes('role=Teacher') && url.includes('status=Pending');
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(pagedResponse(isPendingFilter ? [pendingTeacher] : mockUsers)),
+      });
+    });
+
+    renderPage();
+    await screen.findByText('John Doe');
+
+    // Switch to the Pending Teacher Applications view first.
+    fireEvent.click(screen.getByRole('button', { name: /pending teacher applications/i }));
+    await screen.findByText('Pending Teacher');
+
+    fireEvent.click(screen.getByRole('button', { name: /^approve$/i }));
+
+    // Once approved it no longer belongs in a status=Pending view, so the row disappears
+    // instead of just flipping its badge.
+    await waitFor(() => expect(screen.queryByText('Pending Teacher')).not.toBeInTheDocument());
+  });
+
+  it('shows Approve and Reject on Pending rows, Deactivate on Active rows, Reactivate on Deactivated rows, and nothing on Rejected', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const allStatuses = [
+      { id: 10, name: 'Pending Person', email: 'pendingperson@example.com', role: 'Teacher', status: 'Pending' },
+      { id: 11, name: 'Active Person', email: 'activeperson@example.com', role: 'Student', status: 'Active' },
+      { id: 12, name: 'Deactivated Person', email: 'deactivatedperson@example.com', role: 'Student', status: 'Deactivated' },
+      { id: 13, name: 'Rejected Person', email: 'rejectedperson@example.com', role: 'Teacher', status: 'Rejected' },
+    ];
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse(allStatuses)) })
+    );
+
+    renderPage();
+    await screen.findByText('Pending Person');
+
+    expect(within(screen.getByText('Pending Person').closest('tr')).getByRole('button', { name: /^approve$/i })).toBeInTheDocument();
+    expect(within(screen.getByText('Pending Person').closest('tr')).getByRole('button', { name: /^reject$/i })).toBeInTheDocument();
+
+    expect(within(screen.getByText('Active Person').closest('tr')).getByRole('button', { name: /^deactivate$/i })).toBeInTheDocument();
+
+    expect(within(screen.getByText('Deactivated Person').closest('tr')).getByRole('button', { name: /^reactivate$/i })).toBeInTheDocument();
+
+    // Rejected is a dead end - no action button on that row at all.
+    expect(within(screen.getByText('Rejected Person').closest('tr')).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('clicking Reject calls the reject endpoint and flips the row to Rejected', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const pendingTeacher = { id: 20, name: 'Turned Down', email: 'turneddown@example.com', role: 'Teacher', status: 'Pending' };
+    const rejectedTeacher = { ...pendingTeacher, status: 'Rejected' };
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(rejectedTeacher) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse([pendingTeacher])) });
+    });
+
+    renderPage();
+    await screen.findByText('Turned Down');
+
+    fireEvent.click(screen.getByRole('button', { name: /^reject$/i }));
+
+    await waitFor(() => {
+      const row = screen.getByText('Turned Down').closest('tr');
+      expect(within(row).getByText('Rejected')).toBeInTheDocument();
+    });
+
+    const patchCall = global.fetch.mock.calls.find(([, options]) => options?.method === 'PATCH');
+    expect(patchCall[0]).toContain('/api/users/20/reject');
+  });
+
+  it('clicking Deactivate calls the deactivate endpoint and flips the row to Deactivated', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const activeStudent = { id: 21, name: 'Switch Off', email: 'switchoff@example.com', role: 'Student', status: 'Active' };
+    const deactivatedStudent = { ...activeStudent, status: 'Deactivated' };
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(deactivatedStudent) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse([activeStudent])) });
+    });
+
+    renderPage();
+    await screen.findByText('Switch Off');
+
+    fireEvent.click(screen.getByRole('button', { name: /^deactivate$/i }));
+
+    await waitFor(() => {
+      const row = screen.getByText('Switch Off').closest('tr');
+      expect(within(row).getByText('Deactivated')).toBeInTheDocument();
+      expect(within(row).getByRole('button', { name: /^reactivate$/i })).toBeInTheDocument();
+    });
+
+    const patchCall = global.fetch.mock.calls.find(([, options]) => options?.method === 'PATCH');
+    expect(patchCall[0]).toContain('/api/users/21/deactivate');
+  });
+
+  it('clicking Reactivate calls the reactivate endpoint and flips the row back to Active', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const deactivatedStudent = { id: 22, name: 'Switch Back On', email: 'switchbackon@example.com', role: 'Student', status: 'Deactivated' };
+    const activeStudent = { ...deactivatedStudent, status: 'Active' };
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(activeStudent) });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse([deactivatedStudent])) });
+    });
+
+    renderPage();
+    await screen.findByText('Switch Back On');
+
+    fireEvent.click(screen.getByRole('button', { name: /^reactivate$/i }));
+
+    await waitFor(() => {
+      const row = screen.getByText('Switch Back On').closest('tr');
+      expect(within(row).getByText('Active')).toBeInTheDocument();
+      expect(within(row).getByRole('button', { name: /^deactivate$/i })).toBeInTheDocument();
+    });
+
+    const patchCall = global.fetch.mock.calls.find(([, options]) => options?.method === 'PATCH');
+    expect(patchCall[0]).toContain('/api/users/22/reactivate');
+  });
+
+  // A minimal, unsigned JWT with just the payload segment this page actually reads - enough to
+  // exercise getEmailFromToken's real base64url decoding without a real signing key.
+  const fakeJwt = (email) => {
+    const payload = { 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress': email };
+    const base64url = btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return `header.${base64url}.signature`;
+  };
+
+  it('hides the Deactivate button on the signed-in admin\'s own row, but shows it for everyone else', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', fakeJwt('admin@example.com'));
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse(mockUsers)) })
+    );
+
+    renderPage();
+    await screen.findByText('Admin One');
+
+    // mockUsers' Admin One is admin@example.com - the token's own email.
+    const ownRow = screen.getByText('Admin One').closest('tr');
+    expect(within(ownRow).queryByRole('button', { name: /^deactivate$/i })).not.toBeInTheDocument();
+    expect(within(ownRow).getByText('You')).toBeInTheDocument();
+
+    // Everyone else's Active row still gets a real Deactivate button.
+    const otherRow = screen.getByText('John Doe').closest('tr');
+    expect(within(otherRow).getByRole('button', { name: /^deactivate$/i })).toBeInTheDocument();
+  });
+
+  it('shows Deactivate on every row when the token cannot be decoded (not a real JWT)', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse(mockUsers)) })
+    );
+
+    renderPage();
+    await screen.findByText('Admin One');
+
+    const adminRow = screen.getByText('Admin One').closest('tr');
+    expect(within(adminRow).getByRole('button', { name: /^deactivate$/i })).toBeInTheDocument();
+  });
+
+  it('shows a deactivate-specific error message if the deactivate request fails', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    const activeStudent = { id: 23, name: 'Wont Switch Off', email: 'wontswitchoff@example.com', role: 'Student', status: 'Active' };
+
+    global.fetch = vi.fn((url, options) => {
+      if (options?.method === 'PATCH') {
+        return Promise.resolve({ ok: false, status: 400 });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse([activeStudent])) });
+    });
+
+    renderPage();
+    await screen.findByText('Wont Switch Off');
+
+    fireEvent.click(screen.getByRole('button', { name: /^deactivate$/i }));
+
+    expect(await screen.findByText(/could not deactivate/i)).toBeInTheDocument();
+    // Still Active, button back to normal so the admin can retry.
+    expect(screen.getByRole('button', { name: /^deactivate$/i })).not.toBeDisabled();
+  });
+});
