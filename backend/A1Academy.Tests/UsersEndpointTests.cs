@@ -669,6 +669,81 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
     }
 
     [Fact]
+    public async Task DeactivateUser_OnOwnAccount_ReturnsBadRequestAndTheAccountStaysActive()
+    {
+        // The bug report: an Admin was able to deactivate themselves, which should never be
+        // possible - it locks them out mid-session and, if they're the only Admin, locks
+        // everyone out of ever reversing it (reactivation is itself Admin-only).
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var selfEmail = $"selfdeactivate.{suffix}@example.com";
+        const string selfPassword = "AdminPass1!";
+
+        await SeedUserAsync("Self", "Deactivate", selfEmail, selfPassword, "Admin");
+        var token = await LoginAsync(client, selfEmail, selfPassword);
+        var selfId = await FindUserIdAsync(client, token, selfEmail);
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{selfId}/deactivate");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        // Still Active, and the token is still good - the rejected request did nothing at all.
+        var directory = await GetUsersAsync(client, token, "?pageSize=1000");
+        var stillActive = Assert.Single(directory.Items, u => u.Email == selfEmail);
+        Assert.Equal("Active", stillActive.Status);
+
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new { email = selfEmail, password = selfPassword });
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeactivateUser_OnOwnAccount_IsRejectedBeforeAnyOtherAdminCouldDoIt()
+    {
+        // Same rule, phrased the other way round: another Admin deactivating this Admin is
+        // perfectly legal - only acting on your *own* account id is blocked.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var targetEmail = $"otheradmintarget.{suffix}@example.com";
+
+        await SeedUserAsync("Other", "AdminTarget", targetEmail, "AdminPass1!", "Admin");
+        await SeedUserAsync("Other", "AdminOperator", $"otheradminop.{suffix}@example.com", "AdminPass1!", "Admin");
+
+        var operatorToken = await LoginAsync(client, $"otheradminop.{suffix}@example.com", "AdminPass1!");
+        var targetId = await FindUserIdAsync(client, operatorToken, targetEmail);
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{targetId}/deactivate");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", operatorToken);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var updated = (await response.Content.ReadFromJsonAsync<UserSummaryDto>())!;
+        Assert.Equal("Deactivated", updated.Status);
+    }
+
+    [Fact]
+    public async Task ReactivateUser_OnOwnAccount_ReturnsBadRequest()
+    {
+        // Same self-action guard, exercised on Reactivate - defense in depth even though a
+        // Deactivated Admin's own token would already be dead and couldn't reach this endpoint
+        // as themselves in practice.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var operatorEmail = $"selfreactivateop.{suffix}@example.com";
+
+        await SeedUserAsync("Self", "ReactivateOperator", operatorEmail, "AdminPass1!", "Admin");
+        var operatorToken = await LoginAsync(client, operatorEmail, "AdminPass1!");
+        var operatorId = await FindUserIdAsync(client, operatorToken, operatorEmail);
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{operatorId}/reactivate");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", operatorToken);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task ReactivateUser_AsAdmin_FlipsDeactivatedAccountToActiveAndUnblocksLogin()
     {
         var client = _factory.CreateClient();
