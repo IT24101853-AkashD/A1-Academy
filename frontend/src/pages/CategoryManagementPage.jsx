@@ -33,6 +33,137 @@ export default function CategoryManagementPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState('');
 
+    // "Other, please specify" subjects Teachers typed at registration - reviewed here, not
+    // auto-created as Categories, since a typo or a joke entry shouldn't become a real subject
+    // without a human looking at it first. Loaded independently of the Category list above so a
+    // slow/failed fetch of one doesn't block the other.
+    const [subjectRequests, setSubjectRequests] = useState([]);
+    const [requestsViewState, setRequestsViewState] = useState('idle'); // idle | loading | success | error
+    const [requestsError, setRequestsError] = useState('');
+    // Which pending request is mid-review (picking a Category to approve it against), tracked by
+    // id the same one-active-at-a-time way as editing/deleting a Category above.
+    const [reviewingRequestId, setReviewingRequestId] = useState(null);
+    const [reviewCategoryId, setReviewCategoryId] = useState('');
+    const [isReviewing, setIsReviewing] = useState(false);
+    const [reviewError, setReviewError] = useState('');
+
+    const loadSubjectRequests = () => {
+        const token = localStorage.getItem('token');
+        setRequestsViewState('loading');
+
+        return fetch(`${import.meta.env.VITE_API_URL}/api/teacher-subject-requests`, {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+            .then(async (res) => {
+                if (res.status === 401) {
+                    clearSession();
+                    setViewState('sessionEnded');
+                    return null;
+                }
+                if (res.status === 403) {
+                    // The Category list above already renders its own "Access Denied" state for
+                    // this - nothing further to show for this section specifically.
+                    return null;
+                }
+                if (!res.ok) {
+                    throw new Error(`Request failed with status ${res.status}`);
+                }
+                return res.json();
+            })
+            .then((data) => {
+                if (data) {
+                    setSubjectRequests(data);
+                    setRequestsViewState('success');
+                }
+            })
+            .catch((err) => {
+                setRequestsError(err.message || 'Server connection error.');
+                setRequestsViewState('error');
+            });
+    };
+
+    const startReviewingRequest = (request) => {
+        setReviewingRequestId(request.id);
+        setReviewCategoryId('');
+        setReviewError('');
+    };
+
+    const cancelReviewingRequest = () => {
+        setReviewingRequestId(null);
+        setReviewError('');
+    };
+
+    const approveSubjectRequest = async (id) => {
+        if (!reviewCategoryId) {
+            setReviewError('Pick which Category this subject maps to - add it above first if it doesn\'t exist yet.');
+            return;
+        }
+        setIsReviewing(true);
+        setReviewError('');
+        const token = localStorage.getItem('token');
+
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/teacher-subject-requests/${id}/approve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ categoryId: Number(reviewCategoryId) }),
+            });
+
+            if (res.status === 401) {
+                clearSession();
+                setViewState('sessionEnded');
+                return;
+            }
+
+            if (!res.ok) {
+                const body = await res.json().catch(() => null);
+                setReviewError(body?.message || 'Could not approve this request. Please try again.');
+                return;
+            }
+
+            // Approved requests leave the Pending queue this page shows, the same way a deleted
+            // Category leaves its list immediately above.
+            setSubjectRequests((current) => current.filter((r) => r.id !== id));
+            setReviewingRequestId(null);
+        } catch {
+            setReviewError('Server connection error. Please try again.');
+        } finally {
+            setIsReviewing(false);
+        }
+    };
+
+    const rejectSubjectRequest = async (id) => {
+        setIsReviewing(true);
+        setReviewError('');
+        const token = localStorage.getItem('token');
+
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/teacher-subject-requests/${id}/reject`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (res.status === 401) {
+                clearSession();
+                setViewState('sessionEnded');
+                return;
+            }
+
+            if (!res.ok) {
+                const body = await res.json().catch(() => null);
+                setReviewError(body?.message || 'Could not reject this request. Please try again.');
+                return;
+            }
+
+            setSubjectRequests((current) => current.filter((r) => r.id !== id));
+            setReviewingRequestId(null);
+        } catch {
+            setReviewError('Server connection error. Please try again.');
+        } finally {
+            setIsReviewing(false);
+        }
+    };
+
     const loadCategories = () => {
         const token = localStorage.getItem('token');
         setViewState('loading');
@@ -76,6 +207,7 @@ export default function CategoryManagementPage() {
             return;
         }
         loadCategories();
+        loadSubjectRequests();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [role]);
 
@@ -443,6 +575,113 @@ export default function CategoryManagementPage() {
                                         </li>
                                     ))}
                                 </ul>
+                            )}
+                        </div>
+
+                        <div className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 overflow-hidden mt-10">
+                            <div className="px-6 py-4 border-b border-slate-100">
+                                <h2 className="text-lg font-bold text-slate-900">Pending Subject Requests</h2>
+                                <p className="text-sm text-slate-500 mt-1">
+                                    Subjects Teachers typed under "Other" at registration because they weren't in the list yet.
+                                    Add a matching Category above if it's a real subject, then approve the request against it.
+                                </p>
+                            </div>
+
+                            {requestsViewState === 'loading' && (
+                                <div className="text-center py-10">
+                                    <span className="material-symbols-outlined text-[32px] text-slate-400 animate-spin">progress_activity</span>
+                                </div>
+                            )}
+
+                            {requestsViewState === 'error' && (
+                                <p className="px-6 py-10 text-center text-red-500 font-bold">{requestsError}</p>
+                            )}
+
+                            {requestsViewState === 'success' && (
+                                subjectRequests.length === 0 ? (
+                                    <p className="px-6 py-10 text-center text-slate-500 font-medium">No pending requests right now.</p>
+                                ) : (
+                                    <ul className="divide-y divide-slate-100">
+                                        {subjectRequests.map((request) => (
+                                            <li key={request.id} className="px-6 py-4">
+                                                {reviewingRequestId === request.id ? (
+                                                    <div className="space-y-4">
+                                                        {reviewError && (
+                                                            <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-600">
+                                                                {reviewError}
+                                                            </div>
+                                                        )}
+                                                        <p className="text-sm font-bold text-slate-700">
+                                                            Reviewing "{request.proposedName}" for {request.teacherName} ({request.teacherEmail})
+                                                        </p>
+                                                        <div>
+                                                            <label htmlFor={`review-category-${request.id}`} className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
+                                                                Map to Category (needed to approve)
+                                                            </label>
+                                                            {categories.length === 0 ? (
+                                                                <p className="text-sm text-slate-500 font-medium">No categories exist yet - create one above first.</p>
+                                                            ) : (
+                                                                <select
+                                                                    id={`review-category-${request.id}`}
+                                                                    value={reviewCategoryId}
+                                                                    onChange={(e) => setReviewCategoryId(e.target.value)}
+                                                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900"
+                                                                >
+                                                                    <option value="">Select a category…</option>
+                                                                    {categories.map((category) => (
+                                                                        <option key={category.id} value={category.id}>{category.name}</option>
+                                                                    ))}
+                                                                </select>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex gap-3">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => approveSubjectRequest(request.id)}
+                                                                disabled={isReviewing || categories.length === 0}
+                                                                className="px-5 py-2 rounded-full text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                            >
+                                                                {isReviewing ? 'Approving…' : 'Approve'}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => rejectSubjectRequest(request.id)}
+                                                                disabled={isReviewing}
+                                                                className="px-5 py-2 rounded-full text-sm font-bold bg-white border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                            >
+                                                                Reject
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={cancelReviewingRequest}
+                                                                disabled={isReviewing}
+                                                                className="px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-start justify-between gap-4">
+                                                        <div>
+                                                            <p className="font-bold text-slate-900">"{request.proposedName}"</p>
+                                                            <p className="text-sm text-slate-500 mt-1">{request.teacherName} · {request.teacherEmail}</p>
+                                                        </div>
+                                                        <div className="flex-none">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => startReviewingRequest(request)}
+                                                                className="px-4 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors"
+                                                            >
+                                                                Review
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )
                             )}
                         </div>
                     </>

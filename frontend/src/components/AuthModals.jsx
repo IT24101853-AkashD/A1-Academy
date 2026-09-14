@@ -36,11 +36,55 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
     const [isUploadingFile, setIsUploadingFile] = useState(false);
     const [loginErrors, setLoginErrors] = useState({});
     const [isLoggingIn, setIsLoggingIn] = useState(false);
-    // Which registration form the flip leaf's front face shows - set when a role is picked on
-    // the role-select page, not derived from activeModal, so the leaf can flip to Login (back)
-    // and, if the user backs out to the role picker and re-enters the same role, land on the
-    // same face without needing activeModal itself to encode the role.
+    // Which registration form the flip leaf's front face shows - normally set when a role is
+    // picked on the role-select page (see pickRole), not derived from activeModal, so the leaf
+    // can flip to Login (back) and, if the user backs out to the role picker and re-enters the
+    // same role, land on the same face without needing activeModal itself to encode the role.
     const [registerRole, setRegisterRole] = useState('Student');
+    // The Teacher application's subject checklist, and the error text shown if it fails to load.
+    const [categories, setCategories] = useState([]);
+    const [categoriesError, setCategoriesError] = useState('');
+    // Whether the "Other" row's free-text input is showing - it's its own checkbox alongside the
+    // real Categories rather than always-visible, so the common case (every subject already
+    // exists) stays a plain checklist.
+    const [showOtherSubject, setShowOtherSubject] = useState(false);
+
+    // A caller can also open a specific registration modal directly (IndexPage's "Join as a
+    // Student" / "Teach with Us" buttons do exactly that via window.openReactModal, bypassing
+    // pickRole entirely) - so registerRole has to stay in sync with activeModal whenever
+    // activeModal itself names a role, not only through pickRole's own assignment. Login-modal
+    // deliberately doesn't match either branch, which is what lets the flip-to-login-and-back
+    // behavior above keep working.
+    useEffect(() => {
+        if (activeModal === 'register-student-modal') setRegisterRole('Student');
+        else if (activeModal === 'register-teacher-modal') setRegisterRole('Teacher');
+    }, [activeModal]);
+
+    // Reloaded every time the Teacher form comes into view (not just once on mount) so a
+    // Category an Administrator added earlier in the same session - after this page first
+    // loaded - still shows up as a choice.
+    useEffect(() => {
+        if (activeModal !== 'register-teacher-modal') return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch(import.meta.env.VITE_API_URL + '/api/categories/public');
+                if (!res.ok) throw new Error('Failed to load subjects.');
+                const data = await res.json();
+                if (!cancelled) {
+                    setCategories(data);
+                    setCategoriesError('');
+                }
+            } catch (err) {
+                if (!cancelled) setCategoriesError('Could not load the subject list. Please close and reopen this form to try again.');
+            }
+        })();
+        // A fresh open of the form starts with "Other" collapsed - otherwise a leftover value
+        // from a previous attempt (e.g. one rejected for a duplicate email) would silently ride
+        // along on the next submission.
+        setShowOtherSubject(false);
+        return () => { cancelled = true; };
+    }, [activeModal]);
 
     const googleLogin = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
@@ -311,6 +355,14 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
             }
             if (!teacherFile) {
                 errors['teacher-qualifications'] = 'Please upload your professional qualification certificate.';
+            }
+            // formData.getAll, not data.categoryIds - Object.fromEntries (which built `data`)
+            // keeps only the last value for a repeated form key, collapsing every checked
+            // subject down to one. A subject typed into "Other" counts too, so this only errors
+            // when neither is present - matching AuthController.Register's own rule.
+            const otherSubjectValue = (formData.get('otherSubject') || '').trim();
+            if (formData.getAll('categoryIds').length === 0 && !otherSubjectValue) {
+                errors['teacher-categories'] = "Select at least one subject, or describe it under “Other” if it isn't listed.";
             }
         }
 
@@ -685,6 +737,51 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
                     </div>
                     {formErrors['teacher-qualifications'] && <p className="book-auth-error">{formErrors['teacher-qualifications']}</p>}
                     <p className="book-auth-hint">Required for administrative verification. Please upload certificates.</p>
+
+                    <label className="book-auth-field" style={{ textTransform: 'none', letterSpacing: 'normal' }}>
+                        <span style={{ textTransform: 'uppercase', letterSpacing: '1.6px', fontSize: 11 }}>Subjects You Teach</span>
+                    </label>
+                    {categoriesError ? (
+                        <p className="book-auth-error">{categoriesError}</p>
+                    ) : categories.length === 0 ? (
+                        <p className="book-auth-hint">Loading subjects…</p>
+                    ) : (
+                        <div className="book-auth-category-grid">
+                            {categories.map((category) => (
+                                <label key={category.id} className="book-auth-category-option">
+                                    <input
+                                        type="checkbox" name="categoryIds" value={category.id}
+                                        onChange={() => { if (formErrors['teacher-categories']) setFormErrors({ ...formErrors, 'teacher-categories': null }); }}
+                                    />
+                                    <span>{category.name}</span>
+                                </label>
+                            ))}
+                            <label className="book-auth-category-option">
+                                <input
+                                    type="checkbox" checked={showOtherSubject}
+                                    onChange={(e) => {
+                                        setShowOtherSubject(e.target.checked);
+                                        if (formErrors['teacher-categories']) setFormErrors({ ...formErrors, 'teacher-categories': null });
+                                    }}
+                                />
+                                <span>Other</span>
+                            </label>
+                        </div>
+                    )}
+                    {showOtherSubject && (
+                        <input
+                            type="text" name="otherSubject" id="teacher-other-subject"
+                            placeholder="Type the subject you teach"
+                            maxLength={100}
+                            className="book-auth-category-other-input"
+                            onChange={() => { if (formErrors['teacher-categories']) setFormErrors({ ...formErrors, 'teacher-categories': null }); }}
+                        />
+                    )}
+                    {formErrors['teacher-categories'] && <p className="book-auth-error">{formErrors['teacher-categories']}</p>}
+                    <p className="book-auth-hint">
+                        Pick every subject you're qualified to teach - this can't be changed once you register. Don't see it listed?
+                        Check "Other" and describe it - an administrator will add it and assign you once reviewed.
+                    </p>
 
                     <div className="book-auth-field-row">
                         <label className="book-auth-field">

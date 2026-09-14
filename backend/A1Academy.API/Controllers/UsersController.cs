@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -147,6 +148,17 @@ namespace A1Academy.API.Controllers
         // this method is just the HTTP plumbing around it (404/400/200).
         private async Task<ActionResult<UserSummary>> ApplyTransitionAsync(int id, string action)
         {
+            // An Admin acting on their own account through this endpoint is never legitimate -
+            // self-deactivation would lock them out mid-session (and, if they're the only Admin,
+            // lock everyone else out of ever undoing it, since reactivation is itself
+            // Admin-only). Checked before anything else, ahead of even the NotFound lookup below,
+            // so it can't be bypassed by racing a deactivation against the account being deleted.
+            var callerIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (callerIdClaim != null && int.TryParse(callerIdClaim, out var callerId) && callerId == id)
+            {
+                return BadRequest(new { message = "You cannot change your own account status. Ask another administrator to do this for you." });
+            }
+
             var user = await _context.Users.FindAsync(id);
             if (user == null)
             {

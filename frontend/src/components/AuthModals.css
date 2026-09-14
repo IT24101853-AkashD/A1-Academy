@@ -217,6 +217,72 @@
   margin: 0;
 }
 
+/* The Teacher application's subject checklist - same parchment-chip language as the callout
+   above, one chip per Category so it visually reads as a set of choices rather than a form
+   field. */
+.book-auth-category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.book-auth-category-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(59, 42, 32, 0.06);
+  border: 1px solid rgba(59, 42, 32, 0.12);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--book-ink);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.book-auth-category-option:has(input:checked) {
+  background: rgba(201, 162, 39, 0.16);
+  border-color: var(--book-accent);
+}
+
+.book-auth-category-option input[type='checkbox'] {
+  accent-color: var(--book-accent);
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+/* The free-text field that appears once "Other" is ticked in the grid above - styled like the
+   rest of the parchment form fields rather than the chip it follows, since it's prose, not a
+   choice. */
+.book-auth-category-other-input {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(59, 42, 32, 0.04);
+  border: 1px solid rgba(59, 42, 32, 0.18);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--book-ink);
+  font-family: inherit;
+}
+
+.book-auth-category-other-input::placeholder {
+  color: var(--book-muted);
+  font-weight: 500;
+}
+
+.book-auth-category-other-input:focus {
+  outline: none;
+  border-color: var(--book-accent);
+  background: rgba(201, 162, 39, 0.08);
+}
+
 /* ---------- SPINE ---------- */
 
 .book-auth-spine {

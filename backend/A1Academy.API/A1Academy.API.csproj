@@ -1,10 +1,19 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>4bb5bbde-643e-48a5-a5f9-07a2b2de4b0e</UserSecretsId>
+    <!-- Every build otherwise produces a fresh, unsigned A1Academy.API.exe apphost launcher -
+         on this machine's Windows Application Control policy (Smart App Control or an org WDAC
+         policy), a binary that new is blocked from running outright, which is what breaks
+         "dotnet run". Turning the apphost off stops .NET from generating that native launcher
+         at all: "dotnet run"/"dotnet watch" instead execute the app through the already-trusted,
+         signed dotnet.exe host loading A1Academy.API.dll directly - same app, no more
+         per-rebuild binary for the policy to re-block. Harmless for this project's actual
+         deployment path (CI/CD, not a locally double-clicked .exe - see git history). -->
+    <UseAppHost>false</UseAppHost>
   </PropertyGroup>
 
   <ItemGroup>

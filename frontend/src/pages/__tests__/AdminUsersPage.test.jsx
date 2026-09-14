@@ -480,6 +480,48 @@ describe('AdminUsersPage', () => {
     expect(patchCall[0]).toContain('/api/users/22/reactivate');
   });
 
+  // A minimal, unsigned JWT with just the payload segment this page actually reads - enough to
+  // exercise getEmailFromToken's real base64url decoding without a real signing key.
+  const fakeJwt = (email) => {
+    const payload = { 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress': email };
+    const base64url = btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return `header.${base64url}.signature`;
+  };
+
+  it('hides the Deactivate button on the signed-in admin\'s own row, but shows it for everyone else', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', fakeJwt('admin@example.com'));
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse(mockUsers)) })
+    );
+
+    renderPage();
+    await screen.findByText('Admin One');
+
+    // mockUsers' Admin One is admin@example.com - the token's own email.
+    const ownRow = screen.getByText('Admin One').closest('tr');
+    expect(within(ownRow).queryByRole('button', { name: /^deactivate$/i })).not.toBeInTheDocument();
+    expect(within(ownRow).getByText('You')).toBeInTheDocument();
+
+    // Everyone else's Active row still gets a real Deactivate button.
+    const otherRow = screen.getByText('John Doe').closest('tr');
+    expect(within(otherRow).getByRole('button', { name: /^deactivate$/i })).toBeInTheDocument();
+  });
+
+  it('shows Deactivate on every row when the token cannot be decoded (not a real JWT)', async () => {
+    localStorage.setItem('role', 'Admin');
+    localStorage.setItem('token', 'admin-token');
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(pagedResponse(mockUsers)) })
+    );
+
+    renderPage();
+    await screen.findByText('Admin One');
+
+    const adminRow = screen.getByText('Admin One').closest('tr');
+    expect(within(adminRow).getByRole('button', { name: /^deactivate$/i })).toBeInTheDocument();
+  });
+
   it('shows a deactivate-specific error message if the deactivate request fails', async () => {
     localStorage.setItem('role', 'Admin');
     localStorage.setItem('token', 'admin-token');
