@@ -428,7 +428,18 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
                 closeModal();
                 openModal('success-login-modal');
             } else {
-                setLoginErrors({ 'password': 'Invalid Email or Invalid Password' });
+                // AuthController.Login returns a plain JSON string for every failure case
+                // (unlike most other endpoints, which wrap theirs in {message: ...}) - handled
+                // for both shapes here so a future change to an object body wouldn't silently
+                // fall back to the generic text. Relaying it verbatim, rather than a single
+                // hardcoded string, is what actually differentiates a deactivated/pending/
+                // rejected/Google-only account from a genuinely wrong email or password - the
+                // backend already deliberately uses the *same* generic wording for the latter
+                // two (see LoginBlockedMessage and the checks above it), so nothing sensitive
+                // gets exposed by trusting it here.
+                const body = await res.json().catch(() => null);
+                const message = typeof body === 'string' ? body : body?.message;
+                setLoginErrors({ 'password': message || 'Invalid Email or Invalid Password' });
             }
         } catch (err) {
             setLoginErrors({ 'general': 'Server connection error.' });
