@@ -44,6 +44,18 @@ namespace A1Academy.API.Controllers
             public string Role { get; set; } = "Student";
             public string? Qualifications { get; set; }
             public IFormFile? QualificationDocument { get; set; }
+
+            // Teacher-only: the Category(ies) they're registering to teach - the model binder
+            // populates this from every "CategoryIds" part the multipart form submits, one per
+            // checkbox the applicant ticked. Ignored for Student registrations.
+            public List<int> CategoryIds { get; set; } = new();
+
+            // Teacher-only: a free-text subject typed in when the one they wanted wasn't in
+            // Admin's Category list yet. There's no Category to attach a TeacherSubject to until
+            // an Admin adds one, so this becomes a pending TeacherSubjectRequest instead - see
+            // TeacherSubjectRequestsController for the review/approve step. Optional; a Teacher
+            // can register on CategoryIds alone, OtherSubject alone, or both.
+            public string? OtherSubject { get; set; }
         }
 
         private static readonly string[] SelfRegisterableRoles = { "Student", "Teacher" };
@@ -62,6 +74,39 @@ namespace A1Academy.API.Controllers
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
             {
                 return BadRequest("Email already exists.");
+            }
+
+            // "Teacher Subject Selection" - this is the one and only chance a Teacher gets to
+            // declare which subject(s) they teach (see TeacherSubjectsController's POST for the
+            // equally one-time catch-up path for accounts that predate this field), so it's
+            // validated here, before the account itself is created, the same way the Category
+            // existence checks in CategoriesController run before anything is saved. A Teacher
+            // who picked an id that got deleted between page-load and submission gets a clear
+            // 400 instead of a Pending account stuck with zero subjects and no way to add one.
+            var requestedCategoryIds = (request.CategoryIds ?? new List<int>()).Distinct().ToList();
+            var otherSubject = (request.OtherSubject ?? string.Empty).Trim();
+            if (request.Role == "Teacher")
+            {
+                // A Teacher needs to declare at least one subject somehow - either an existing
+                // Category checkbox, the free-text "Other" field, or both - but not neither.
+                if (requestedCategoryIds.Count == 0 && otherSubject.Length == 0)
+                {
+                    return BadRequest("Select at least one subject you teach, or describe it if it isn't listed.");
+                }
+
+                if (otherSubject.Length > 100)
+                {
+                    return BadRequest("The subject you typed must be 100 characters or fewer.");
+                }
+
+                if (requestedCategoryIds.Count > 0)
+                {
+                    var existingCategoryCount = await _context.Categories.CountAsync(c => requestedCategoryIds.Contains(c.Id));
+                    if (existingCategoryCount != requestedCategoryIds.Count)
+                    {
+                        return BadRequest("One or more selected subjects don't exist.");
+                    }
+                }
             }
 
             string? documentPath = null;
@@ -96,6 +141,25 @@ namespace A1Academy.API.Controllers
             };
 
             _context.Users.Add(user);
+
+            // Wired through the Teacher navigation property, not a TeacherId value - user.Id
+            // doesn't exist yet (it's identity-generated), so EF Core resolves the foreign key
+            // itself once the insert below assigns one, in the same SaveChangesAsync call rather
+            // than a second round-trip.
+            if (request.Role == "Teacher")
+            {
+                if (requestedCategoryIds.Count > 0)
+                {
+                    _context.TeacherSubjects.AddRange(
+                        requestedCategoryIds.Select(id => new TeacherSubject { Teacher = user, CategoryId = id }));
+                }
+
+                if (otherSubject.Length > 0)
+                {
+                    _context.TeacherSubjectRequests.Add(new TeacherSubjectRequest { Teacher = user, ProposedName = otherSubject });
+                }
+            }
+
             await _context.SaveChangesAsync();
 
             // "isApproved" is kept as the response key (rather than renamed to match the new

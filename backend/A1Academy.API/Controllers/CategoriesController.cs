@@ -57,6 +57,20 @@ namespace A1Academy.API.Controllers
             return Ok(categories);
         }
 
+        // The same list as GET above, but reachable without a JWT - the Teacher registration
+        // form needs it to offer a subject choice, and a visitor filling that form out doesn't
+        // have an account (let alone a token) yet. [AllowAnonymous] overrides this controller's
+        // class-level [Authorize] for this one action only; every other endpoint here still
+        // requires it. Deliberately a separate route rather than loosening GET /api/categories
+        // itself, so GetCategories_Unauthenticated_ReturnsUnauthorized's existing contract for
+        // logged-in users stays exactly as it was.
+        [AllowAnonymous]
+        [HttpGet("public")]
+        public async Task<ActionResult<List<CategorySummary>>> GetPublicCategories()
+        {
+            return await GetCategories();
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<CategorySummary>> GetCategoryById(int id)
         {
@@ -195,6 +209,17 @@ namespace A1Academy.API.Controllers
             if (hasActiveClasses)
             {
                 return Conflict(new { message = "This category cannot be deleted until all associated classes are reassigned or canceled." });
+            }
+
+            // The "Teacher Subject Selection" feature added TeacherSubjects.CategoryId as a
+            // second Restrict-on-delete foreign key (see AppDbContext) - checked here, the same
+            // way as active classes above, so a Teacher having declared this subject also gets a
+            // friendly 409 instead of the raw database constraint error Restrict would otherwise
+            // surface as an unhandled 500.
+            var hasDeclaredTeachers = await _context.TeacherSubjects.AnyAsync(ts => ts.CategoryId == id);
+            if (hasDeclaredTeachers)
+            {
+                return Conflict(new { message = "This category cannot be deleted while a teacher has selected it as a subject they teach." });
             }
 
             _context.Categories.Remove(category);

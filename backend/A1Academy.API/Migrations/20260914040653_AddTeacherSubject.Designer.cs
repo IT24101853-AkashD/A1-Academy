@@ -3,6 +3,7 @@ using System;
 using A1Academy.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace A1Academy.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260914040653_AddTeacherSubject")]
+    partial class AddTeacherSubject
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -104,43 +107,6 @@ namespace A1Academy.API.Migrations
                         .IsUnique();
 
                     b.ToTable("TeacherSubjects");
-                });
-
-            modelBuilder.Entity("A1Academy.API.Data.Models.TeacherSubjectRequest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ProposedName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int?>("ResultingCategoryId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("ReviewedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TeacherId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ResultingCategoryId");
-
-                    b.HasIndex("TeacherId");
-
-                    b.ToTable("TeacherSubjectRequests");
                 });
 
             modelBuilder.Entity("A1Academy.API.Data.Models.User", b =>
@@ -236,24 +202,6 @@ namespace A1Academy.API.Migrations
                         .IsRequired();
 
                     b.Navigation("Category");
-
-                    b.Navigation("Teacher");
-                });
-
-            modelBuilder.Entity("A1Academy.API.Data.Models.TeacherSubjectRequest", b =>
-                {
-                    b.HasOne("A1Academy.API.Data.Models.Category", "ResultingCategory")
-                        .WithMany()
-                        .HasForeignKey("ResultingCategoryId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("A1Academy.API.Data.Models.User", "Teacher")
-                        .WithMany()
-                        .HasForeignKey("TeacherId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ResultingCategory");
 
                     b.Navigation("Teacher");
                 });

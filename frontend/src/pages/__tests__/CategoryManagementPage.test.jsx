@@ -209,8 +209,8 @@ describe('CategoryManagementPage', () => {
 
     expect(screen.getByText('Mathematics')).toBeInTheDocument();
     expect(screen.queryByText('Something Else')).not.toBeInTheDocument();
-    // No PUT was ever sent - only the initial GET.
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    // No PUT was ever sent - only this page's two initial GETs (categories, subject requests).
+    expect(global.fetch.mock.calls.some(([, options]) => options?.method === 'PUT')).toBe(false);
   });
 
   it('shows the backend validation message when editing to a duplicate name and stays in edit mode', async () => {
@@ -319,7 +319,8 @@ describe('CategoryManagementPage', () => {
     // Clicking Delete asks for confirmation rather than deleting right away.
     fireEvent.click(screen.getAllByRole('button', { name: /delete/i })[0]);
     expect(screen.getByText(/delete "mathematics"/i)).toBeInTheDocument();
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    // Confirmation is asked for locally - no DELETE has gone out yet.
+    expect(global.fetch.mock.calls.some(([, options]) => options?.method === 'DELETE')).toBe(false);
 
     fireEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
 
@@ -350,8 +351,8 @@ describe('CategoryManagementPage', () => {
 
     expect(screen.getByText('Mathematics')).toBeInTheDocument();
     expect(screen.queryByText(/this can't be undone/i)).not.toBeInTheDocument();
-    // No DELETE was ever sent - only the initial GET.
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    // No DELETE was ever sent - only this page's two initial GETs (categories, subject requests).
+    expect(global.fetch.mock.calls.some(([, options]) => options?.method === 'DELETE')).toBe(false);
   });
 
   it('shows the backend error message if deletion is rejected and keeps the category', async () => {

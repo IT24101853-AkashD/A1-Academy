@@ -291,6 +291,10 @@ public async Task Register_WithTeacherRole_StartsInPendingStatus()
 {
     // Arrange - a Teacher signup shouldn't be usable until an Admin approves it, which is only
     // true if it starts life as Pending rather than Active like a Student's does.
+    var category = new Category { Name = "Mathematics", Description = "Algebra and calculus." };
+    _context.Categories.Add(category);
+    await _context.SaveChangesAsync();
+
     var request = new AuthController.RegisterRequest
     {
         FirstName = "New",
@@ -298,7 +302,8 @@ public async Task Register_WithTeacherRole_StartsInPendingStatus()
         Email = "newteacher@example.com",
         Password = "Password123!",
         Role = "Teacher",
-        Qualifications = "BSc"
+        Qualifications = "BSc",
+        CategoryIds = new List<int> { category.Id }
     };
 
     // Act
@@ -311,6 +316,151 @@ public async Task Register_WithTeacherRole_StartsInPendingStatus()
         .SingleOrDefaultAsync(u => u.Email == "newteacher@example.com");
     Assert.NotNull(createdUser);
     Assert.Equal(AccountStatus.Pending, createdUser.AccountStatus);
+
+    // "Teacher Subject Selection" - registering as a Teacher is also the one chance to declare
+    // the subject(s) taught, so a successful registration should leave exactly the requested
+    // TeacherSubject row behind, tied to the newly created account.
+    var registeredSubject = await _context.TeacherSubjects
+        .SingleOrDefaultAsync(ts => ts.TeacherId == createdUser.Id);
+    Assert.NotNull(registeredSubject);
+    Assert.Equal(category.Id, registeredSubject.CategoryId);
+}
+
+[Fact]
+public async Task Register_WithTeacherRoleAndNoCategories_ReturnsBadRequestAndDoesNotCreateTheAccount()
+{
+    var request = new AuthController.RegisterRequest
+    {
+        FirstName = "New",
+        LastName = "Teacher",
+        Email = "nosubject.teacher@example.com",
+        Password = "Password123!",
+        Role = "Teacher",
+        Qualifications = "BSc"
+        // CategoryIds deliberately left empty.
+    };
+
+    var result = await _controller.Register(request);
+
+    Assert.IsType<BadRequestObjectResult>(result);
+    var createdUser = await _context.Users
+        .SingleOrDefaultAsync(u => u.Email == "nosubject.teacher@example.com");
+    Assert.Null(createdUser);
+}
+
+[Fact]
+public async Task Register_WithTeacherRoleAndUnknownCategoryId_ReturnsBadRequestAndDoesNotCreateTheAccount()
+{
+    var request = new AuthController.RegisterRequest
+    {
+        FirstName = "New",
+        LastName = "Teacher",
+        Email = "badcategory.teacher@example.com",
+        Password = "Password123!",
+        Role = "Teacher",
+        Qualifications = "BSc",
+        CategoryIds = new List<int> { 999999 }
+    };
+
+    var result = await _controller.Register(request);
+
+    Assert.IsType<BadRequestObjectResult>(result);
+    var createdUser = await _context.Users
+        .SingleOrDefaultAsync(u => u.Email == "badcategory.teacher@example.com");
+    Assert.Null(createdUser);
+}
+
+[Fact]
+public async Task Register_WithTeacherRoleAndOnlyOtherSubject_CreatesAccountAndAPendingRequest()
+{
+    // Arrange - no Category matches what this Teacher teaches yet, so they type it into the
+    // "Other" field instead of ticking any checkbox. Registration should still succeed, leaving
+    // a pending TeacherSubjectRequest for an Admin to review rather than a BadRequest or a
+    // TeacherSubject row (there's no Category to attach one to).
+    var request = new AuthController.RegisterRequest
+    {
+        FirstName = "New",
+        LastName = "Teacher",
+        Email = "othersubject.teacher@example.com",
+        Password = "Password123!",
+        Role = "Teacher",
+        Qualifications = "BSc",
+        OtherSubject = "  Robotics  "
+    };
+
+    var result = await _controller.Register(request);
+
+    Assert.IsType<OkObjectResult>(result);
+
+    var createdUser = await _context.Users
+        .SingleOrDefaultAsync(u => u.Email == "othersubject.teacher@example.com");
+    Assert.NotNull(createdUser);
+
+    Assert.False(await _context.TeacherSubjects.AnyAsync(ts => ts.TeacherId == createdUser.Id));
+
+    var pendingRequest = await _context.TeacherSubjectRequests
+        .SingleOrDefaultAsync(r => r.TeacherId == createdUser.Id);
+    Assert.NotNull(pendingRequest);
+    Assert.Equal("Robotics", pendingRequest.ProposedName); // trimmed
+    Assert.Equal(TeacherSubjectRequestStatus.Pending, pendingRequest.Status);
+    Assert.Null(pendingRequest.ResultingCategoryId);
+}
+
+[Fact]
+public async Task Register_WithTeacherRoleCategoryAndOtherSubject_CreatesBothTheTeacherSubjectAndThePendingRequest()
+{
+    // Arrange - a Teacher can pick from the list AND type something extra in the same
+    // submission; both should be recorded, on their own tracks.
+    var category = new Category { Name = "Mathematics", Description = "Algebra and calculus." };
+    _context.Categories.Add(category);
+    await _context.SaveChangesAsync();
+
+    var request = new AuthController.RegisterRequest
+    {
+        FirstName = "New",
+        LastName = "Teacher",
+        Email = "both.teacher@example.com",
+        Password = "Password123!",
+        Role = "Teacher",
+        Qualifications = "BSc",
+        CategoryIds = new List<int> { category.Id },
+        OtherSubject = "Robotics"
+    };
+
+    var result = await _controller.Register(request);
+
+    Assert.IsType<OkObjectResult>(result);
+
+    var createdUser = await _context.Users
+        .SingleOrDefaultAsync(u => u.Email == "both.teacher@example.com");
+    Assert.NotNull(createdUser);
+
+    Assert.True(await _context.TeacherSubjects
+        .AnyAsync(ts => ts.TeacherId == createdUser.Id && ts.CategoryId == category.Id));
+    Assert.True(await _context.TeacherSubjectRequests
+        .AnyAsync(r => r.TeacherId == createdUser.Id && r.ProposedName == "Robotics"));
+}
+
+[Fact]
+public async Task Register_WithTeacherRoleAndOtherSubjectOverTheLengthLimit_ReturnsBadRequestAndDoesNotCreateTheAccount()
+{
+    var request = new AuthController.RegisterRequest
+    {
+        FirstName = "New",
+        LastName = "Teacher",
+        Email = "longsubject.teacher@example.com",
+        Password = "Password123!",
+        Role = "Teacher",
+        Qualifications = "BSc",
+        OtherSubject = new string('x', 101)
+    };
+
+    var result = await _controller.Register(request);
+
+    Assert.IsType<BadRequestObjectResult>(result);
+    var createdUser = await _context.Users
+        .SingleOrDefaultAsync(u => u.Email == "longsubject.teacher@example.com");
+    Assert.Null(createdUser);
 }
 
 [Fact]
