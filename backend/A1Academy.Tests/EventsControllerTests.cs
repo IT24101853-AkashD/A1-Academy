@@ -1,5 +1,5 @@
-using A1Academy.API.Controllers;
-using A1Academy.API.Services;
+using A1Academy.AdminService.Controllers; using A1Academy.AuthService.Controllers; 
+using A1Academy.Shared.Services;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using System.Text.Json;
@@ -134,3 +134,6 @@ namespace A1Academy.Tests
         }
     }
 }
+
+
+

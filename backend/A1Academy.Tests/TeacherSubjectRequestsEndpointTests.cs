@@ -2,8 +2,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using A1Academy.API.Data;
-using A1Academy.API.Data.Models;
+using A1Academy.Shared.Data;
+using A1Academy.Shared.Data.Models;
 using A1Academy.Tests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -264,3 +264,5 @@ public class TeacherSubjectRequestsEndpointTests : IClassFixture<ApiWebApplicati
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 }
+
+

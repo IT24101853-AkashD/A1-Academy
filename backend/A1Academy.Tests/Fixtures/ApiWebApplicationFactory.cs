@@ -1,5 +1,5 @@
 using System.Linq;
-using A1Academy.API.Data;
+using A1Academy.Shared.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +14,7 @@ namespace A1Academy.Tests.Fixtures
     /// database and hardcoded test-only JWT settings, so these tests never depend on a real
     /// Postgres instance or a developer's local appsettings.Development.json.
     /// </summary>
-    public class ApiWebApplicationFactory : WebApplicationFactory<Program>
+    public class ApiWebApplicationFactory : WebApplicationFactory<A1Academy.AuthService.Program>
     {
         public const string TestJwtKey = "IntegrationTestOnlySecretKeyMustBeAtLeast32Characters!";
         public const string TestJwtIssuer = "A1AcademyTests";
@@ -52,3 +52,6 @@ namespace A1Academy.Tests.Fixtures
         }
     }
 }
+
+
+

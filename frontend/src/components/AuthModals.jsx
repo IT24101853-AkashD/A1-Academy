@@ -369,14 +369,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
             if (!teacherFile) {
                 errors['teacher-qualifications'] = 'Please upload your professional qualification certificate.';
             }
-            // formData.getAll, not data.categoryIds - Object.fromEntries (which built `data`)
-            // keeps only the last value for a repeated form key, collapsing every checked
-            // subject down to one. A subject typed into "Other" counts too, so this only errors
-            // when neither is present - matching AuthController.Register's own rule.
-            const otherSubjectValue = (formData.get('otherSubject') || '').trim();
-            if (formData.getAll('categoryIds').length === 0 && !otherSubjectValue) {
-                errors['teacher-categories'] = "Select at least one subject, or describe it under “Other” if it isn't listed.";
-            }
+
         }
 
         if (Object.keys(errors).length > 0) {
@@ -855,50 +848,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
                         <p className="text-xs text-slate-400 mt-1">* Required for administrative verification. Please upload certificates.</p>
                     </div>
 
-                    {/* Subjects You Teach (Categories) */}
-                    <div>
-                        <label className="block font-bold text-slate-900 mb-2">Subjects You Teach</label>
-                        {categoriesError ? (
-                            <p className="text-sm font-bold text-red-500">{categoriesError}</p>
-                        ) : categories.length === 0 ? (
-                            <p className="text-sm font-medium text-slate-500">Loading subjects…</p>
-                        ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-2">
-                                {categories.map((category) => (
-                                    <label key={category.id} className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox" name="categoryIds" value={category.id}
-                                            className="w-4 h-4 text-amber-500 border-slate-200 rounded focus:ring-amber-500"
-                                            onChange={() => { if (formErrors['teacher-categories']) setFormErrors({ ...formErrors, 'teacher-categories': null }); }}
-                                        />
-                                        <span className="text-sm font-medium text-slate-700">{category.name}</span>
-                                    </label>
-                                ))}
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox" checked={showOtherSubject}
-                                        className="w-4 h-4 text-amber-500 border-slate-200 rounded focus:ring-amber-500"
-                                        onChange={(e) => {
-                                            setShowOtherSubject(e.target.checked);
-                                            if (formErrors['teacher-categories']) setFormErrors({ ...formErrors, 'teacher-categories': null });
-                                        }}
-                                    />
-                                    <span className="text-sm font-medium text-slate-700">Other</span>
-                                </label>
-                            </div>
-                        )}
-                        {showOtherSubject && (
-                            <input
-                                type="text" name="otherSubject" id="teacher-other-subject"
-                                placeholder="Type the subject you teach"
-                                maxLength={100}
-                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm font-medium text-slate-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all mb-2"
-                                onChange={() => { if (formErrors['teacher-categories']) setFormErrors({ ...formErrors, 'teacher-categories': null }); }}
-                            />
-                        )}
-                        {formErrors['teacher-categories'] && <p className="text-sm font-bold text-red-500 mt-1">{formErrors['teacher-categories']}</p>}
-                        <p className="text-xs text-slate-400 mt-1">* Pick every subject you're qualified to teach. Check "Other" if not listed.</p>
-                    </div>
+
 
                     {/* Password with Toggle (Stacked) */}
                     <div>

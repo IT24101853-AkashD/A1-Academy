@@ -1,8 +1,8 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using A1Academy.API.Data;
-using A1Academy.API.Data.Models;
+using A1Academy.Shared.Data;
+using A1Academy.Shared.Data.Models;
 using A1Academy.Tests.Fixtures;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -521,3 +521,5 @@ public class CategoriesEndpointTests : IClassFixture<ApiWebApplicationFactory>
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }
+
+

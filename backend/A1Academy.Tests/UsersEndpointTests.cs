@@ -3,8 +3,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using A1Academy.API.Data;
-using A1Academy.API.Data.Models;
+using A1Academy.Shared.Data;
+using A1Academy.Shared.Data.Models;
 using A1Academy.Tests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -1127,3 +1127,5 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         public int TotalPages { get; set; }
     }
 }
+
+

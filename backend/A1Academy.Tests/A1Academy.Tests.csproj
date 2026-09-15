@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\A1Academy.API\A1Academy.API.csproj" />
+    <ProjectReference Include="..\A1Academy.Shared\A1Academy.Shared.csproj" /><ProjectReference Include="..\A1Academy.AuthService\A1Academy.AuthService.csproj" /><ProjectReference Include="..\A1Academy.AdminService\A1Academy.AdminService.csproj" /><ProjectReference Include="..\A1Academy.TeacherService\A1Academy.TeacherService.csproj" /><ProjectReference Include="..\A1Academy.StudentService\A1Academy.StudentService.csproj" />
   </ItemGroup>
 
 </Project>
