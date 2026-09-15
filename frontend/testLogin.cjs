@@ -5,7 +5,7 @@ const data = JSON.stringify({
   password: 'wrongpassword'
 });
 
-const req = http.request('http://localhost:5123/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' } }, (res) => {
+const req = http.request('http://localhost:5100/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' } }, (res) => {
   let body = '';
   res.on('data', chunk => body += chunk);
   res.on('end', () => {
