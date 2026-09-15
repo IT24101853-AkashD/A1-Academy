@@ -25,7 +25,7 @@ export default function OtpResetModal({ isOpen, onClose }) {
 
         <button id="otp-reset-verify-btn" onClick={() => {}} className="w-full bg-primary text-on-primary font-label-md py-3 rounded-full hover:bg-primary-container active:scale-95 transition-all shadow-sm cursor-pointer flex justify-center items-center">Verify Code</button>
         
-        <!-- Resend Code -->
+        {/* Resend Code */}
         <div className="mt-6 text-body-sm text-on-surface-variant flex items-center justify-center gap-2">
             <span>Didn't receive the code?</span>
             <span id="reset-resend-timer" className="text-primary font-bold">60s</span>

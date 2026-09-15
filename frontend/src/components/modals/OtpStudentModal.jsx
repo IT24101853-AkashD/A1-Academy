@@ -6,7 +6,7 @@ export default function OtpStudentModal({ isOpen, onClose }) {
     return (
 <div id="otp-student-modal" className="fixed inset-0 z-[130] flex items-center justify-center backdrop-blur-md bg-on-surface/40 p-4 transition-all duration-300">
     <div className="relative w-full max-w-md bg-surface-container-lowest rounded-[24px] shadow-level-3 p-8 border border-surface-variant text-center">
-        <!-- Close Button (Returns to Registration) -->
+        {/* Close Button (Returns to Registration) */}
         <button onClick={onClose} className="absolute top-6 right-6 text-on-surface-variant hover:text-error transition-colors cursor-pointer outline-none">
             <span className="material-symbols-outlined text-[28px]">close</span>
         </button>
