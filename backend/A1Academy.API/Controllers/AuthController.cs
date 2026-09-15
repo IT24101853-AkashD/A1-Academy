@@ -227,7 +227,7 @@ namespace A1Academy.API.Controllers
         {
             AccountStatus.Pending => "Your account is pending administrator approval.",
             AccountStatus.Rejected => "Your registration was not approved. Please contact support.",
-            AccountStatus.Deactivated => "Your account has been deactivated. Please contact support.",
+            AccountStatus.Deactivated => "This Email is Deactivated contact the admin",
             _ => "Your account cannot log in at this time. Please contact support."
         };
 
@@ -398,6 +398,42 @@ namespace A1Academy.API.Controllers
         // GET /me does it, which makes cross-user modification structurally impossible rather
         // than something checked for and rejected after the fact.
         [Authorize]
+
+        public class UpdateCredentialsRequest { public string CurrentEmail { get; set; } = string.Empty; public string? NewEmail { get; set; } public string? NewPassword { get; set; } }
+
+        [HttpPut("me/credentials")]
+        public async Task<IActionResult> UpdateCredentials([FromBody] UpdateCredentialsRequest request)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Id == userId);
+            if (user == null || user.AccountStatus != AccountStatus.Active)
+                return Unauthorized();
+
+            if (user.Email != request.CurrentEmail)
+                return BadRequest("Invalid current email provided.");
+
+            if (!string.IsNullOrWhiteSpace(request.NewEmail))
+            {
+                var exists = await _context.Users.AnyAsync(u => u.Email == request.NewEmail && u.Id != userId);
+                if (exists) return BadRequest("That email is already in use.");
+                user.Email = request.NewEmail;
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.NewPassword))
+            {
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            }
+
+            // Always force sign out by updating security stamp
+            user.SecurityStamp = Guid.NewGuid().ToString();
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Credentials updated successfully." });
+        }
+
         [HttpPut("me")]
         public async Task<IActionResult> UpdateMe([FromBody] UpdateProfileRequest request)
         {
@@ -461,13 +497,13 @@ namespace A1Academy.API.Controllers
             });
         }
 
-        public class OtpRequest { public string Email { get; set; } = string.Empty; public string FirstName { get; set; } = string.Empty; }
+        public class OtpRequest { public string Email { get; set; } = string.Empty; public string FirstName { get; set; } = string.Empty; public bool SkipEmailCheck { get; set; } = false; }
         public class VerifyOtpRequest { public string Email { get; set; } = string.Empty; public string Otp { get; set; } = string.Empty; }
 
         [HttpPost("send-otp")]
         public async Task<IActionResult> SendOtp([FromBody] OtpRequest request)
         {
-            if (await _context.Users.AnyAsync(u => u.Email == request.Email))
+            if (!request.SkipEmailCheck && await _context.Users.AnyAsync(u => u.Email == request.Email))
             {
                 return BadRequest("This email is already taken.");
             }
