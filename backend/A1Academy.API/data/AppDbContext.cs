@@ -47,10 +47,11 @@ namespace A1Academy.API.Data
                 .HasForeignKey(ts => ts.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // A Teacher's own account, on the other hand, is never hard-deleted (see
-            // AccountStatus - deactivation, not deletion), so this Cascade is effectively
-            // unreachable in practice. It's still the semantically correct choice if that ever
-            // changes: a deleted user's subject selections should disappear with them.
+            // A Teacher's own account can be hard-deleted by an Admin (UsersController.DeleteUser),
+            // and a deleted user's subject selections should disappear with them. This Cascade is
+            // the correct semantics for a relational provider; UsersController also removes these
+            // rows explicitly, since EF Core's InMemory provider (used in tests) only cascades to
+            // entities already tracked by the context, not to rows it hasn't loaded.
             modelBuilder.Entity<TeacherSubject>()
                 .HasOne(ts => ts.Teacher)
                 .WithMany()

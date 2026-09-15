@@ -149,9 +149,8 @@ namespace A1Academy.API.Controllers
         // Admin is a decision this directory doesn't make unilaterally) or the caller's own
         // (already structurally impossible - nobody signed in as an Admin has Role "Student" or
         // "Teacher" on their own row, so no separate self-check is needed the way the status
-        // transitions above require one). TeacherSubject/TeacherSubjectRequest rows cascade-delete
-        // automatically (see AppDbContext), so a Teacher's declared subjects and any pending
-        // "Other" request are removed with them instead of being left orphaned.
+        // transitions above require one). A Teacher's declared subjects and any pending "Other"
+        // request are removed with them (see below) instead of being left orphaned.
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
@@ -165,6 +164,16 @@ namespace A1Academy.API.Controllers
             {
                 return BadRequest(new { message = "Only Student and Teacher accounts can be deleted." });
             }
+
+            // AppDbContext configures TeacherSubject/TeacherSubjectRequest to cascade on
+            // TeacherId, but that only becomes a real database-level ON DELETE CASCADE on a
+            // relational provider - EF Core's cascade delete otherwise only reaches entities
+            // already tracked by this context. FindAsync above loaded just the User row, so
+            // these have to be fetched and removed explicitly rather than left to the FK config.
+            var teacherSubjects = await _context.TeacherSubjects.Where(ts => ts.TeacherId == id).ToListAsync();
+            var teacherSubjectRequests = await _context.TeacherSubjectRequests.Where(r => r.TeacherId == id).ToListAsync();
+            _context.TeacherSubjects.RemoveRange(teacherSubjects);
+            _context.TeacherSubjectRequests.RemoveRange(teacherSubjectRequests);
 
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
