@@ -8,10 +8,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://localhost:4173")
+        policy.AllowAnyOrigin()
               .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowAnyMethod();
     });
 });
 
@@ -21,10 +20,5 @@ builder.Services.AddReverseProxy()
 var app = builder.Build();
 
 app.UseCors("AllowFrontend");
-
 app.MapReverseProxy();
-
 app.Run();
-
-
-
