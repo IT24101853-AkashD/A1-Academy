@@ -136,6 +136,39 @@ public class CategoriesEndpointTests : IClassFixture<ApiWebApplicationFactory>
         Assert.DoesNotContain(list!, c => c.Name == $"ShouldNotSave-{suffix}");
     }
 
+    [Theory]
+    [InlineData("Student")]
+    [InlineData("Teacher")]
+    public async Task CategoryWriteOperations_AsNonAdmin_ReturnForbidden(string role)
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var email = $"categorywrites.{role.ToLowerInvariant()}.{suffix}@example.com";
+        await SeedUserAsync("NonAdmin", email, "Pass1!", role);
+
+        var token = await LoginAsync(client, email, "Pass1!");
+        var category = await SeedCategoryAsync($"Protected-{suffix}", "Must remain unchanged.");
+
+        var createRequest = Authorized(HttpMethod.Post, "/api/categories", token);
+        createRequest.Content = JsonContent.Create(new { name = $"Unauthorized-{suffix}", description = "Should not save." });
+        var createResponse = await client.SendAsync(createRequest);
+        Assert.Equal(HttpStatusCode.Forbidden, createResponse.StatusCode);
+
+        var updateRequest = Authorized(HttpMethod.Put, $"/api/categories/{category.Id}", token);
+        updateRequest.Content = JsonContent.Create(new { name = $"Changed-{suffix}", description = "Should not update." });
+        var updateResponse = await client.SendAsync(updateRequest);
+        Assert.Equal(HttpStatusCode.Forbidden, updateResponse.StatusCode);
+
+        var deleteResponse = await client.SendAsync(Authorized(HttpMethod.Delete, $"/api/categories/{category.Id}", token));
+        Assert.Equal(HttpStatusCode.Forbidden, deleteResponse.StatusCode);
+
+        var readResponse = await client.SendAsync(Authorized(HttpMethod.Get, $"/api/categories/{category.Id}", token));
+        var unchanged = await readResponse.Content.ReadFromJsonAsync<CategoryDto>();
+        Assert.Equal(HttpStatusCode.OK, readResponse.StatusCode);
+        Assert.Equal(category.Name, unchanged!.Name);
+        Assert.Equal(category.Description, unchanged.Description);
+    }
+
     [Fact]
     public async Task CreateCategory_Unauthenticated_ReturnsUnauthorized()
     {
@@ -255,6 +288,16 @@ public class CategoriesEndpointTests : IClassFixture<ApiWebApplicationFactory>
         var response = await client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<CategoryDto>())!;
+    }
+
+    private async Task<CategoryDto> SeedCategoryAsync(string name, string description)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var category = new Category { Name = name, Description = description };
+        context.Categories.Add(category);
+        await context.SaveChangesAsync();
+        return new CategoryDto { Id = category.Id, Name = category.Name, Description = category.Description };
     }
 
     [Fact]
