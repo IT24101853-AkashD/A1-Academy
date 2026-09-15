@@ -44,14 +44,4 @@ jobs:
           ${{ secrets.DOCKER_USERNAME }}/a1academy-admin:latest
           ${{ secrets.DOCKER_USERNAME }}/a1academy-admin:${{ github.sha }}
 
-    - name: Azure Login
-      uses: azure/login@v2
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Deploy to Azure Container Apps
-      uses: azure/container-apps-deploy-action@v3
-      with:
-        imageToDeploy: ${{ secrets.DOCKER_USERNAME }}/a1academy-admin:${{ github.sha }}
-        containerAppName: a1academy-admin
-        resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
