@@ -1,0 +1,45 @@
+name: Gateway Service CI
+
+on:
+  push:
+    branches: [ "main", "feature/*" ]
+    paths:
+      - 'backend/A1Academy.Gateway/**'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'backend/A1Academy.Gateway/**'
+
+jobs:
+  build-and-dockerize:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker Image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        file: ./backend/A1Academy.Gateway/Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/a1academy-gateway:latest
+          ${{ secrets.DOCKER_USERNAME }}/a1academy-gateway:${{ github.sha }}
+
+

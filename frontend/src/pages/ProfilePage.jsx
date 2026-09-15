@@ -19,6 +19,17 @@ export default function ProfilePage() {
     const [profile, setProfile] = useState(null);
     const [errorMessage, setErrorMessage] = useState('');
 
+    useEffect(() => {
+        if (window.AOS) {
+            window.AOS.init({
+                once: false,
+                offset: 50,
+                duration: 800,
+                easing: 'ease-out-cubic'
+            });
+        }
+    }, []);
+
     // Edit mode is a layer on top of viewState === 'success' - the page only ever lets you edit
     // your own already-loaded profile, never someone else's, since there's nothing here that
     // could point it at a different user's record in the first place.
@@ -26,6 +37,7 @@ export default function ProfilePage() {
     const [formValues, setFormValues] = useState(toFormValues(null));
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState('');
+    const [firstNameError, setFirstNameError] = useState('');
     const [savedJustNow, setSavedJustNow] = useState(false);
 
     useEffect(() => {
@@ -86,8 +98,13 @@ export default function ProfilePage() {
 
     const saveProfile = async (e) => {
         e.preventDefault();
+        if (!formValues.firstName || formValues.firstName.trim() === '') {
+            setFirstNameError('First name is required.');
+            return;
+        }
         setIsSaving(true);
         setSaveError('');
+        setFirstNameError('');
         const token = localStorage.getItem('token');
 
         try {
@@ -128,8 +145,9 @@ export default function ProfilePage() {
 
     return (
         <Layout>
-            <section className="py-24 px-6 max-w-2xl mx-auto w-full min-h-[60vh]">
-                <div className="mb-10 text-center">
+            <div className="fixed inset-0 z-[-1] gradient-bg font-jakarta"></div>
+            <section className="py-24 px-6 max-w-2xl mx-auto w-full min-h-[60vh] font-jakarta">
+                <div data-aos="fade-up" className="mb-10 text-center">
                     <div className="inline-block mb-4 px-5 py-2 rounded-full bg-white/80 backdrop-blur-md text-slate-600 text-sm font-bold tracking-widest uppercase shadow-sm border border-slate-200">
                         My Account
                     </div>
@@ -180,7 +198,7 @@ export default function ProfilePage() {
                 )}
 
                 {viewState === 'success' && profile && !isEditing && (
-                    <div className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10">
+                    <div data-aos="fade-up" data-aos-delay="100" className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10">
                         <div className="flex items-start justify-between mb-8">
                             <div className="flex items-center gap-5">
                                 <div className="w-16 h-16 rounded-full bg-slate-900 text-white flex items-center justify-center text-2xl font-black flex-none">
@@ -193,13 +211,25 @@ export default function ProfilePage() {
                                     </span>
                                 </div>
                             </div>
-                            <button
-                                type="button"
-                                onClick={startEditing}
-                                className="px-5 py-2.5 rounded-full text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 cursor-pointer transition-colors flex-none"
-                            >
-                                Edit Profile
-                            </button>
+                            <div className="flex items-center gap-3">
+                                {profile.role === 'Admin' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => window.openReactModal && window.openReactModal('admin-controls-modal')}
+                                        className="px-5 py-2.5 rounded-full text-sm font-bold bg-white text-blue-600 hover:bg-blue-50 border border-blue-200 cursor-pointer transition-colors flex-none flex items-center gap-1.5"
+                                    >
+                                        <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+                                        Admin Controls
+                                    </button>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={startEditing}
+                                    className="px-5 py-2.5 rounded-full text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 cursor-pointer transition-colors flex-none"
+                                >
+                                    Edit Profile
+                                </button>
+                            </div>
                         </div>
 
                         {savedJustNow && (
@@ -249,9 +279,9 @@ export default function ProfilePage() {
                                     type="text"
                                     value={formValues.firstName}
                                     onChange={updateField('firstName')}
-                                    required
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900"
+                                    className={`w-full px-4 py-3 rounded-xl border text-slate-900 font-medium focus:outline-none focus:ring-2 ${firstNameError ? 'border-red-500 focus:ring-red-500/20' : 'border-slate-200 focus:ring-slate-900'}`}
                                 />
+                                {firstNameError && <p className="mt-1.5 text-sm font-bold text-red-500">{firstNameError}</p>}
                             </div>
                             <div>
                                 <label htmlFor="profile-last-name" className="block text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">

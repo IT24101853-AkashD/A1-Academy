@@ -1,7 +1,7 @@
-using A1Academy.API.Controllers;
-using A1Academy.API.Data;
-using A1Academy.API.Data.Models;
-using A1Academy.API.Services;
+using A1Academy.AdminService.Controllers; using A1Academy.AuthService.Controllers; 
+using A1Academy.Shared.Data;
+using A1Academy.Shared.Data.Models;
+using A1Academy.Shared.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -612,3 +612,6 @@ public void DebugOtp_OutsideDevelopmentOrTesting_ReturnsNotFound()
 }
 
 }
+
+
+

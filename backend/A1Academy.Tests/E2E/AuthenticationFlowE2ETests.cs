@@ -20,7 +20,7 @@ namespace A1Academy.Tests.E2E
     /// This is a UI test against a *running* environment - it does not start the app itself.
     /// Prerequisites, from the repo root:
     ///   1. docker-compose up -d postgres kafka zookeeper
-    ///   2. dotnet run --project backend/A1Academy.API   (defaults to http://localhost:5123, ASPNETCORE_ENVIRONMENT=Development)
+    ///   2. dotnet run --project backend/A1Academy.Shared   (defaults to http://localhost:5123, ASPNETCORE_ENVIRONMENT=Development)
     ///   3. npm run dev --prefix frontend                (defaults to http://localhost:5173)
     ///
     /// Run only this suite with:  dotnet test --filter Category=E2E
@@ -231,3 +231,5 @@ namespace A1Academy.Tests.E2E
         }
     }
 }
+
+

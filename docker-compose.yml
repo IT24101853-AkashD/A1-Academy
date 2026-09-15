@@ -33,5 +33,66 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
+  gateway:
+    build:
+      context: ./backend
+      dockerfile: A1Academy.Gateway/Dockerfile
+    container_name: local_gateway
+    environment:
+      - ReverseProxy__Clusters__authCluster__Destinations__destination1__Address=http://auth:8080/
+      - ReverseProxy__Clusters__adminCluster__Destinations__destination1__Address=http://admin:8080/
+      - ReverseProxy__Clusters__teacherCluster__Destinations__destination1__Address=http://teacher:8080/
+    ports:
+      - "5100:8080"
+    depends_on:
+      - auth
+      - admin
+      - teacher
+      - student
+
+  auth:
+    build:
+      context: ./backend
+      dockerfile: A1Academy.AuthService/Dockerfile
+    container_name: local_auth
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=appdb;Username=appuser;Password=SecurePassword123!
+    depends_on:
+      - postgres
+      - kafka
+
+  admin:
+    build:
+      context: ./backend
+      dockerfile: A1Academy.AdminService/Dockerfile
+    container_name: local_admin
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=appdb;Username=appuser;Password=SecurePassword123!
+    depends_on:
+      - postgres
+      - kafka
+
+  teacher:
+    build:
+      context: ./backend
+      dockerfile: A1Academy.TeacherService/Dockerfile
+    container_name: local_teacher
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=appdb;Username=appuser;Password=SecurePassword123!
+    depends_on:
+      - postgres
+      - kafka
+
+  student:
+    build:
+      context: ./backend
+      dockerfile: A1Academy.StudentService/Dockerfile
+    container_name: local_student
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=appdb;Username=appuser;Password=SecurePassword123!
+    depends_on:
+      - postgres
+      - kafka
+
 volumes:
   postgres_data:

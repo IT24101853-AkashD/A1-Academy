@@ -1,0 +1,6 @@
+@A1Academy.AdminService_HostAddress = http://localhost:5219
+
+GET {{A1Academy.AdminService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

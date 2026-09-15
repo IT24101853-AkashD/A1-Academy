@@ -1,5 +1,5 @@
-using A1Academy.API.Data.Models;
-using A1Academy.API.Services;
+using A1Academy.Shared.Data.Models;
+using A1Academy.Shared.Services;
 using Xunit;
 
 namespace A1Academy.Tests;
@@ -67,3 +67,5 @@ public class AccountStatusTransitionsTests
         Assert.Contains("promote", error);
     }
 }
+
+

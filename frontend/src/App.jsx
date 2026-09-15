@@ -12,7 +12,10 @@ import ProfilePage from './pages/ProfilePage';
 import CategoryManagementPage from './pages/CategoryManagementPage';
 import StudentCategoriesPage from './pages/StudentCategoriesPage';
 import ClassesPage from './pages/ClassesPage';
+import AdminDashboard from './pages/AdminDashboard';
 import AuthModals from './components/AuthModals';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 
 function App() {
   const [activeModal, setActiveModal] = useState(null);
@@ -22,8 +25,11 @@ function App() {
 
   return (
     <BrowserRouter>
-      <AuthModals activeModal={activeModal} setActiveModal={setActiveModal} openModal={openModal} closeModal={closeModal} />
-      <Routes>
+      <div className="min-h-screen flex flex-col">
+        <AuthModals activeModal={activeModal} setActiveModal={setActiveModal} openModal={openModal} closeModal={closeModal} />
+        <Navbar />
+        <div className="flex-grow flex flex-col">
+          <Routes>
         <Route path="/" element={<IndexPage />} />
         <Route path="/index.html" element={<IndexPage />} />
         <Route path="/about.html" element={<AboutPage />} />
@@ -32,12 +38,16 @@ function App() {
         <Route path="/help.html" element={<HelpPage />} />
         <Route path="/privacy.html" element={<PrivacyPage />} />
         <Route path="/terms.html" element={<TermsPage />} />
+        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<AdminUsersPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/admin/categories" element={<CategoryManagementPage />} />
         <Route path="/student/categories" element={<StudentCategoriesPage />} />
         <Route path="/classes" element={<ClassesPage />} />
-      </Routes>
+          </Routes>
+        </div>
+        <Footer />
+      </div>
     </BrowserRouter>
   );
 }

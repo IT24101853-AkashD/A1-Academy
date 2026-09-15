@@ -1,4 +1,4 @@
-using A1Academy.API.Data;
+using A1Academy.Shared.Data;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,3 +52,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+
