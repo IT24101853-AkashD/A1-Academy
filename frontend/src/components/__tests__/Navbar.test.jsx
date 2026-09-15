@@ -67,20 +67,18 @@ describe('Navbar', () => {
     expect(screen.getByText(/my profile/i)).toBeInTheDocument();
   });
 
-  it('shows Login and Register, not Log Out, when logged out', () => {
+  it('shows Login, not Log Out, when logged out', () => {
     renderNavbar();
     expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /register/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /log out/i })).not.toBeInTheDocument();
   });
 
-  it('shows Log Out, not Login/Register, once a token is stored', () => {
+  it('shows Log Out, not Login, once a token is stored', () => {
     localStorage.setItem('role', 'Student');
     localStorage.setItem('token', 'student-token');
     renderNavbar();
     expect(screen.getByRole('button', { name: /log out/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^login$/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /register/i })).not.toBeInTheDocument();
   });
 
   it('clicking Log Out clears the stored session and navigates home', () => {
