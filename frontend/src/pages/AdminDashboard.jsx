@@ -5,6 +5,29 @@ export default function AdminDashboard() {
     const role = localStorage.getItem('role');
     const navigate = useNavigate();
     const [firstName, setFirstName] = useState('');
+    const [pendingTeachers, setPendingTeachers] = useState([]);
+    const [pendingCount, setPendingCount] = useState(0);
+    const [pendingActionId, setPendingActionId] = useState(null);
+
+    
+    const runAccountAction = async (user, action) => {
+        setPendingActionId(user.id);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${user.id}/${action}`, {
+                method: 'PATCH',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.ok) {
+                setPendingTeachers(prev => prev.filter(u => u.id !== user.id));
+                setPendingCount(prev => Math.max(prev - 1, 0));
+            }
+        } catch (err) {
+            console.error('Action failed', err);
+        } finally {
+            setPendingActionId(null);
+        }
+    };
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -19,6 +42,17 @@ export default function AdminDashboard() {
                 }
             })
             .catch(err => console.error('Failed to fetch profile:', err));
+        fetch(import.meta.env.VITE_API_URL + '/api/users?role=Teacher&status=Pending&page=1&pageSize=3', {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.items) {
+                    setPendingTeachers(data.items);
+                    setPendingCount(data.totalCount || 0);
+                }
+            })
+            .catch(err => console.error('Failed to fetch pending teachers:', err));
         }
     }, []);
 
@@ -84,7 +118,7 @@ export default function AdminDashboard() {
                                 <span className="px-2.5 py-1 bg-red-50 text-red-600 text-xs font-bold rounded-full">Action Needed</span>
                             </div>
                             <h3 className="text-slate-500 font-semibold text-sm mb-1">Pending Approvals</h3>
-                            <p className="text-3xl font-extrabold text-slate-900">12</p>
+                            <p className="text-3xl font-extrabold text-slate-900">{pendingCount}</p>
                         </div>
 
                         <div data-aos="fade-up" data-aos-delay="400" className="glass-card rounded-3xl p-6">
@@ -144,37 +178,49 @@ export default function AdminDashboard() {
                                 <span className="material-symbols-outlined text-amber-500">notification_important</span>
                             </h2>
                             <div className="space-y-6">
-                                <div className="flex gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-amber-100 flex-shrink-0 flex items-center justify-center text-amber-700 font-bold text-sm">
-                                        SJ
+                                {pendingTeachers.length === 0 ? (
+                                    <div className="text-center py-6">
+                                        <p className="text-slate-500 font-medium text-sm">All caught up! No pending applications.</p>
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-slate-900">Sarah Jenkins</p>
-                                        <p className="text-xs font-medium text-slate-500 mb-2">Applied for Teacher role</p>
-                                        <div className="flex gap-2">
-                                            <button className="px-3 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold rounded-lg cursor-pointer">Approve</button>
-                                            <button className="px-3 py-1 bg-slate-50 text-slate-600 hover:bg-slate-100 text-xs font-bold rounded-lg cursor-pointer">Review</button>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div className="flex gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-amber-100 flex-shrink-0 flex items-center justify-center text-amber-700 font-bold text-sm">
-                                        FF
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-slate-900">Frank Foster</p>
-                                        <p className="text-xs font-medium text-slate-500 mb-2">Applied for Teacher role</p>
-                                        <div className="flex gap-2">
-                                            <button className="px-3 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold rounded-lg cursor-pointer">Approve</button>
-                                            <button className="px-3 py-1 bg-slate-50 text-slate-600 hover:bg-slate-100 text-xs font-bold rounded-lg cursor-pointer">Review</button>
-                                        </div>
-                                    </div>
-                                </div>
+                                ) : (
+                                    pendingTeachers.map((user) => {
+                                        const nameParts = (user.name || user.email || 'U').trim().split(' ');
+                                        const initials = nameParts.length > 1 
+                                            ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
+                                            : nameParts[0].substring(0, 2).toUpperCase();
 
-                                <button className="block w-full text-center text-sm font-bold text-blue-600 hover:text-blue-700 pt-4 border-t border-slate-100 cursor-pointer">
-                                    View all 12 pending
-                                </button>
+                                        return (
+                                            <div key={user.id} className="flex gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-amber-100 flex-shrink-0 flex items-center justify-center text-amber-700 font-bold text-sm">
+                                                    {initials}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-slate-900">{user.name}</p>
+                                                    <p className="text-xs font-medium text-slate-500 mb-2">Applied for Teacher role</p>
+                                                    <div className="flex gap-2">
+                                                        <button 
+                                                            disabled={pendingActionId === user.id}
+                                                            onClick={() => runAccountAction(user, 'approve')}
+                                                            className="px-3 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold rounded-lg cursor-pointer disabled:opacity-50 transition-colors"
+                                                        >
+                                                            {pendingActionId === user.id ? 'Working...' : 'Approve'}
+                                                        </button>
+                                                        <Link 
+                                                            to="/admin/users"
+                                                            className="px-3 py-1 bg-slate-50 text-slate-600 hover:bg-slate-100 text-xs font-bold rounded-lg cursor-pointer transition-colors"
+                                                        >
+                                                            Review
+                                                        </Link>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+
+                                <Link to="/admin/users" className="block w-full text-center text-sm font-bold text-blue-600 hover:text-blue-700 pt-4 border-t border-slate-100 cursor-pointer">
+                                    {pendingCount > 0 ? `View all ${pendingCount} pending` : 'Go to User Directory'}
+                                </Link>
                             </div>
                         </div>
 
