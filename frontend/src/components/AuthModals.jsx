@@ -595,7 +595,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
                                         </div>
                                     ) : (
                                         <button type="button" id="student-verify-btn" disabled={isSendingOtp} onClick={() => sendOtp('student-email', 'Student')} className="shrink-0 bg-amber-300 text-slate-900 font-bold px-4 py-2.5 rounded-lg hover:bg-amber-400 transition-all shadow-sm cursor-pointer w-[116px] flex items-center justify-center gap-1 disabled:opacity-70 ">
-                                        {isSendingOtp === 'admin-current-email' ? (
+                                        {isSendingOtp ? (
                                                 <><span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> Sending...</>
                                             ) : (
                                                 'Verify'
@@ -794,7 +794,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
                                         </div>
                                     ) : (
                                         <button type="button" id="teacher-verify-btn" disabled={isSendingOtp} onClick={() => sendOtp('teacher-email', 'Teacher')} className="shrink-0 bg-amber-300 text-slate-900 font-bold px-4 py-2.5 rounded-lg hover:bg-amber-400 transition-all shadow-sm cursor-pointer w-[116px] flex items-center justify-center gap-1 disabled:opacity-70 ">
-                                        {isSendingOtp === 'admin-new-email' ? (
+                                        {isSendingOtp ? (
                                                 <><span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> Sending...</>
                                             ) : (
                                                 'Verify'
