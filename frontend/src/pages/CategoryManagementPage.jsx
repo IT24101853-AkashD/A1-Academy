@@ -27,6 +27,17 @@ export default function CategoryManagementPage() {
     const [isEditSaving, setIsEditSaving] = useState(false);
     const [editError, setEditError] = useState('');
 
+    useEffect(() => {
+        if (window.AOS) {
+            window.AOS.init({
+                once: false,
+                offset: 50,
+                duration: 800,
+                easing: 'ease-out-cubic'
+            });
+        }
+    }, []);
+
     const loadCategories = () => {
         const token = localStorage.getItem('token');
         setViewState('loading');
@@ -169,8 +180,9 @@ export default function CategoryManagementPage() {
 
     return (
         <Layout>
-            <section className="py-24 px-6 max-w-3xl mx-auto w-full min-h-[60vh]">
-                <div className="mb-10 text-center">
+            <div className="fixed inset-0 z-[-1] gradient-bg font-jakarta"></div>
+            <section className="py-24 px-6 max-w-3xl mx-auto w-full min-h-[60vh] font-jakarta">
+                <div data-aos="fade-up" className="mb-10 text-center">
                     <div className="inline-block mb-4 px-5 py-2 rounded-full bg-white/80 backdrop-blur-md text-slate-600 text-sm font-bold tracking-widest uppercase shadow-sm border border-slate-200">
                         Administrator
                     </div>
@@ -222,7 +234,7 @@ export default function CategoryManagementPage() {
 
                 {viewState === 'success' && (
                     <>
-                        <form onSubmit={createCategory} className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 mb-10">
+                        <form data-aos="fade-up" data-aos-delay="100" onSubmit={createCategory} className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 mb-10">
                             <h2 className="text-2xl font-bold text-slate-900 mb-6">New Category</h2>
 
                             {formError && (
@@ -276,7 +288,7 @@ export default function CategoryManagementPage() {
                             </button>
                         </form>
 
-                        <div className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 overflow-hidden">
+                        <div data-aos="fade-up" data-aos-delay="200" className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 overflow-hidden">
                             <div className="px-6 py-4 border-b border-slate-100">
                                 <h2 className="text-lg font-bold text-slate-900">Existing Categories</h2>
                             </div>

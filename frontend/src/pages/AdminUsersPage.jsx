@@ -11,6 +11,12 @@ const STATUS_STYLES = {
     Deactivated: 'bg-slate-100 text-slate-600 border-slate-200',
 };
 
+const ROLE_STYLES = {
+    Student: 'text-sky-600 bg-sky-50',
+    Teacher: 'text-violet-600 bg-violet-50',
+    Admin: 'text-amber-600 bg-amber-50',
+};
+
 // What the account status API errors would call "not a valid action from here" messages, kept
 // friendly per action instead of surfacing the raw status code to whoever's clicking the button.
 const ACTION_ERROR_MESSAGES = {
@@ -18,6 +24,7 @@ const ACTION_ERROR_MESSAGES = {
     reject: 'Could not reject this application. Please try again.',
     deactivate: 'Could not deactivate this account. Please try again.',
     reactivate: 'Could not reactivate this account. Please try again.',
+    delete: 'Could not delete this account. Please try again.',
 };
 
 const PAGE_SIZE = 10;
@@ -57,12 +64,6 @@ export default function AdminUsersPage() {
             headers: { Authorization: `Bearer ${token}` },
         })
             .then(async (res) => {
-                // 401 means this specific token is dead - expired, or the account behind it was
-                // deactivated/otherwise changed status since it was issued (see Program.cs's
-                // OnTokenValidated). That's different from 403 (a real Admin session, just not
-                // allowed here): the token itself is no good, so the stale role/token shouldn't
-                // keep telling the rest of the app (e.g. the Navbar) that this browser is still
-                // signed in.
                 if (res.status === 401) {
                     clearSession();
                     setViewState('sessionEnded');
@@ -115,51 +116,39 @@ export default function AdminUsersPage() {
         setStatusFilter('');
     };
 
-    // Runs one of the account actions (approve/reject/deactivate/reactivate) against a single
-    // row. All four work the same way on the frontend - hit PATCH /api/users/{id}/{action} and
-    // either update the row in place or drop it from view, depending on whether it still
-    // matches whatever status filter the admin currently has selected.
     const runAccountAction = async (user, action) => {
         setPendingActionId(user.id);
         setActionError('');
-        const token = localStorage.getItem('token');
-
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${user.id}/${action}`, {
-                method: 'PATCH',
+            const token = localStorage.getItem('token');
+            const isDelete = action === 'delete';
+            const endpoint = isDelete 
+                ? `${import.meta.env.VITE_API_URL}/api/users/${user.id}` 
+                : `${import.meta.env.VITE_API_URL}/api/users/${user.id}/${action}`;
+            
+            const res = await fetch(endpoint, {
+                method: isDelete ? 'DELETE' : 'PATCH',
                 headers: { Authorization: `Bearer ${token}` },
             });
+            if (!res.ok) throw new Error('Action failed');
 
-            // The admin's own session can die mid-use too - e.g. a second Admin deactivates them
-            // in another tab while this page is still open. That's not "this action failed",
-            // it's "you're not signed in anymore", so it gets the same full-page Session Ended
-            // state as the initial load rather than a per-row error message.
-            if (res.status === 401) {
-                clearSession();
-                setViewState('sessionEnded');
-                return;
-            }
-
-            if (!res.ok) {
-                throw new Error(`${action} failed with status ${res.status}`);
-            }
-
-            const updated = await res.json();
-            // If a status filter is active and the account's new status no longer matches it,
-            // the row doesn't belong on screen anymore - e.g. approving out of a "Pending" view.
-            const dropsOutOfView = Boolean(statusFilter) && updated.status !== statusFilter;
-
-            setUsers((current) =>
-                dropsOutOfView
-                    ? current.filter((u) => u.id !== user.id)
-                    : current.map((u) => (u.id === user.id ? updated : u))
-            );
-            if (dropsOutOfView) {
+            if (isDelete) {
+                setUsers((current) => current.filter((u) => u.id !== user.id));
                 setTotalCount((count) => Math.max(count - 1, 0));
+            } else {
+                const updated = await res.json();
+                const dropsOutOfView = Boolean(statusFilter) && updated.status !== statusFilter;
+
+                setUsers((current) =>
+                    dropsOutOfView
+                        ? current.filter((u) => u.id !== user.id)
+                        : current.map((u) => (u.id === user.id ? updated : u))
+                );
+                if (dropsOutOfView) {
+                    setTotalCount((count) => Math.max(count - 1, 0));
+                }
             }
         } catch {
-            // Whatever went wrong (network blip, 4xx/5xx), the admin doesn't need the raw
-            // status code - just a plain "it didn't work, try again" message.
             setActionError(ACTION_ERROR_MESSAGES[action] || 'That action could not be completed. Please try again.');
         } finally {
             setPendingActionId(null);
@@ -168,17 +157,20 @@ export default function AdminUsersPage() {
 
     return (
         <Layout>
-            <section className="py-24 px-6 max-w-6xl mx-auto w-full min-h-[60vh]">
-                <div className="mb-10 text-center">
-                    <div className="inline-block mb-4 px-5 py-2 rounded-full bg-white/80 backdrop-blur-md text-slate-600 text-sm font-bold tracking-widest uppercase shadow-sm border border-slate-200">
+            <div className="fixed inset-0 z-[-1] gradient-bg font-jakarta"></div>
+
+            <section className="py-24 px-6 max-w-7xl mx-auto w-full min-h-[70vh] font-jakarta">
+                <div data-aos="fade-up" className="mb-10 text-center">
+                    <div className="inline-flex items-center gap-2 mb-4 px-5 py-2 rounded-full bg-white/60 backdrop-blur-md text-slate-600 text-sm font-bold tracking-widest uppercase shadow-sm border border-slate-200">
+                        <span className="material-symbols-outlined text-sm text-blue-500">admin_panel_settings</span>
                         Administrator
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-3">User Directory</h1>
-                    <p className="text-lg font-medium text-slate-500">All registered students, teachers, and administrators on the platform.</p>
+                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-3 tracking-tight gradient-text pb-2">User Directory</h1>
+                    <p className="text-lg font-medium text-slate-500 max-w-2xl mx-auto">Manage students, teachers, and administrators across the platform.</p>
                 </div>
 
                 {viewState === 'denied' && (
-                    <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
+                    <div className="max-w-lg mx-auto bg-white/80 backdrop-blur-md rounded-[32px] shadow-level-2 border border-slate-100 p-10 text-center">
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 flex items-center justify-center">
                             <span className="material-symbols-outlined text-[32px] text-red-500">block</span>
                         </div>
@@ -190,17 +182,17 @@ export default function AdminUsersPage() {
                 )}
 
                 {viewState === 'sessionEnded' && (
-                    <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
+                    <div className="max-w-lg mx-auto bg-white/80 backdrop-blur-md rounded-[32px] shadow-level-2 border border-slate-100 p-10 text-center">
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 flex items-center justify-center">
                             <span className="material-symbols-outlined text-[32px] text-amber-500">lock_clock</span>
                         </div>
                         <h2 className="text-2xl font-bold text-slate-900 mb-2">Session Ended</h2>
                         <p className="text-base font-medium text-slate-500 mb-6">
-                            You've been signed out - this can happen if your account's status changed. Please sign in again to continue.
+                            You've been signed out. Please sign in again to continue.
                         </p>
                         <a
                             href="/"
-                            className="inline-block px-6 py-3 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 transition-colors"
+                            className="inline-block px-6 py-3 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 transition-colors shadow-md"
                         >
                             Back to Home
                         </a>
@@ -208,119 +200,143 @@ export default function AdminUsersPage() {
                 )}
 
                 {(viewState === 'loading' || viewState === 'error' || viewState === 'success') && (
-                    <UserFilters
-                        role={roleFilter}
-                        status={statusFilter}
-                        onRoleChange={applyRoleFilter}
-                        onStatusChange={applyStatusFilter}
-                        onShowPendingTeachers={showPendingTeachers}
-                        onClear={clearFilters}
-                    />
+                    <div data-aos="fade-up" data-aos-delay="100">
+                        <UserFilters
+                            role={roleFilter}
+                            status={statusFilter}
+                            onRoleChange={applyRoleFilter}
+                            onStatusChange={applyStatusFilter}
+                            onShowPendingTeachers={showPendingTeachers}
+                            onClear={clearFilters}
+                        />
+                    </div>
                 )}
 
                 {viewState === 'loading' && (
-                    <div className="text-center py-20">
-                        <span className="material-symbols-outlined text-[40px] text-slate-400 animate-spin">progress_activity</span>
+                    <div className="text-center py-32">
+                        <span className="material-symbols-outlined text-[48px] text-slate-300 animate-spin">progress_activity</span>
                     </div>
                 )}
 
                 {viewState === 'error' && (
-                    <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
-                        <p className="text-base font-bold text-red-500">{errorMessage}</p>
+                    <div className="max-w-lg mx-auto bg-white/80 backdrop-blur-md rounded-[32px] shadow-level-2 border border-red-100 p-10 text-center mt-8">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-50 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[28px] text-red-500">error</span>
+                        </div>
+                        <p className="text-base font-bold text-red-600">{errorMessage}</p>
                     </div>
                 )}
 
                 {viewState === 'success' && (
-                    <div className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 overflow-hidden">
+                    <div data-aos="fade-up" data-aos-delay="200" className="flex flex-col gap-4">
                         {actionError && (
-                            <div className="px-6 py-3 bg-red-50 border-b border-red-100 text-sm font-bold text-red-600">
+                            <div className="px-6 py-4 rounded-2xl bg-red-50 border border-red-200 text-sm font-bold text-red-600 shadow-sm flex items-center gap-3">
+                                <span className="material-symbols-outlined">warning</span>
                                 {actionError}
                             </div>
                         )}
-                        <table className="w-full text-left">
-                            <thead className="bg-slate-50 border-b border-slate-100">
-                                <tr>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Name</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Email</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Role</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Status</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase tracking-wide">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {users.length === 0 && (
-                                    <tr>
-                                        <td colSpan={5} className="px-6 py-10 text-center text-slate-500 font-medium">
-                                            {roleFilter || statusFilter
-                                                ? 'No users match the current filter.'
-                                                : 'No registered users yet.'}
-                                        </td>
-                                    </tr>
-                                )}
-                                {users.map((user) => (
-                                    <tr key={user.email} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-6 py-4 font-bold text-slate-900">{user.name}</td>
-                                        <td className="px-6 py-4 text-slate-600">{user.email}</td>
-                                        <td className="px-6 py-4 text-slate-600">{user.role}</td>
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${STATUS_STYLES[user.status] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
-                                                {user.status}
+
+                        {/* Floating Cards List */}
+                        <div className="space-y-4">
+                            {users.length === 0 && (
+                                <div className="bg-white/60 backdrop-blur-md rounded-[24px] border border-slate-100 px-6 py-16 text-center text-slate-500 font-medium shadow-sm">
+                                    <span className="material-symbols-outlined text-4xl text-slate-300 mb-3 block">search_off</span>
+                                    {roleFilter || statusFilter
+                                        ? 'No users match the current filter.'
+                                        : 'No registered users yet.'}
+                                </div>
+                            )}
+                            
+                            {users.map((user) => (
+                                <div key={user.email} className="group bg-white/70 hover:bg-white backdrop-blur-md rounded-[24px] border border-slate-100 p-5 md:p-6 shadow-sm hover:shadow-lg transition-all flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+                                    {/* Avatar & Info */}
+                                    <div className="flex items-center gap-5 flex-1 min-w-0">
+                                        <div className="w-14 h-14 rounded-full bg-slate-900 text-white flex items-center justify-center text-xl font-black flex-shrink-0 shadow-md">
+                                            {user.name?.charAt(0).toUpperCase() || '?'}
+                                        </div>
+                                        <div className="truncate">
+                                            <h3 className="text-lg font-bold text-slate-900 truncate">{user.name}</h3>
+                                            <p className="text-sm text-slate-500 truncate">{user.email}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Role & Status Pill */}
+                                    <div className="flex items-center gap-3 md:w-64 flex-shrink-0">
+                                        <div className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm ${ROLE_STYLES[user.role] || 'text-slate-600 bg-slate-50'}`}>
+                                            <span className="material-symbols-outlined text-[14px]">
+                                                {user.role === 'Admin' ? 'shield' : user.role === 'Teacher' ? 'school' : 'person'}
                                             </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex gap-2">
-                                                {user.status === 'Pending' && (
-                                                    <>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => runAccountAction(user, 'approve')}
-                                                            disabled={pendingActionId === user.id}
-                                                            className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                                                        >
-                                                            {pendingActionId === user.id ? 'Working…' : 'Approve'}
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => runAccountAction(user, 'reject')}
-                                                            disabled={pendingActionId === user.id}
-                                                            className="px-3 py-1.5 rounded-full text-xs font-bold bg-white border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                                                        >
-                                                            Reject
-                                                        </button>
-                                                    </>
-                                                )}
-                                                {user.status === 'Active' && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => runAccountAction(user, 'deactivate')}
-                                                        disabled={pendingActionId === user.id}
-                                                        className="px-3 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                                                    >
-                                                        {pendingActionId === user.id ? 'Working…' : 'Deactivate'}
-                                                    </button>
-                                                )}
-                                                {user.status === 'Deactivated' && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => runAccountAction(user, 'reactivate')}
-                                                        disabled={pendingActionId === user.id}
-                                                        className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                                                    >
-                                                        {pendingActionId === user.id ? 'Working…' : 'Reactivate'}
-                                                    </button>
-                                                )}
-                                                {/* Rejected is a dead end by design - see AccountStatusTransitions - so no
-                                                    action renders here. A rejected applicant re-registers instead. */}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                            {user.role}
+                                        </div>
+                                        <span className={`inline-block px-3 py-1.5 rounded-full text-xs font-bold border shadow-sm ${STATUS_STYLES[user.status] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                                            {user.status}
+                                        </span>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="flex gap-2 md:justify-end md:w-64 flex-shrink-0 mt-2 md:mt-0 pt-4 md:pt-0 border-t md:border-none border-slate-100">
+                                        {user.status === 'Pending' && (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => runAccountAction(user, 'approve')}
+                                                    disabled={pendingActionId === user.id}
+                                                    className="flex-1 md:flex-none px-4 py-2 rounded-full text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center justify-center gap-1"
+                                                >
+                                                    {pendingActionId === user.id ? 'Workingâ€¦' : <><span className="material-symbols-outlined text-[16px]">check</span> Approve</>}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => runAccountAction(user, 'reject')}
+                                                    disabled={pendingActionId === user.id}
+                                                    className="flex-1 md:flex-none px-4 py-2 rounded-full text-xs font-bold bg-white border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all"
+                                                >
+                                                    Reject
+                                                </button>
+                                            </>
+                                        )}
+                                        {user.status === 'Active' && user.role !== 'Admin' && (
+                                            <button
+                                                type="button"
+                                                onClick={() => { if(window.confirm('Do you want to deactivate? Yes or Cancel')) runAccountAction(user, 'deactivate'); }}
+                                                disabled={pendingActionId === user.id}
+                                                className="px-4 py-2 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-red-600 hover:border-red-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1"
+                                            >
+                                                {pendingActionId === user.id ? 'Working…' : <><span className="material-symbols-outlined text-[16px]">block</span> Deactivate</>}
+                                            </button>
+                                        )}
+                                        {user.status === 'Deactivated' && user.role !== 'Admin' && (
+                                            <button
+                                                type="button"
+                                                onClick={() => { if(window.confirm('Do you want to activate? Yes or Cancel')) runAccountAction(user, 'reactivate'); }}
+                                                disabled={pendingActionId === user.id}
+                                                className="px-4 py-2 rounded-full text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1"
+                                            >
+                                                {pendingActionId === user.id ? 'Working…' : <><span className="material-symbols-outlined text-[16px]">settings_backup_restore</span> Reactivate</>}
+                                            </button>
+                                        )}
+                                        {user.role !== 'Admin' && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if(window.confirm('Are you sure you want to remove this account? This cannot be undone.')) {
+                                                        runAccountAction(user, 'delete');
+                                                    }
+                                                }}
+                                                disabled={pendingActionId === user.id}
+                                                className="px-4 py-2 rounded-full text-xs font-bold bg-red-50 border border-red-200 text-red-600 hover:bg-red-600 hover:text-white shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1"
+                                            >
+                                                {pendingActionId === user.id ? 'Working…' : <><span className="material-symbols-outlined text-[16px]">delete</span> Remove</>}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
 
                         {totalCount > 0 && (
-                            <div className="px-6 py-4 border-t border-slate-100 flex flex-col items-center gap-1">
-                                <p className="text-sm font-medium text-slate-500">
+                            <div className="mt-6 flex flex-col items-center gap-2">
+                                <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">
                                     Showing page {page} of {totalPages} &middot; {totalCount} total users
                                 </p>
                                 <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
