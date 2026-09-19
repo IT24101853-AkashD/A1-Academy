@@ -27,7 +27,7 @@ for APP_NAME in "$AUTH_APP_NAME" "$ADMIN_APP_NAME" "$STUDENT_APP_NAME" "$TEACHER
     --set-env-vars \
       "Jwt__Key=$JWT_KEY" \
       "Admin__Password=$ADMIN_PASSWORD" \
-      "ConnectionStrings__DefaultConnection=$DB_CONNECTION_STRING" \
+      "ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING};Pooling=true;Max Pool Size=100;" \
       "EmailSettings__SmtpPassword=$SMTP_PASSWORD"
 done
 

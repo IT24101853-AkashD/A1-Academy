@@ -15,7 +15,7 @@ builder.Services.AddApplicationInsightsTelemetry();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 // Register DbContext
-builder.Services.AddDbContext<A1Academy.Shared.Data.AppDbContext>(options =>
+builder.Services.AddDbContextPool<A1Academy.Shared.Data.AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // Register Kafka Services
