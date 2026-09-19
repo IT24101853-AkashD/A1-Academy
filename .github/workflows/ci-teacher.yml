@@ -2,7 +2,7 @@ name: Teacher Service CI
 
 on:
   push:
-    branches: [ "main", "feature/*" ]
+    branches: [ "main" ]
     paths:
       - 'backend/A1Academy.TeacherService/**'
       - 'backend/A1Academy.Shared/**'
