@@ -365,7 +365,8 @@ export default function CategoryManagementPage() {
             <div className="fixed inset-0 z-[-1] gradient-bg font-jakarta"></div>
             <section className="py-24 px-6 max-w-3xl mx-auto w-full min-h-[60vh] font-jakarta">
                 <div data-aos="fade-up" className="mb-10 text-center">
-                    <div className="inline-block mb-4 px-5 py-2 rounded-full bg-white/80 backdrop-blur-md text-slate-600 text-sm font-bold tracking-widest uppercase shadow-sm border border-slate-200">
+                    <div className="inline-flex items-center gap-2 mb-4 px-5 py-2 rounded-full bg-white/80 backdrop-blur-md text-slate-600 text-sm font-bold tracking-widest uppercase shadow-sm border border-slate-200">
+                        <span className="material-symbols-outlined text-[16px]" aria-hidden="true">admin_panel_settings</span>
                         Administrator
                     </div>
                     <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-3">Category Management</h1>
@@ -374,8 +375,8 @@ export default function CategoryManagementPage() {
 
                 {viewState === 'denied' && (
                     <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-[32px] text-red-500">block</span>
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 ring-8 ring-red-50/50 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[32px] text-red-500" aria-hidden="true">block</span>
                         </div>
                         <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h2>
                         <p className="text-base font-medium text-slate-500">
@@ -386,8 +387,8 @@ export default function CategoryManagementPage() {
 
                 {viewState === 'sessionEnded' && (
                     <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-[32px] text-amber-500">lock_clock</span>
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 ring-8 ring-amber-50/50 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[32px] text-amber-500" aria-hidden="true">lock_clock</span>
                         </div>
                         <h2 className="text-2xl font-bold text-slate-900 mb-2">Session Ended</h2>
                         <p className="text-base font-medium text-slate-500 mb-6">
@@ -403,13 +404,17 @@ export default function CategoryManagementPage() {
                 )}
 
                 {viewState === 'loading' && (
-                    <div className="text-center py-20">
-                        <span className="material-symbols-outlined text-[40px] text-slate-400 animate-spin">progress_activity</span>
+                    <div className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 py-24 text-center">
+                        <span className="material-symbols-outlined text-[40px] text-slate-300 animate-spin" aria-hidden="true">progress_activity</span>
+                        <p className="mt-3 text-sm font-bold text-slate-400">Loading categories…</p>
                     </div>
                 )}
 
                 {viewState === 'error' && (
                     <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 ring-8 ring-red-50/50 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[32px] text-red-500" aria-hidden="true">error</span>
+                        </div>
                         <p className="text-base font-bold text-red-500">{errorMessage}</p>
                     </div>
                 )}
@@ -417,15 +422,22 @@ export default function CategoryManagementPage() {
                 {viewState === 'success' && (
                     <>
                         <form data-aos="fade-up" data-aos-delay="100" onSubmit={createCategory} className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 mb-10">
-                            <h2 className="text-2xl font-bold text-slate-900 mb-6">New Category</h2>
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-none">
+                                    <span className="material-symbols-outlined text-amber-600 text-[20px]" aria-hidden="true">add_circle</span>
+                                </div>
+                                <h2 className="text-2xl font-bold text-slate-900">New Category</h2>
+                            </div>
 
                             {formError && (
-                                <div className="mb-6 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-600">
+                                <div className="mb-6 flex items-start gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-600">
+                                    <span className="material-symbols-outlined text-[18px] leading-none mt-0.5" aria-hidden="true">error</span>
                                     {formError}
                                 </div>
                             )}
                             {savedJustNow && (
-                                <div className="mb-6 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-sm font-bold text-emerald-700">
+                                <div className="mb-6 flex items-start gap-2 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-sm font-bold text-emerald-700">
+                                    <span className="material-symbols-outlined text-[18px] leading-none mt-0.5" aria-hidden="true">check_circle</span>
                                     Category created and available immediately.
                                 </div>
                             )}
@@ -464,26 +476,36 @@ export default function CategoryManagementPage() {
                             <button
                                 type="submit"
                                 disabled={isSaving}
-                                className="mt-6 px-6 py-3 rounded-full text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-sm"
                             >
+                                <span className={`material-symbols-outlined text-[18px] ${isSaving ? 'animate-spin' : ''}`} aria-hidden="true">
+                                    {isSaving ? 'progress_activity' : 'add'}
+                                </span>
                                 {isSaving ? 'Creating…' : 'Create Category'}
                             </button>
                         </form>
 
                         <div data-aos="fade-up" data-aos-delay="200" className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-slate-100">
+                            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                                 <h2 className="text-lg font-bold text-slate-900">Existing Categories</h2>
+                                <span className="text-xs font-bold text-slate-400 bg-slate-50 border border-slate-100 rounded-full px-2.5 py-1 tabular-nums">
+                                    {categories.length}
+                                </span>
                             </div>
                             {categories.length === 0 ? (
-                                <p className="px-6 py-10 text-center text-slate-500 font-medium">No categories yet - create the first one above.</p>
+                                <div className="px-6 py-16 text-center">
+                                    <span className="material-symbols-outlined text-[32px] text-slate-300 block mb-2" aria-hidden="true">category</span>
+                                    <p className="text-slate-500 font-medium">No categories yet - create the first one above.</p>
+                                </div>
                             ) : (
                                 <ul className="divide-y divide-slate-100">
                                     {categories.map((category) => (
-                                        <li key={category.id} className="px-6 py-4">
+                                        <li key={category.id} className="px-6 py-4 hover:bg-slate-50/60 transition-colors">
                                             {editingId === category.id ? (
                                                 <form onSubmit={saveEditedCategory} className="space-y-4">
                                                     {editError && (
-                                                        <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-600">
+                                                        <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-600">
+                                                            <span className="material-symbols-outlined text-[18px] leading-none mt-0.5" aria-hidden="true">error</span>
                                                             {editError}
                                                         </div>
                                                     )}
@@ -517,16 +539,20 @@ export default function CategoryManagementPage() {
                                                         <button
                                                             type="submit"
                                                             disabled={isEditSaving}
-                                                            className="px-5 py-2 rounded-full text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-sm"
                                                         >
+                                                            <span className={`material-symbols-outlined text-[16px] ${isEditSaving ? 'animate-spin' : ''}`} aria-hidden="true">
+                                                                {isEditSaving ? 'progress_activity' : 'check'}
+                                                            </span>
                                                             {isEditSaving ? 'Saving…' : 'Save Changes'}
                                                         </button>
                                                         <button
                                                             type="button"
                                                             onClick={cancelEditingCategory}
                                                             disabled={isEditSaving}
-                                                            className="px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
                                                         >
+                                                            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">close</span>
                                                             Cancel
                                                         </button>
                                                     </div>
@@ -534,11 +560,13 @@ export default function CategoryManagementPage() {
                                             ) : confirmingDeleteId === category.id ? (
                                                 <div className="space-y-4">
                                                     {deleteError && (
-                                                        <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-600">
+                                                        <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-600">
+                                                            <span className="material-symbols-outlined text-[18px] leading-none mt-0.5" aria-hidden="true">error</span>
                                                             {deleteError}
                                                         </div>
                                                     )}
-                                                    <p className="text-sm font-bold text-slate-700">
+                                                    <p className="flex items-start gap-1.5 text-sm font-bold text-slate-700">
+                                                        <span className="material-symbols-outlined text-[17px] text-red-500 leading-none mt-0.5" aria-hidden="true">warning</span>
                                                         Delete "{category.name}"? This can't be undone.
                                                     </p>
                                                     <div className="flex gap-3">
@@ -546,39 +574,50 @@ export default function CategoryManagementPage() {
                                                             type="button"
                                                             onClick={() => confirmDeleteCategory(category.id)}
                                                             disabled={isDeleting}
-                                                            className="px-5 py-2 rounded-full text-sm font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-sm"
                                                         >
+                                                            <span className={`material-symbols-outlined text-[16px] ${isDeleting ? 'animate-spin' : ''}`} aria-hidden="true">
+                                                                {isDeleting ? 'progress_activity' : 'delete_forever'}
+                                                            </span>
                                                             {isDeleting ? 'Deleting…' : 'Confirm Delete'}
                                                         </button>
                                                         <button
                                                             type="button"
                                                             onClick={cancelDeletingCategory}
                                                             disabled={isDeleting}
-                                                            className="px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
                                                         >
+                                                            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">close</span>
                                                             Cancel
                                                         </button>
                                                     </div>
                                                 </div>
                                             ) : (
                                                 <div className="flex items-start justify-between gap-4">
-                                                    <div>
-                                                        <p className="font-bold text-slate-900">{category.name}</p>
-                                                        <p className="text-sm text-slate-500 mt-1">{category.description}</p>
+                                                    <div className="flex items-start gap-3 min-w-0">
+                                                        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-none mt-0.5">
+                                                            <span className="material-symbols-outlined text-slate-500 text-[18px]" aria-hidden="true">category</span>
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="font-bold text-slate-900">{category.name}</p>
+                                                            <p className="text-sm text-slate-500 mt-1">{category.description}</p>
+                                                        </div>
                                                     </div>
                                                     <div className="flex-none flex gap-2">
                                                         <button
                                                             type="button"
                                                             onClick={() => startEditingCategory(category)}
-                                                            className="px-4 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors"
+                                                            className="inline-flex items-center gap-1 px-4 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors"
                                                         >
+                                                            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">edit</span>
                                                             Edit
                                                         </button>
                                                         <button
                                                             type="button"
                                                             onClick={() => startDeletingCategory(category)}
-                                                            className="px-4 py-2 rounded-full text-sm font-bold bg-white border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
+                                                            className="inline-flex items-center gap-1 px-4 py-2 rounded-full text-sm font-bold bg-white border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
                                                         >
+                                                            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">delete</span>
                                                             Delete
                                                         </button>
                                                     </div>
@@ -591,17 +630,29 @@ export default function CategoryManagementPage() {
                         </div>
 
                         <div className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 overflow-hidden mt-10">
-                            <div className="px-6 py-4 border-b border-slate-100">
-                                <h2 className="text-lg font-bold text-slate-900">Pending Subject Requests</h2>
-                                <p className="text-sm text-slate-500 mt-1">
-                                    Subjects Teachers typed under "Other" at registration because they weren't in the list yet.
-                                    Add a matching Category above if it's a real subject, then approve the request against it.
-                                </p>
+                            <div className="px-6 py-4 border-b border-slate-100 flex items-start justify-between gap-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-none">
+                                        <span className="material-symbols-outlined text-amber-600 text-[20px]" aria-hidden="true">contact_support</span>
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-bold text-slate-900">Pending Subject Requests</h2>
+                                        <p className="text-sm text-slate-500 mt-1">
+                                            Subjects Teachers typed under "Other" at registration because they weren't in the list yet.
+                                            Add a matching Category above if it's a real subject, then approve the request against it.
+                                        </p>
+                                    </div>
+                                </div>
+                                {requestsViewState === 'success' && subjectRequests.length > 0 && (
+                                    <span className="flex-none text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1 tabular-nums">
+                                        {subjectRequests.length}
+                                    </span>
+                                )}
                             </div>
 
                             {requestsViewState === 'loading' && (
                                 <div className="text-center py-10">
-                                    <span className="material-symbols-outlined text-[32px] text-slate-400 animate-spin">progress_activity</span>
+                                    <span className="material-symbols-outlined text-[32px] text-slate-300 animate-spin" aria-hidden="true">progress_activity</span>
                                 </div>
                             )}
 
@@ -611,15 +662,19 @@ export default function CategoryManagementPage() {
 
                             {requestsViewState === 'success' && (
                                 subjectRequests.length === 0 ? (
-                                    <p className="px-6 py-10 text-center text-slate-500 font-medium">No pending requests right now.</p>
+                                    <div className="px-6 py-16 text-center">
+                                        <span className="material-symbols-outlined text-[32px] text-slate-300 block mb-2" aria-hidden="true">task_alt</span>
+                                        <p className="text-slate-500 font-medium">No pending requests right now.</p>
+                                    </div>
                                 ) : (
                                     <ul className="divide-y divide-slate-100">
                                         {subjectRequests.map((request) => (
-                                            <li key={request.id} className="px-6 py-4">
+                                            <li key={request.id} className="px-6 py-4 hover:bg-slate-50/60 transition-colors">
                                                 {reviewingRequestId === request.id ? (
                                                     <div className="space-y-4">
                                                         {reviewError && (
-                                                            <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-600">
+                                                            <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-600">
+                                                                <span className="material-symbols-outlined text-[18px] leading-none mt-0.5" aria-hidden="true">error</span>
                                                                 {reviewError}
                                                             </div>
                                                         )}
@@ -651,40 +706,51 @@ export default function CategoryManagementPage() {
                                                                 type="button"
                                                                 onClick={() => approveSubjectRequest(request.id)}
                                                                 disabled={isReviewing || categories.length === 0}
-                                                                className="px-5 py-2 rounded-full text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-sm"
                                                             >
+                                                                <span className={`material-symbols-outlined text-[16px] ${isReviewing ? 'animate-spin' : ''}`} aria-hidden="true">
+                                                                    {isReviewing ? 'progress_activity' : 'check_circle'}
+                                                                </span>
                                                                 {isReviewing ? 'Approving…' : 'Approve'}
                                                             </button>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => rejectSubjectRequest(request.id)}
                                                                 disabled={isReviewing}
-                                                                className="px-5 py-2 rounded-full text-sm font-bold bg-white border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold bg-white border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
                                                             >
+                                                                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">cancel</span>
                                                                 Reject
                                                             </button>
                                                             <button
                                                                 type="button"
                                                                 onClick={cancelReviewingRequest}
                                                                 disabled={isReviewing}
-                                                                className="px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
                                                             >
+                                                                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">close</span>
                                                                 Cancel
                                                             </button>
                                                         </div>
                                                     </div>
                                                 ) : (
                                                     <div className="flex items-start justify-between gap-4">
-                                                        <div>
-                                                            <p className="font-bold text-slate-900">"{request.proposedName}"</p>
-                                                            <p className="text-sm text-slate-500 mt-1">{request.teacherName} · {request.teacherEmail}</p>
+                                                        <div className="flex items-start gap-3 min-w-0">
+                                                            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center flex-none mt-0.5">
+                                                                <span className="material-symbols-outlined text-amber-600 text-[18px]" aria-hidden="true">help</span>
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="font-bold text-slate-900">"{request.proposedName}"</p>
+                                                                <p className="text-sm text-slate-500 mt-1">{request.teacherName} · {request.teacherEmail}</p>
+                                                            </div>
                                                         </div>
                                                         <div className="flex-none">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => startReviewingRequest(request)}
-                                                                className="px-4 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors"
+                                                                className="inline-flex items-center gap-1 px-4 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors"
                                                             >
+                                                                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
                                                                 Review
                                                             </button>
                                                         </div>
