@@ -14,6 +14,11 @@ namespace A1Academy.Shared.Data
         public DbSet<Class> Classes { get; set; }
         public DbSet<TeacherSubject> TeacherSubjects { get; set; }
         public DbSet<TeacherSubjectRequest> TeacherSubjectRequests { get; set; }
+        public DbSet<Enrollment> Enrollments { get; set; }
+        public DbSet<StudyMaterial> StudyMaterials { get; set; }
+        public DbSet<Assignment> Assignments { get; set; }
+        public DbSet<AssignmentSubmission> AssignmentSubmissions { get; set; }
+        public DbSet<Attendance> Attendances { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -75,6 +80,92 @@ namespace A1Academy.Shared.Data
                 .WithMany()
                 .HasForeignKey(r => r.ResultingCategoryId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Restrict, same guard philosophy as Class->Category: deleting a Teacher who has
+            // scheduled classes should be blocked, not silently cascade away the classes (and
+            // any students' enrollments/materials/assignments hanging off them).
+            modelBuilder.Entity<Class>()
+                .HasOne(c => c.Teacher)
+                .WithMany()
+                .HasForeignKey(c => c.TeacherId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // A Student can enroll in a given Class only once - same unique-index approach as
+            // TeacherSubject's (TeacherId, CategoryId).
+            modelBuilder.Entity<Enrollment>()
+                .HasIndex(e => new { e.StudentId, e.ClassId })
+                .IsUnique();
+
+            // Enrollment rows are owned by the Student (Cascade, same reasoning as
+            // TeacherSubject->Teacher) and by the Class they belong to (Cascade - nothing
+            // currently hard-deletes a Class, but if that ever changes its enrollments should go
+            // with it rather than leaving orphaned rows or blocking the delete).
+            modelBuilder.Entity<Enrollment>()
+                .HasOne(e => e.Student)
+                .WithMany()
+                .HasForeignKey(e => e.StudentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Enrollment>()
+                .HasOne(e => e.Class)
+                .WithMany()
+                .HasForeignKey(e => e.ClassId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<StudyMaterial>()
+                .HasOne(m => m.Class)
+                .WithMany()
+                .HasForeignKey(m => m.ClassId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Same reasoning as TeacherSubjectRequest->ResultingCategory: a material stays valid
+            // and downloadable even if we lose track of exactly who uploaded it.
+            modelBuilder.Entity<StudyMaterial>()
+                .HasOne(m => m.UploadedByTeacher)
+                .WithMany()
+                .HasForeignKey(m => m.UploadedByTeacherId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Assignment>()
+                .HasOne(a => a.Class)
+                .WithMany()
+                .HasForeignKey(a => a.ClassId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // A Student can submit an Assignment only once - there's no resubmission path.
+            modelBuilder.Entity<AssignmentSubmission>()
+                .HasIndex(s => new { s.AssignmentId, s.StudentId })
+                .IsUnique();
+
+            modelBuilder.Entity<AssignmentSubmission>()
+                .HasOne(s => s.Assignment)
+                .WithMany()
+                .HasForeignKey(s => s.AssignmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<AssignmentSubmission>()
+                .HasOne(s => s.Student)
+                .WithMany()
+                .HasForeignKey(s => s.StudentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // One attendance record per Student per Class - re-marking upserts this row instead
+            // of creating a duplicate (see ClassesController's attendance endpoint).
+            modelBuilder.Entity<Attendance>()
+                .HasIndex(a => new { a.ClassId, a.StudentId })
+                .IsUnique();
+
+            modelBuilder.Entity<Attendance>()
+                .HasOne(a => a.Class)
+                .WithMany()
+                .HasForeignKey(a => a.ClassId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Attendance>()
+                .HasOne(a => a.Student)
+                .WithMany()
+                .HasForeignKey(a => a.StudentId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
