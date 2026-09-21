@@ -8,6 +8,7 @@ export default function AdminDashboard() {
     const [pendingTeachers, setPendingTeachers] = useState([]);
     const [pendingCount, setPendingCount] = useState(0);
     const [pendingActionId, setPendingActionId] = useState(null);
+    const [stats, setStats] = useState({ totalStudents: 0, activeTeachers: 0, totalCategories: 0 });
 
     
     const runAccountAction = async (user, action) => {
@@ -53,6 +54,19 @@ export default function AdminDashboard() {
                 }
             })
             .catch(err => console.error('Failed to fetch pending teachers:', err));
+
+        fetch(import.meta.env.VITE_API_URL + '/api/users?role=Student&status=Active&page=1&pageSize=1', { headers: { Authorization: `Bearer ${token}` } })
+            .then(res => res.json())
+            .then(data => setStats(s => ({ ...s, totalStudents: data.totalCount || 0 })));
+
+        fetch(import.meta.env.VITE_API_URL + '/api/users?role=Teacher&status=Active&page=1&pageSize=1', { headers: { Authorization: `Bearer ${token}` } })
+            .then(res => res.json())
+            .then(data => setStats(s => ({ ...s, activeTeachers: data.totalCount || 0 })));
+
+        fetch(import.meta.env.VITE_API_URL + '/api/categories')
+            .then(res => res.json())
+            .then(data => setStats(s => ({ ...s, totalCategories: data.length || 0 })));
+
         }
     }, []);
 
@@ -95,8 +109,8 @@ export default function AdminDashboard() {
                                 </div>
                                 <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-full">+12%</span>
                             </div>
-                            <h3 className="text-slate-500 font-semibold text-sm mb-1">Total Users</h3>
-                            <p className="text-3xl font-extrabold text-slate-900">1,248</p>
+                            <h3 className="text-slate-500 font-semibold text-sm mb-1">Total Students</h3>
+                            <p className="text-3xl font-extrabold text-slate-900">{stats.totalStudents}</p>
                         </div>
 
                         <div data-aos="fade-up" data-aos-delay="200" className="glass-card rounded-3xl p-6">
@@ -107,7 +121,7 @@ export default function AdminDashboard() {
                                 <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-full">+4%</span>
                             </div>
                             <h3 className="text-slate-500 font-semibold text-sm mb-1">Active Teachers</h3>
-                            <p className="text-3xl font-extrabold text-slate-900">84</p>
+                            <p className="text-3xl font-extrabold text-slate-900">{stats.activeTeachers}</p>
                         </div>
 
                         <div data-aos="fade-up" data-aos-delay="300" className="glass-card rounded-3xl p-6">
@@ -128,7 +142,7 @@ export default function AdminDashboard() {
                                 </div>
                             </div>
                             <h3 className="text-slate-500 font-semibold text-sm mb-1">Total Categories</h3>
-                            <p className="text-3xl font-extrabold text-slate-900">45</p>
+                            <p className="text-3xl font-extrabold text-slate-900">{stats.totalCategories}</p>
                         </div>
                     </div>
 
