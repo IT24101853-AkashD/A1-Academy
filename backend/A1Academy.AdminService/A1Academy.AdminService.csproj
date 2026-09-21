@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>a1academy-admin-b4a2d0f3-8c5e-4f7b-ad2f-3e9f6b8c0d4e</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
