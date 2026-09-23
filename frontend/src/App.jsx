@@ -12,6 +12,11 @@ import ProfilePage from './pages/ProfilePage';
 import CategoryManagementPage from './pages/CategoryManagementPage';
 import StudentCategoriesPage from './pages/StudentCategoriesPage';
 import ClassesPage from './pages/ClassesPage';
+import ScheduleClassPage from './pages/ScheduleClassPage';
+import TeacherClassesPage from './pages/TeacherClassesPage';
+import TeacherClassDetailPage from './pages/TeacherClassDetailPage';
+import StudentMyClassesPage from './pages/StudentMyClassesPage';
+import StudentClassDetailPage from './pages/StudentClassDetailPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AuthModals from './components/AuthModals';
 import Navbar from './components/Navbar';
@@ -44,6 +49,11 @@ function App() {
         <Route path="/admin/categories" element={<CategoryManagementPage />} />
         <Route path="/student/categories" element={<StudentCategoriesPage />} />
         <Route path="/classes" element={<ClassesPage />} />
+        <Route path="/student/classes/:id" element={<StudentClassDetailPage />} />
+        <Route path="/student/my-classes" element={<StudentMyClassesPage />} />
+        <Route path="/teacher/classes" element={<TeacherClassesPage />} />
+        <Route path="/teacher/classes/new" element={<ScheduleClassPage />} />
+        <Route path="/teacher/classes/:id" element={<TeacherClassDetailPage />} />
           </Routes>
         </div>
         <Footer />
