@@ -34,6 +34,20 @@ namespace A1Academy.Tests.Fixtures
 
             builder.ConfigureServices(services =>
             {
+                // ASP.NET Core's default controller discovery only scans the entry point's own
+                // assembly (A1Academy.AuthService here) - it does NOT pick up controllers from
+                // the other service projects just because this test project references them.
+                // Every "microservice" in this solution is really a separate deployable with its
+                // own Program.cs, so to exercise AdminService/TeacherService/StudentService
+                // controllers through this one shared factory (the way every *EndpointTests file
+                // in this project assumes), their assemblies have to be added as MVC
+                // ApplicationParts explicitly. Without this, every route belonging to those three
+                // services 404s here even though it works fine in each service's own real host.
+                services.AddControllers()
+                    .AddApplicationPart(typeof(A1Academy.AdminService.Controllers.CategoriesController).Assembly)
+                    .AddApplicationPart(typeof(A1Academy.TeacherService.Controllers.TeacherSubjectsController).Assembly)
+                    .AddApplicationPart(typeof(A1Academy.StudentService.Controllers.ClassesController).Assembly);
+
                 var dbContextOptions = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
                 if (dbContextOptions != null)
                 {
