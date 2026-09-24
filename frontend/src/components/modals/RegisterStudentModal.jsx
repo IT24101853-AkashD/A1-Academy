@@ -54,7 +54,7 @@ export default function RegisterStudentModal({ isOpen, onClose }) {
                         <div className="flex justify-between items-center mt-1">
                             <p className="text-xs text-outline">* Must be a unique email address.</p>
                             {/* Hidden Verified Text */}
-                            <p id="verified-text" className="text-xs text-green-600 font-bold hidden flex items-center gap-1">
+                            <p id="verified-text" className="text-xs text-green-600 dark:text-green-400 font-bold hidden flex items-center gap-1">
                                 <span className="material-symbols-outlined text-[14px]">check_circle</span> Verified!
                             </p>
                         </div>
@@ -101,7 +101,7 @@ export default function RegisterStudentModal({ isOpen, onClose }) {
                     </div>
 
                     {/* Google Sign In Button */}
-                    <button type="button" className="w-full flex items-center justify-center gap-3 bg-white border border-outline-variant rounded-full px-4 py-2.5 text-body-md font-label-md text-on-surface hover:bg-surface-container-low transition-all shadow-sm cursor-pointer">
+                    <button type="button" className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-outline-variant rounded-full px-4 py-2.5 text-body-md font-label-md text-on-surface hover:bg-surface-container-low transition-all shadow-sm cursor-pointer">
                         {/* Official Google "G" Logo SVG */}
                         <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
                         Sign in with Google

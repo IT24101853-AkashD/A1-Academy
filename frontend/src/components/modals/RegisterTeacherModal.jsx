@@ -61,7 +61,7 @@ export default function RegisterTeacherModal({ isOpen, onClose }) {
                         <div className="flex justify-between items-center mt-1">
                             <p className="text-xs text-outline">* Must be a unique email address.</p>
                             {/* Hidden Verified Text */}
-                            <p id="teacher-verified-text" className="text-xs text-green-600 font-bold hidden flex items-center gap-1">
+                            <p id="teacher-verified-text" className="text-xs text-green-600 dark:text-green-400 font-bold hidden flex items-center gap-1">
                                 <span className="material-symbols-outlined text-[14px]">check_circle</span> Verified!
                             </p>
                         </div>

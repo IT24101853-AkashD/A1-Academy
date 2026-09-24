@@ -6,7 +6,7 @@ export default function SuccessStudentModal({ isOpen, onClose }) {
     return (
 <div id="success-student-modal" className="fixed inset-0 z-[140] flex items-center justify-center backdrop-blur-md bg-on-surface/40 p-4 transition-all duration-300">
     <div className="relative w-full max-w-sm bg-surface-container-lowest rounded-[24px] shadow-level-3 p-8 border border-surface-variant text-center">
-        <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-green-100 flex items-center justify-center animate-bounce shadow-sm">
+        <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center animate-bounce shadow-sm">
             <span className="text-[48px]">🎉</span>
         </div>
         <h2 className="font-display-sm text-[28px] font-bold text-primary mb-2">Congratulations!</h2>
