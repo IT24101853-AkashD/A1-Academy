@@ -76,32 +76,32 @@ export default function StudentCategoriesPage() {
         <Layout>
             <section className="py-24 px-6 max-w-6xl mx-auto w-full min-h-[60vh]">
                 <div className="mb-10 text-center">
-                    <div className="inline-block mb-4 px-5 py-2 rounded-full bg-white/80 backdrop-blur-md text-slate-600 text-sm font-bold tracking-widest uppercase shadow-sm border border-slate-200">
+                    <div className="inline-block mb-4 px-5 py-2 rounded-full bg-white dark:bg-slate-800/80 backdrop-blur-md text-slate-600 dark:text-slate-300 text-sm font-bold tracking-widest uppercase shadow-sm border border-slate-200 dark:border-slate-700">
                         Browse Subjects
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-3">Categories</h1>
-                    <p className="text-lg font-medium text-slate-500">Pick a subject to see the classes available in it.</p>
+                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-3">Categories</h1>
+                    <p className="text-lg font-medium text-slate-500 dark:text-slate-400">Pick a subject to see the classes available in it.</p>
                 </div>
 
                 {viewState === 'denied' && (
-                    <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-[32px] text-red-500">block</span>
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[32px] text-red-500 dark:text-red-400">block</span>
                         </div>
-                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h2>
-                        <p className="text-base font-medium text-slate-500">
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Access Denied</h2>
+                        <p className="text-base font-medium text-slate-500 dark:text-slate-400">
                             Category browsing is available to Students. Sign in with a Student account to view it.
                         </p>
                     </div>
                 )}
 
                 {viewState === 'sessionEnded' && (
-                    <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-[32px] text-amber-500">lock_clock</span>
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[32px] text-amber-500 dark:text-amber-400">lock_clock</span>
                         </div>
-                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Session Ended</h2>
-                        <p className="text-base font-medium text-slate-500 mb-6">
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Session Ended</h2>
+                        <p className="text-base font-medium text-slate-500 dark:text-slate-400 mb-6">
                             You've been signed out - this can happen if your account's status changed. Please sign in again to continue.
                         </p>
                         <a
@@ -115,20 +115,20 @@ export default function StudentCategoriesPage() {
 
                 {viewState === 'loading' && (
                     <div className="text-center py-20">
-                        <span className="material-symbols-outlined text-[40px] text-slate-400 animate-spin">progress_activity</span>
+                        <span className="material-symbols-outlined text-[40px] text-slate-400 dark:text-slate-500 animate-spin">progress_activity</span>
                     </div>
                 )}
 
                 {viewState === 'error' && (
-                    <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
-                        <p className="text-base font-bold text-red-500">{errorMessage}</p>
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                        <p className="text-base font-bold text-red-500 dark:text-red-400">{errorMessage}</p>
                     </div>
                 )}
 
                 {viewState === 'success' && (
                     categories.length === 0 ? (
-                        <div className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
-                            <p className="text-base font-medium text-slate-500">No categories yet - check back soon.</p>
+                        <div className="bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                            <p className="text-base font-medium text-slate-500 dark:text-slate-400">No categories yet - check back soon.</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -139,13 +139,13 @@ export default function StudentCategoriesPage() {
                                     tabIndex={0}
                                     onClick={() => openCategory(category)}
                                     onKeyDown={handleCardKeyDown(category)}
-                                    className="text-left bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-8 cursor-pointer hover:-translate-y-1 hover:shadow-xl transition-all focus:outline-none focus:ring-2 focus:ring-slate-900"
+                                    className="text-left bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-8 cursor-pointer hover:-translate-y-1 hover:shadow-xl transition-all focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-100"
                                 >
-                                    <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mb-6">
+                                    <div className="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-6">
                                         <span className="material-symbols-outlined text-3xl">auto_stories</span>
                                     </div>
-                                    <h2 className="text-xl font-bold text-slate-900 mb-2">{category.name}</h2>
-                                    <p className="text-sm text-slate-500 leading-relaxed">{category.description}</p>
+                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{category.name}</h2>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{category.description}</p>
                                 </div>
                             ))}
                         </div>

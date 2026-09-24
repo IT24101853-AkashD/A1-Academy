@@ -42,7 +42,7 @@ export default function Pagination({ page, totalPages, onPageChange }) {
                 type="button"
                 onClick={() => onPageChange(page - 1)}
                 disabled={page <= 1}
-                className="px-4 py-2 rounded-full text-sm font-bold border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+                className="px-4 py-2 rounded-full text-sm font-bold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
             >
                 Previous
             </button>
@@ -50,7 +50,7 @@ export default function Pagination({ page, totalPages, onPageChange }) {
             {pageNumbers.map((entry, index) =>
                 entry === '...' ? (
                     // eslint-disable-next-line react/no-array-index-key
-                    <span key={`ellipsis-${index}`} className="px-1 text-slate-400 font-bold select-none">
+                    <span key={`ellipsis-${index}`} className="px-1 text-slate-400 dark:text-slate-500 font-bold select-none">
                         &hellip;
                     </span>
                 ) : (
@@ -62,7 +62,7 @@ export default function Pagination({ page, totalPages, onPageChange }) {
                         className={`min-w-10 h-10 px-3 rounded-full text-sm font-bold transition-colors ${
                             entry === page
                                 ? 'bg-slate-900 text-white'
-                                : 'text-slate-600 border border-slate-200 hover:bg-slate-50'
+                                : 'text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900'
                         }`}
                     >
                         {entry}
@@ -74,7 +74,7 @@ export default function Pagination({ page, totalPages, onPageChange }) {
                 type="button"
                 onClick={() => onPageChange(page + 1)}
                 disabled={page >= totalPages}
-                className="px-4 py-2 rounded-full text-sm font-bold border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+                className="px-4 py-2 rounded-full text-sm font-bold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
             >
                 Next
             </button>

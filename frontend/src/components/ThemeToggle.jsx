@@ -1,51 +1,26 @@
-import React, { useEffect, useState } from 'react';
-
-const STORAGE_KEY = 'theme';
-
-function getInitialTheme() {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'dark' || stored === 'light') return stored;
-  } catch {
-    // localStorage unavailable (e.g. private browsing) - fall back to system preference
-  }
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-    ? 'dark'
-    : 'light';
-}
-
-function applyTheme(theme) {
-  document.documentElement.classList.toggle('dark', theme === 'dark');
-}
+import React, { useState } from 'react';
+import { getStoredTheme, applyTheme } from '../utils/theme';
 
 export default function ThemeToggle({ className = '' }) {
-  const [theme, setTheme] = useState(getInitialTheme);
+  const [theme, setTheme] = useState(
+    () => getStoredTheme() || (document.documentElement.classList.contains('dark') ? 'dark' : 'light')
+  );
 
-  useEffect(() => {
-    applyTheme(theme);
-    try {
-      localStorage.setItem(STORAGE_KEY, theme);
-    } catch {
-      // ignore storage failures
-    }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  const toggle = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    setTheme(next);
   };
-
-  const isDark = theme === 'dark';
 
   return (
     <button
-      type="button"
-      onClick={toggleTheme}
-      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      className={`inline-flex items-center justify-center rounded-full text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer ${className}`}
+      onClick={toggle}
+      aria-label={theme === 'dark' ? 'Switch to day mode' : 'Switch to night mode'}
+      title={theme === 'dark' ? 'Switch to day mode' : 'Switch to night mode'}
+      className={`w-12 h-12 rounded-full flex items-center justify-center border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-amber-300 shadow-md hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer ${className}`}
     >
-      <span className="material-symbols-outlined">
-        {isDark ? 'light_mode' : 'dark_mode'}
+      <span className="material-symbols-outlined text-2xl">
+        {theme === 'dark' ? 'light_mode' : 'dark_mode'}
       </span>
     </button>
   );
