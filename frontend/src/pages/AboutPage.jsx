@@ -5,19 +5,19 @@ export default function AboutPage() {
   return (
     <Layout>
       <section className="py-32 px-6 text-center max-w-4xl mx-auto flex flex-col items-center justify-center min-h-[60vh]" data-aos="fade-up">
-        <div className="inline-block mb-6 px-5 py-2 rounded-full bg-white/80 backdrop-blur-md text-slate-600 text-sm font-bold tracking-widest uppercase shadow-sm border border-slate-200">
+        <div className="inline-block mb-6 px-5 py-2 rounded-full bg-white dark:bg-slate-800/80 backdrop-blur-md text-slate-600 dark:text-slate-300 text-sm font-bold tracking-widest uppercase shadow-sm border border-slate-200 dark:border-slate-700">
           About Us
         </div>
-        <h1 className="text-5xl md:text-6xl font-black mb-6 text-slate-900">
-          Empowering the Next <br/> <span className="text-amber-500">Generation of Scholars</span>
+        <h1 className="text-5xl md:text-6xl font-black mb-6 text-slate-900 dark:text-white">
+          Empowering the Next <br/> <span className="text-amber-500 dark:text-amber-400">Generation of Scholars</span>
         </h1>
-        <p className="text-lg md:text-xl text-slate-500 max-w-3xl leading-relaxed font-medium">
+        <p className="text-lg md:text-xl text-slate-500 dark:text-slate-400 max-w-3xl leading-relaxed font-medium">
           At A1 Academy, we believe that quality education should be accessible, engaging, and measurable. Founded on the principle of scholarly excellence, our platform bridges the gap between ambitious students and verified, top-tier educators. We do not just facilitate classes; we build personalized learning pathways designed to elevate every student's academic journey.
         </p>
       </section>
 
-      <section className="py-24 px-6 max-w-7xl mx-auto bg-slate-50">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 text-center mb-16" data-aos="fade-up">
+      <section className="py-24 px-6 max-w-7xl mx-auto bg-slate-50 dark:bg-slate-900">
+        <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white text-center mb-16" data-aos="fade-up">
           What Sets Us Apart
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -27,16 +27,16 @@ export default function AboutPage() {
             { icon: 'military_tech', title: 'Gamified Progress', desc: 'We believe in rewarding hard work. Our integrated digital badge system and public recognition boards keep students motivated and engaged.' },
             { icon: 'bar_chart', title: 'Data-Driven Success', desc: 'With dynamic progress cards and detailed grading analytics, students and teachers can visualize academic growth in real-time.' }
           ].map((card, i) => (
-            <div key={i} className="bg-white/90 backdrop-blur-md rounded-[24px] p-8 shadow-xl border border-slate-100 hover:-translate-y-2 transition-all duration-300 group" data-aos="fade-up" data-aos-delay={i * 100}>
-              <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-6 group-hover:bg-amber-100 transition-colors">
-                <span className="material-symbols-outlined text-slate-600 group-hover:text-amber-600 text-3xl transition-colors">
+            <div key={i} className="bg-white dark:bg-slate-800/90 backdrop-blur-md rounded-[24px] p-8 shadow-xl border border-slate-100 dark:border-slate-700 hover:-translate-y-2 transition-all duration-300 group" data-aos="fade-up" data-aos-delay={i * 100}>
+              <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-6 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/30 transition-colors">
+                <span className="material-symbols-outlined text-slate-600 dark:text-slate-300 group-hover:text-amber-600 dark:group-hover:text-amber-400 text-3xl transition-colors">
                   {card.icon}
                 </span>
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-4">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
                 {card.title}
               </h3>
-              <p className="text-slate-500 leading-relaxed">
+              <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
                 {card.desc}
               </p>
             </div>
@@ -44,12 +44,12 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="w-full py-24 px-6 mt-12 bg-white border-t border-slate-100">
+      <section className="w-full py-24 px-6 mt-12 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700">
         <div className="max-w-4xl mx-auto text-center" data-aos="zoom-in">
-          <h2 className="text-slate-400 mb-8 uppercase tracking-widest text-sm font-bold">
+          <h2 className="text-slate-400 dark:text-slate-500 mb-8 uppercase tracking-widest text-sm font-bold">
             The Vision
           </h2>
-          <blockquote className="text-3xl md:text-4xl font-extrabold text-slate-900 italic leading-relaxed relative">
+          <blockquote className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white italic leading-relaxed relative">
             <span className="material-symbols-outlined absolute -top-10 -left-6 md:-left-12 text-amber-200 text-8xl -z-10">
               format_quote
             </span>
