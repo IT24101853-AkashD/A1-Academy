@@ -365,33 +365,33 @@ export default function CategoryManagementPage() {
             <div className="fixed inset-0 z-[-1] gradient-bg font-jakarta"></div>
             <section className="py-24 px-6 max-w-3xl mx-auto w-full min-h-[60vh] font-jakarta">
                 <div data-aos="fade-up" className="mb-10 text-center">
-                    <div className="inline-flex items-center gap-2 mb-4 px-5 py-2 rounded-full bg-white/80 backdrop-blur-md text-slate-600 text-sm font-bold tracking-widest uppercase shadow-sm border border-slate-200">
+                    <div className="inline-flex items-center gap-2 mb-4 px-5 py-2 rounded-full bg-white dark:bg-slate-800/80 backdrop-blur-md text-slate-600 dark:text-slate-300 text-sm font-bold tracking-widest uppercase shadow-sm border border-slate-200 dark:border-slate-700">
                         <span className="material-symbols-outlined text-[16px]" aria-hidden="true">admin_panel_settings</span>
                         Administrator
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-3">Category Management</h1>
-                    <p className="text-lg font-medium text-slate-500">Create academic subject categories for Teachers to group their classes under.</p>
+                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-3">Category Management</h1>
+                    <p className="text-lg font-medium text-slate-500 dark:text-slate-400">Create academic subject categories for Teachers to group their classes under.</p>
                 </div>
 
                 {viewState === 'denied' && (
-                    <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 ring-8 ring-red-50/50 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-[32px] text-red-500" aria-hidden="true">block</span>
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 dark:bg-red-900/30 ring-8 ring-red-50/50 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[32px] text-red-500 dark:text-red-400" aria-hidden="true">block</span>
                         </div>
-                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h2>
-                        <p className="text-base font-medium text-slate-500">
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Access Denied</h2>
+                        <p className="text-base font-medium text-slate-500 dark:text-slate-400">
                             Category management is restricted to Administrators. Sign in with an Administrator account to view it.
                         </p>
                     </div>
                 )}
 
                 {viewState === 'sessionEnded' && (
-                    <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 ring-8 ring-amber-50/50 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-[32px] text-amber-500" aria-hidden="true">lock_clock</span>
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 dark:bg-amber-900/30 ring-8 ring-amber-50/50 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[32px] text-amber-500 dark:text-amber-400" aria-hidden="true">lock_clock</span>
                         </div>
-                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Session Ended</h2>
-                        <p className="text-base font-medium text-slate-500 mb-6">
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Session Ended</h2>
+                        <p className="text-base font-medium text-slate-500 dark:text-slate-400 mb-6">
                             You've been signed out - this can happen if your account's status changed. Please sign in again to continue.
                         </p>
                         <a
@@ -404,39 +404,39 @@ export default function CategoryManagementPage() {
                 )}
 
                 {viewState === 'loading' && (
-                    <div className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 py-24 text-center">
+                    <div className="bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 py-24 text-center">
                         <span className="material-symbols-outlined text-[40px] text-slate-300 animate-spin" aria-hidden="true">progress_activity</span>
-                        <p className="mt-3 text-sm font-bold text-slate-400">Loading categories…</p>
+                        <p className="mt-3 text-sm font-bold text-slate-400 dark:text-slate-500">Loading categories…</p>
                     </div>
                 )}
 
                 {viewState === 'error' && (
-                    <div className="max-w-lg mx-auto bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 text-center">
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 ring-8 ring-red-50/50 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-[32px] text-red-500" aria-hidden="true">error</span>
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 dark:bg-red-900/30 ring-8 ring-red-50/50 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[32px] text-red-500 dark:text-red-400" aria-hidden="true">error</span>
                         </div>
-                        <p className="text-base font-bold text-red-500">{errorMessage}</p>
+                        <p className="text-base font-bold text-red-500 dark:text-red-400">{errorMessage}</p>
                     </div>
                 )}
 
                 {viewState === 'success' && (
                     <>
-                        <form data-aos="fade-up" data-aos-delay="100" onSubmit={createCategory} className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 p-10 mb-10">
+                        <form data-aos="fade-up" data-aos-delay="100" onSubmit={createCategory} className="bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 mb-10">
                             <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-none">
-                                    <span className="material-symbols-outlined text-amber-600 text-[20px]" aria-hidden="true">add_circle</span>
+                                <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-none">
+                                    <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 text-[20px]" aria-hidden="true">add_circle</span>
                                 </div>
-                                <h2 className="text-2xl font-bold text-slate-900">New Category</h2>
+                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">New Category</h2>
                             </div>
 
                             {formError && (
-                                <div className="mb-6 flex items-start gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-600">
+                                <div className="mb-6 flex items-start gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 text-sm font-bold text-red-600 dark:text-red-400">
                                     <span className="material-symbols-outlined text-[18px] leading-none mt-0.5" aria-hidden="true">error</span>
                                     {formError}
                                 </div>
                             )}
                             {savedJustNow && (
-                                <div className="mb-6 flex items-start gap-2 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-sm font-bold text-emerald-700">
+                                <div className="mb-6 flex items-start gap-2 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 text-sm font-bold text-emerald-700 dark:text-emerald-300">
                                     <span className="material-symbols-outlined text-[18px] leading-none mt-0.5" aria-hidden="true">check_circle</span>
                                     Category created and available immediately.
                                 </div>
@@ -444,7 +444,7 @@ export default function CategoryManagementPage() {
 
                             <div className="space-y-5">
                                 <div>
-                                    <label htmlFor="category-name" className="block text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">
+                                    <label htmlFor="category-name" className="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
                                         Category Name
                                     </label>
                                     <input
@@ -454,11 +454,11 @@ export default function CategoryManagementPage() {
                                         onChange={(e) => setName(e.target.value)}
                                         placeholder="e.g. Mathematics"
                                         required
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-100"
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="category-description" className="block text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">
+                                    <label htmlFor="category-description" className="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
                                         Description
                                     </label>
                                     <textarea
@@ -468,7 +468,7 @@ export default function CategoryManagementPage() {
                                         placeholder="A brief description of this subject area."
                                         required
                                         rows={3}
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 resize-none"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-100 resize-none"
                                     />
                                 </div>
                             </div>
@@ -485,32 +485,32 @@ export default function CategoryManagementPage() {
                             </button>
                         </form>
 
-                        <div data-aos="fade-up" data-aos-delay="200" className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                                <h2 className="text-lg font-bold text-slate-900">Existing Categories</h2>
-                                <span className="text-xs font-bold text-slate-400 bg-slate-50 border border-slate-100 rounded-full px-2.5 py-1 tabular-nums">
+                        <div data-aos="fade-up" data-aos-delay="200" className="bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 overflow-hidden">
+                            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Existing Categories</h2>
+                                <span className="text-xs font-bold text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-full px-2.5 py-1 tabular-nums">
                                     {categories.length}
                                 </span>
                             </div>
                             {categories.length === 0 ? (
                                 <div className="px-6 py-16 text-center">
                                     <span className="material-symbols-outlined text-[32px] text-slate-300 block mb-2" aria-hidden="true">category</span>
-                                    <p className="text-slate-500 font-medium">No categories yet - create the first one above.</p>
+                                    <p className="text-slate-500 dark:text-slate-400 font-medium">No categories yet - create the first one above.</p>
                                 </div>
                             ) : (
-                                <ul className="divide-y divide-slate-100">
+                                <ul className="divide-y divide-slate-100 dark:divide-slate-700">
                                     {categories.map((category) => (
-                                        <li key={category.id} className="px-6 py-4 hover:bg-slate-50/60 transition-colors">
+                                        <li key={category.id} className="px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-900/60 transition-colors">
                                             {editingId === category.id ? (
                                                 <form onSubmit={saveEditedCategory} className="space-y-4">
                                                     {editError && (
-                                                        <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-600">
+                                                        <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 text-sm font-bold text-red-600 dark:text-red-400">
                                                             <span className="material-symbols-outlined text-[18px] leading-none mt-0.5" aria-hidden="true">error</span>
                                                             {editError}
                                                         </div>
                                                     )}
                                                     <div>
-                                                        <label htmlFor={`edit-name-${category.id}`} className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
+                                                        <label htmlFor={`edit-name-${category.id}`} className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
                                                             Category Name
                                                         </label>
                                                         <input
@@ -519,11 +519,11 @@ export default function CategoryManagementPage() {
                                                             value={editName}
                                                             onChange={(e) => setEditName(e.target.value)}
                                                             required
-                                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900"
+                                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-100"
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label htmlFor={`edit-description-${category.id}`} className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
+                                                        <label htmlFor={`edit-description-${category.id}`} className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
                                                             Description
                                                         </label>
                                                         <textarea
@@ -532,7 +532,7 @@ export default function CategoryManagementPage() {
                                                             onChange={(e) => setEditDescription(e.target.value)}
                                                             required
                                                             rows={2}
-                                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 resize-none"
+                                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-100 resize-none"
                                                         />
                                                     </div>
                                                     <div className="flex gap-3">
@@ -550,7 +550,7 @@ export default function CategoryManagementPage() {
                                                             type="button"
                                                             onClick={cancelEditingCategory}
                                                             disabled={isEditSaving}
-                                                            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
                                                         >
                                                             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">close</span>
                                                             Cancel
@@ -560,13 +560,13 @@ export default function CategoryManagementPage() {
                                             ) : confirmingDeleteId === category.id ? (
                                                 <div className="space-y-4">
                                                     {deleteError && (
-                                                        <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-600">
+                                                        <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 text-sm font-bold text-red-600 dark:text-red-400">
                                                             <span className="material-symbols-outlined text-[18px] leading-none mt-0.5" aria-hidden="true">error</span>
                                                             {deleteError}
                                                         </div>
                                                     )}
-                                                    <p className="flex items-start gap-1.5 text-sm font-bold text-slate-700">
-                                                        <span className="material-symbols-outlined text-[17px] text-red-500 leading-none mt-0.5" aria-hidden="true">warning</span>
+                                                    <p className="flex items-start gap-1.5 text-sm font-bold text-slate-700 dark:text-slate-200">
+                                                        <span className="material-symbols-outlined text-[17px] text-red-500 dark:text-red-400 leading-none mt-0.5" aria-hidden="true">warning</span>
                                                         Delete "{category.name}"? This can't be undone.
                                                     </p>
                                                     <div className="flex gap-3">
@@ -585,7 +585,7 @@ export default function CategoryManagementPage() {
                                                             type="button"
                                                             onClick={cancelDeletingCategory}
                                                             disabled={isDeleting}
-                                                            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
                                                         >
                                                             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">close</span>
                                                             Cancel
@@ -595,19 +595,19 @@ export default function CategoryManagementPage() {
                                             ) : (
                                                 <div className="flex items-start justify-between gap-4">
                                                     <div className="flex items-start gap-3 min-w-0">
-                                                        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-none mt-0.5">
-                                                            <span className="material-symbols-outlined text-slate-500 text-[18px]" aria-hidden="true">category</span>
+                                                        <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-none mt-0.5">
+                                                            <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]" aria-hidden="true">category</span>
                                                         </div>
                                                         <div className="min-w-0">
-                                                            <p className="font-bold text-slate-900">{category.name}</p>
-                                                            <p className="text-sm text-slate-500 mt-1">{category.description}</p>
+                                                            <p className="font-bold text-slate-900 dark:text-white">{category.name}</p>
+                                                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{category.description}</p>
                                                         </div>
                                                     </div>
                                                     <div className="flex-none flex gap-2">
                                                         <button
                                                             type="button"
                                                             onClick={() => startEditingCategory(category)}
-                                                            className="inline-flex items-center gap-1 px-4 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors"
+                                                            className="inline-flex items-center gap-1 px-4 py-2 rounded-full text-sm font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-colors"
                                                         >
                                                             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">edit</span>
                                                             Edit
@@ -615,7 +615,7 @@ export default function CategoryManagementPage() {
                                                         <button
                                                             type="button"
                                                             onClick={() => startDeletingCategory(category)}
-                                                            className="inline-flex items-center gap-1 px-4 py-2 rounded-full text-sm font-bold bg-white border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
+                                                            className="inline-flex items-center gap-1 px-4 py-2 rounded-full text-sm font-bold bg-white dark:bg-slate-800 border border-red-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 cursor-pointer transition-colors"
                                                         >
                                                             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">delete</span>
                                                             Delete
@@ -629,22 +629,22 @@ export default function CategoryManagementPage() {
                             )}
                         </div>
 
-                        <div className="bg-white rounded-[24px] shadow-level-2 border border-slate-100 overflow-hidden mt-10">
-                            <div className="px-6 py-4 border-b border-slate-100 flex items-start justify-between gap-4">
+                        <div className="bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 overflow-hidden mt-10">
+                            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-start justify-between gap-4">
                                 <div className="flex items-start gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-none">
-                                        <span className="material-symbols-outlined text-amber-600 text-[20px]" aria-hidden="true">contact_support</span>
+                                    <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-none">
+                                        <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 text-[20px]" aria-hidden="true">contact_support</span>
                                     </div>
                                     <div>
-                                        <h2 className="text-lg font-bold text-slate-900">Pending Subject Requests</h2>
-                                        <p className="text-sm text-slate-500 mt-1">
+                                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Pending Subject Requests</h2>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                                             Subjects Teachers typed under "Other" at registration because they weren't in the list yet.
                                             Add a matching Category above if it's a real subject, then approve the request against it.
                                         </p>
                                     </div>
                                 </div>
                                 {requestsViewState === 'success' && subjectRequests.length > 0 && (
-                                    <span className="flex-none text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1 tabular-nums">
+                                    <span className="flex-none text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 rounded-full px-2.5 py-1 tabular-nums">
                                         {subjectRequests.length}
                                     </span>
                                 )}
@@ -657,42 +657,42 @@ export default function CategoryManagementPage() {
                             )}
 
                             {requestsViewState === 'error' && (
-                                <p className="px-6 py-10 text-center text-red-500 font-bold">{requestsError}</p>
+                                <p className="px-6 py-10 text-center text-red-500 dark:text-red-400 font-bold">{requestsError}</p>
                             )}
 
                             {requestsViewState === 'success' && (
                                 subjectRequests.length === 0 ? (
                                     <div className="px-6 py-16 text-center">
                                         <span className="material-symbols-outlined text-[32px] text-slate-300 block mb-2" aria-hidden="true">task_alt</span>
-                                        <p className="text-slate-500 font-medium">No pending requests right now.</p>
+                                        <p className="text-slate-500 dark:text-slate-400 font-medium">No pending requests right now.</p>
                                     </div>
                                 ) : (
-                                    <ul className="divide-y divide-slate-100">
+                                    <ul className="divide-y divide-slate-100 dark:divide-slate-700">
                                         {subjectRequests.map((request) => (
-                                            <li key={request.id} className="px-6 py-4 hover:bg-slate-50/60 transition-colors">
+                                            <li key={request.id} className="px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-900/60 transition-colors">
                                                 {reviewingRequestId === request.id ? (
                                                     <div className="space-y-4">
                                                         {reviewError && (
-                                                            <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-600">
+                                                            <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 text-sm font-bold text-red-600 dark:text-red-400">
                                                                 <span className="material-symbols-outlined text-[18px] leading-none mt-0.5" aria-hidden="true">error</span>
                                                                 {reviewError}
                                                             </div>
                                                         )}
-                                                        <p className="text-sm font-bold text-slate-700">
+                                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
                                                             Reviewing "{request.proposedName}" for {request.teacherName} ({request.teacherEmail})
                                                         </p>
                                                         <div>
-                                                            <label htmlFor={`review-category-${request.id}`} className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
+                                                            <label htmlFor={`review-category-${request.id}`} className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
                                                                 Map to Category (needed to approve)
                                                             </label>
                                                             {categories.length === 0 ? (
-                                                                <p className="text-sm text-slate-500 font-medium">No categories exist yet - create one above first.</p>
+                                                                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">No categories exist yet - create one above first.</p>
                                                             ) : (
                                                                 <select
                                                                     id={`review-category-${request.id}`}
                                                                     value={reviewCategoryId}
                                                                     onChange={(e) => setReviewCategoryId(e.target.value)}
-                                                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900"
+                                                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-100"
                                                                 >
                                                                     <option value="">Select a category…</option>
                                                                     {categories.map((category) => (
@@ -717,7 +717,7 @@ export default function CategoryManagementPage() {
                                                                 type="button"
                                                                 onClick={() => rejectSubjectRequest(request.id)}
                                                                 disabled={isReviewing}
-                                                                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold bg-white border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold bg-white dark:bg-slate-800 border border-red-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
                                                             >
                                                                 <span className="material-symbols-outlined text-[16px]" aria-hidden="true">cancel</span>
                                                                 Reject
@@ -726,7 +726,7 @@ export default function CategoryManagementPage() {
                                                                 type="button"
                                                                 onClick={cancelReviewingRequest}
                                                                 disabled={isReviewing}
-                                                                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                                                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
                                                             >
                                                                 <span className="material-symbols-outlined text-[16px]" aria-hidden="true">close</span>
                                                                 Cancel
@@ -736,19 +736,19 @@ export default function CategoryManagementPage() {
                                                 ) : (
                                                     <div className="flex items-start justify-between gap-4">
                                                         <div className="flex items-start gap-3 min-w-0">
-                                                            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center flex-none mt-0.5">
-                                                                <span className="material-symbols-outlined text-amber-600 text-[18px]" aria-hidden="true">help</span>
+                                                            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center flex-none mt-0.5">
+                                                                <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 text-[18px]" aria-hidden="true">help</span>
                                                             </div>
                                                             <div className="min-w-0">
-                                                                <p className="font-bold text-slate-900">"{request.proposedName}"</p>
-                                                                <p className="text-sm text-slate-500 mt-1">{request.teacherName} · {request.teacherEmail}</p>
+                                                                <p className="font-bold text-slate-900 dark:text-white">"{request.proposedName}"</p>
+                                                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{request.teacherName} · {request.teacherEmail}</p>
                                                             </div>
                                                         </div>
                                                         <div className="flex-none">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => startReviewingRequest(request)}
-                                                                className="inline-flex items-center gap-1 px-4 py-2 rounded-full text-sm font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors"
+                                                                className="inline-flex items-center gap-1 px-4 py-2 rounded-full text-sm font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-colors"
                                                             >
                                                                 <span className="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
                                                                 Review
