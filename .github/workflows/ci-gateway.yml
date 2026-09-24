@@ -2,7 +2,7 @@ name: Gateway Service CI
 
 on:
   push:
-    branches: [ "main", "feature/*" ]
+    branches: [ "main" ]
     paths:
       - 'backend/A1Academy.Gateway/**'
   pull_request:

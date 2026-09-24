@@ -2,7 +2,7 @@ name: Auth Service CI
 
 on:
   push:
-    branches: [ "main", "feature/*" ]
+    branches: [ "main" ]
     paths:
       - 'backend/A1Academy.AuthService/**'
       - 'backend/A1Academy.Shared/**'
