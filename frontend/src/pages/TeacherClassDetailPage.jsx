@@ -27,6 +27,9 @@ export default function TeacherClassDetailPage() {
     const [asgTime, setAsgTime] = useState('');
     const [asgError, setAsgError] = useState('');
     const [isCreatingAsg, setIsCreatingAsg] = useState(false);
+    const [expandedAsgId, setExpandedAsgId] = useState(null);
+    const [submissions, setSubmissions] = useState({});
+    const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
     // Roster / attendance
     const [roster, setRoster] = useState([]);
@@ -141,6 +144,46 @@ export default function TeacherClassDetailPage() {
         }
     };
 
+    const toggleSubmissions = async (asgId) => {
+        if (expandedAsgId === asgId) {
+            setExpandedAsgId(null);
+            return;
+        }
+        setExpandedAsgId(asgId);
+        if (!submissions[asgId]) {
+            setLoadingSubmissions(true);
+            try {
+                const res = await fetch(`${apiBase}/assignments/${asgId}/submissions`, { headers: authHeader() });
+                if (res.status === 401) return onUnauthorized();
+                if (res.ok) {
+                    const data = await res.json();
+                    setSubmissions((prev) => ({ ...prev, [asgId]: data }));
+                }
+            } catch {
+                // Ignore fetch error
+            } finally {
+                setLoadingSubmissions(false);
+            }
+        }
+    };
+
+    const downloadSubmission = async (asgId, subId, fileName) => {
+        try {
+            const res = await fetch(`${apiBase}/assignments/${asgId}/submissions/${subId}/download`, { headers: authHeader() });
+            if (res.status === 401) return onUnauthorized();
+            if (!res.ok) return;
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            link.click();
+            window.URL.revokeObjectURL(url);
+        } catch {
+            // Ignore download error
+        }
+    };
+
     const saveAttendance = async () => {
         setIsSavingAttendance(true);
         setAttendanceSaved(false);
@@ -232,14 +275,63 @@ export default function TeacherClassDetailPage() {
                     {assignments.length === 0 ? (
                         <p className="text-sm text-slate-500 dark:text-slate-400">No assignments yet.</p>
                     ) : (
-                        <ul className="space-y-2">
+                        <ul className="space-y-3">
                             {assignments.map((a) => (
                                 <li key={a.id} className="px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 text-sm">
                                     <div className="flex items-center justify-between">
                                         <span className="font-semibold text-slate-800 dark:text-slate-100">{a.title}</span>
-                                        <span className="text-xs text-slate-500 dark:text-slate-400">{a.submissionCount} submission(s)</span>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-xs text-slate-500 dark:text-slate-400">{a.submissionCount} submission(s)</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleSubmissions(a.id)}
+                                                className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+                                            >
+                                                {expandedAsgId === a.id ? 'Hide Submissions' : 'View Submissions'}
+                                            </button>
+                                        </div>
                                     </div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Due {new Date(a.dueAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</p>
+
+                                    {expandedAsgId === a.id && (
+                                        <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700/80">
+                                            <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2 font-jakarta">Student Submissions</h4>
+                                            {loadingSubmissions && !submissions[a.id] ? (
+                                                <p className="text-xs text-slate-400">Loading submissions...</p>
+                                            ) : !submissions[a.id] || submissions[a.id].length === 0 ? (
+                                                <p className="text-xs text-slate-400">No submissions received yet.</p>
+                                            ) : (
+                                                <ul className="space-y-2">
+                                                    {submissions[a.id].map((sub) => (
+                                                        <li key={sub.id} className="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
+                                                            <div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-semibold text-slate-900 dark:text-white">{sub.studentName}</span>
+                                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                                                        sub.status === 'Late'
+                                                                            ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
+                                                                            : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                                                    }`}>
+                                                                        {sub.status}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                                                    {sub.fileName} &bull; {sub.studentEmail} &bull; Submitted {new Date(sub.submittedAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
+                                                                </p>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => downloadSubmission(a.id, sub.id, sub.fileName)}
+                                                                className="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 font-semibold text-slate-700 dark:text-slate-200 transition-colors"
+                                                            >
+                                                                Download
+                                                            </button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    )}
                                 </li>
                             ))}
                         </ul>

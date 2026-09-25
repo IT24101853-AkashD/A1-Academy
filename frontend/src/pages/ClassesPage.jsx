@@ -264,12 +264,18 @@ export default function ClassesPage() {
                                                     )}
                                                 </div>
 
-                                                <Link
-                                                    to={`/student/classes/${cls.id}`}
-                                                    className="block text-lg font-bold text-slate-900 dark:text-white mb-2 font-jakarta hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
-                                                >
-                                                    {cls.name}
-                                                </Link>
+                                                {cls.isEnrolled ? (
+                                                    <Link
+                                                        to={`/student/classes/${cls.id}`}
+                                                        className="block text-lg font-bold text-slate-900 dark:text-white mb-2 font-jakarta hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+                                                    >
+                                                        {cls.name}
+                                                    </Link>
+                                                ) : (
+                                                    <h3 className="block text-lg font-bold text-slate-900 dark:text-white mb-2 font-jakarta">
+                                                        {cls.name}
+                                                    </h3>
+                                                )}
 
                                                 <div className="flex items-center gap-2.5 mb-4 text-xs text-slate-600 dark:text-slate-300">
                                                     <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-700 font-bold flex items-center justify-center text-[11px]">

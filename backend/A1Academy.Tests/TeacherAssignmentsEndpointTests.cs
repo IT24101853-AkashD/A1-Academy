@@ -92,6 +92,16 @@ public class TeacherAssignmentsEndpointTests : IClassFixture<ApiWebApplicationFa
         public int SubmissionCount { get; set; }
     }
 
+    private class SubmissionDetailDto
+    {
+        public int Id { get; set; }
+        public int StudentId { get; set; }
+        public string StudentName { get; set; } = string.Empty;
+        public string StudentEmail { get; set; } = string.Empty;
+        public string FileName { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+    }
+
     [Fact]
     public async Task CreateAssignment_WithFutureDueDate_CreatesItAndSubmissionCountStartsAtZero()
     {
@@ -145,5 +155,106 @@ public class TeacherAssignmentsEndpointTests : IClassFixture<ApiWebApplicationFa
         var response = await client.SendAsync(CreateAssignmentRequest(otherToken, classId, DateTime.UtcNow.AddDays(7)));
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetSubmissions_ReturnsSubmissionsWithStatusAndStudentInfo()
+    {
+        // Story 13 / Scenario 1 - lets teachers easily spot overdue work with Late/Submitted tags.
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var teacherEmail = $"teacher.sub.{suffix}@example.com";
+        var teacherId = await SeedUserAsync("Teach", teacherEmail, "TeachPass1!", "Teacher");
+        var token = await LoginAsync(client, teacherEmail, "TeachPass1!");
+        var classId = await SeedClassAsync(teacherId, suffix);
+
+        var studentAId = await SeedUserAsync("Alice", $"student.a.{suffix}@example.com", "StuPass1!", "Student");
+        var studentBId = await SeedUserAsync("Bob", $"student.b.{suffix}@example.com", "StuPass1!", "Student");
+
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var assignment = new Assignment
+        {
+            ClassId = classId,
+            Title = "Math Task",
+            Description = "Do questions 1-5",
+            DueAt = DateTime.UtcNow.AddHours(2),
+        };
+        context.Assignments.Add(assignment);
+        await context.SaveChangesAsync();
+
+        context.AssignmentSubmissions.AddRange(
+            new AssignmentSubmission
+            {
+                AssignmentId = assignment.Id,
+                StudentId = studentAId,
+                FileName = "alice.pdf",
+                ContentType = "application/pdf",
+                Content = new byte[] { 1, 2, 3 },
+                Status = SubmissionStatus.Submitted,
+                SubmittedAt = DateTime.UtcNow.AddHours(-1),
+            },
+            new AssignmentSubmission
+            {
+                AssignmentId = assignment.Id,
+                StudentId = studentBId,
+                FileName = "bob.pdf",
+                ContentType = "application/pdf",
+                Content = new byte[] { 4, 5, 6 },
+                Status = SubmissionStatus.Late,
+                SubmittedAt = DateTime.UtcNow.AddMinutes(5),
+            }
+        );
+        await context.SaveChangesAsync();
+
+        var response = await client.SendAsync(Authorized(HttpMethod.Get, $"/api/teacher/classes/{classId}/assignments/{assignment.Id}/submissions", token));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var submissions = await response.Content.ReadFromJsonAsync<List<SubmissionDetailDto>>();
+        Assert.NotNull(submissions);
+        Assert.Equal(2, submissions.Count);
+        Assert.Contains(submissions, s => s.StudentId == studentAId && s.Status == "Submitted");
+        Assert.Contains(submissions, s => s.StudentId == studentBId && s.Status == "Late");
+    }
+
+    [Fact]
+    public async Task DownloadSubmission_ByOwningTeacher_ReturnsFileBytes()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var teacherEmail = $"teacher.dlsub.{suffix}@example.com";
+        var teacherId = await SeedUserAsync("Teach", teacherEmail, "TeachPass1!", "Teacher");
+        var token = await LoginAsync(client, teacherEmail, "TeachPass1!");
+        var classId = await SeedClassAsync(teacherId, suffix);
+        var studentId = await SeedUserAsync("Alice", $"student.dl.{suffix}@example.com", "StuPass1!", "Student");
+
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var assignment = new Assignment
+        {
+            ClassId = classId,
+            Title = "Math Task",
+            Description = "Task",
+            DueAt = DateTime.UtcNow.AddDays(1),
+        };
+        context.Assignments.Add(assignment);
+        await context.SaveChangesAsync();
+
+        var submission = new AssignmentSubmission
+        {
+            AssignmentId = assignment.Id,
+            StudentId = studentId,
+            FileName = "alice.pdf",
+            ContentType = "application/pdf",
+            Content = new byte[] { 9, 8, 7 },
+            Status = SubmissionStatus.Submitted,
+        };
+        context.AssignmentSubmissions.Add(submission);
+        await context.SaveChangesAsync();
+
+        var response = await client.SendAsync(Authorized(HttpMethod.Get, $"/api/teacher/classes/{classId}/assignments/{assignment.Id}/submissions/{submission.Id}/download", token));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var bytes = await response.Content.ReadAsByteArrayAsync();
+        Assert.Equal(new byte[] { 9, 8, 7 }, bytes);
     }
 }

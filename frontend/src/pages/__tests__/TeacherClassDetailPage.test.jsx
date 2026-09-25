@@ -29,6 +29,15 @@ function mockFetch(overrides = {}) {
     if (url.endsWith('/assignments') && options?.method === 'POST') {
       return Promise.resolve({ ok: overrides.createAsgOk ?? true, status: overrides.createAsgStatus ?? 200, json: () => Promise.resolve({ message: overrides.createAsgMessage }) });
     }
+    if (/\/assignments\/\d+\/submissions$/.test(url)) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(overrides.submissions ?? [
+          { id: 10, studentId: 1, studentName: 'Alex Rivera', studentEmail: 'alex@example.com', fileName: 'solution.pdf', status: 'Late', submittedAt: '2027-01-01T01:00:00Z' },
+        ]),
+      });
+    }
     if (url.endsWith('/roster')) {
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(overrides.roster ?? sampleRoster) });
     }
@@ -100,5 +109,18 @@ describe('TeacherClassDetailPage', () => {
     fireEvent.click(screen.getByText('Create Assignment'));
 
     expect(await screen.findByText(/cannot be in the past/i)).toBeInTheDocument();
+  });
+
+  it('clicking View Submissions shows student submission with status badge', async () => {
+    global.fetch = mockFetch();
+    renderPage();
+
+    await screen.findByText('Homework 1');
+    const viewBtn = screen.getByText('View Submissions');
+    fireEvent.click(viewBtn);
+
+    expect(await screen.findByText('Student Submissions')).toBeInTheDocument();
+    expect(screen.getByText('solution.pdf')).toBeInTheDocument();
+    expect(screen.getByText('Late')).toBeInTheDocument();
   });
 });
