@@ -69,6 +69,13 @@ export default function Navbar() {
           )}
           {isStudent && (
             <Link
+              to="/classes"
+              className="text-slate-600 dark:text-slate-300 font-semibold hover:text-slate-900 dark:hover:text-white transition-colors px-4">
+              Browse Classes
+            </Link>
+          )}
+          {isStudent && (
+            <Link
               to="/student/my-classes"
               className="text-slate-600 dark:text-slate-300 font-semibold hover:text-slate-900 dark:hover:text-white transition-colors px-4">
               My Classes

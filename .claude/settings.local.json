@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build *)",
+      "Bash(curl -sS -X POST http://localhost:5123/api/auth/verify-otp -H 'Content-Type: application/json' -d '{\"email\":\"jmeter.loadtest@example.com\",\"otp\":\"40122\"}')",
+      "Bash(curl -sS -X POST http://localhost:5123/api/auth/register -F firstName=LoadTest -F email=jmeter.loadtest@example.com -F password=LoadTest!2026Secure -F role=Student)",
+      "Bash(curl -sS -w '\\\\nHTTP %{http_code}\\\\n' -X POST http://localhost:5123/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"jmeter.loadtest@example.com\",\"password\":\"LoadTest!2026Secure\"}')"
+    ]
+  }
+}

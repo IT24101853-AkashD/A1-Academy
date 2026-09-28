@@ -40,6 +40,19 @@ namespace A1Academy.TeacherService.Controllers
             public DateTime DueAt { get; set; }
         }
 
+        public class SubmissionDetail
+        {
+            public int Id { get; set; }
+            public int StudentId { get; set; }
+            public string StudentName { get; set; } = string.Empty;
+            public string StudentEmail { get; set; } = string.Empty;
+            public string FileName { get; set; } = string.Empty;
+            public string ContentType { get; set; } = string.Empty;
+            public long FileSizeBytes { get; set; }
+            public DateTime SubmittedAt { get; set; }
+            public string Status { get; set; } = string.Empty;
+        }
+
         private int? CurrentTeacherId()
         {
             var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -141,6 +154,76 @@ namespace A1Academy.TeacherService.Controllers
                 DueAt = assignment.DueAt,
                 SubmissionCount = 0,
             });
+        }
+
+        // Scenario 1 (AA-57) - lets the Teacher review all submissions for an assignment they
+        // created, see each student's name, submission timestamp, and whether it was marked
+        // "Submitted" or "Late".
+        [HttpGet("{assignmentId}/submissions")]
+        public async Task<ActionResult<List<SubmissionDetail>>> GetSubmissions(int classId, int assignmentId)
+        {
+            var teacherId = CurrentTeacherId();
+            if (teacherId == null)
+            {
+                return Unauthorized();
+            }
+
+            if (!await OwnsClassAsync(classId, teacherId.Value))
+            {
+                return NotFound(new { message = "Class not found." });
+            }
+
+            var assignmentExists = await _context.Assignments.AnyAsync(a => a.Id == assignmentId && a.ClassId == classId);
+            if (!assignmentExists)
+            {
+                return NotFound(new { message = "Assignment not found." });
+            }
+
+            var submissions = await _context.AssignmentSubmissions
+                .Where(s => s.AssignmentId == assignmentId)
+                .Include(s => s.Student)
+                .OrderByDescending(s => s.SubmittedAt)
+                .Select(s => new SubmissionDetail
+                {
+                    Id = s.Id,
+                    StudentId = s.StudentId,
+                    StudentName = s.Student == null ? string.Empty : $"{s.Student.FirstName} {s.Student.LastName}".Trim(),
+                    StudentEmail = s.Student == null ? string.Empty : s.Student.Email,
+                    FileName = s.FileName,
+                    ContentType = s.ContentType,
+                    FileSizeBytes = s.FileSizeBytes,
+                    SubmittedAt = s.SubmittedAt,
+                    Status = s.Status,
+                })
+                .ToListAsync();
+
+            return Ok(submissions);
+        }
+
+        [HttpGet("{assignmentId}/submissions/{submissionId}/download")]
+        public async Task<IActionResult> DownloadSubmission(int classId, int assignmentId, int submissionId)
+        {
+            var teacherId = CurrentTeacherId();
+            if (teacherId == null)
+            {
+                return Unauthorized();
+            }
+
+            if (!await OwnsClassAsync(classId, teacherId.Value))
+            {
+                return NotFound(new { message = "Class not found." });
+            }
+
+            var submission = await _context.AssignmentSubmissions
+                .Include(s => s.Assignment)
+                .SingleOrDefaultAsync(s => s.Id == submissionId && s.AssignmentId == assignmentId && s.Assignment!.ClassId == classId);
+
+            if (submission == null)
+            {
+                return NotFound(new { message = "Submission not found." });
+            }
+
+            return File(submission.Content, submission.ContentType, submission.FileName);
         }
     }
 }
