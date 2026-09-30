@@ -280,4 +280,37 @@ public class StudentClassesEndpointTests : IClassFixture<ApiWebApplicationFactor
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
+
+    [Fact]
+    public async Task SeatUpdate_FromAStaleRead_IsRejectedByTheConcurrencyToken()
+    {
+        // The cross-replica guard behind AA-47/AA-49: two service instances (two DbContexts)
+        // read the same class with one seat left and both try to take it. The first save wins;
+        // the second must fail rather than overwrite the count, so Enroll can re-read and see
+        // the class is full.
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var teacherId = await SeedUserAsync("Teach", null, $"teacher.stamp.{suffix}@example.com", "TeachPass1!", "Teacher");
+        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}");
+        var classId = await SeedClassAsync(categoryId, teacherId, capacity: 1);
+
+        using var scopeA = _factory.Services.CreateScope();
+        using var scopeB = _factory.Services.CreateScope();
+        var contextA = scopeA.ServiceProvider.GetRequiredService<AppDbContext>();
+        var contextB = scopeB.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var classSeenByA = await contextA.Classes.SingleAsync(c => c.Id == classId);
+        var classSeenByB = await contextB.Classes.SingleAsync(c => c.Id == classId);
+
+        classSeenByA.EnrolledCount++;
+        classSeenByA.BumpConcurrencyStamp();
+        await contextA.SaveChangesAsync();
+
+        classSeenByB.EnrolledCount++;
+        classSeenByB.BumpConcurrencyStamp();
+        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => contextB.SaveChangesAsync());
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyContext = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.Equal(1, (await verifyContext.Classes.SingleAsync(c => c.Id == classId)).EnrolledCount);
+    }
 }

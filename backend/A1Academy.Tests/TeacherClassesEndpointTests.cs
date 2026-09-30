@@ -39,12 +39,21 @@ public class TeacherClassesEndpointTests : IClassFixture<ApiWebApplicationFactor
         await context.SaveChangesAsync();
     }
 
-    private async Task<int> SeedCategoryAsync(string name)
+    // taughtBy: emails of already-seeded Teachers registered to teach this subject - scheduling
+    // a class is only allowed in a subject the Teacher teaches.
+    private async Task<int> SeedCategoryAsync(string name, params string[] taughtBy)
     {
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var category = new Category { Name = name, Description = "Seeded for TeacherClasses tests." };
         context.Categories.Add(category);
+        await context.SaveChangesAsync();
+
+        foreach (var email in taughtBy)
+        {
+            var teacher = context.Users.Single(u => u.Email == email);
+            context.TeacherSubjects.Add(new TeacherSubject { TeacherId = teacher.Id, CategoryId = category.Id });
+        }
         await context.SaveChangesAsync();
         return category.Id;
     }
@@ -115,7 +124,7 @@ public class TeacherClassesEndpointTests : IClassFixture<ApiWebApplicationFactor
         var email = $"teacher.schedule.{suffix}@example.com";
         await SeedUserAsync("Teach", email, "TeachPass1!", "Teacher");
         var token = await LoginAsync(client, email, "TeachPass1!");
-        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}");
+        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}", email);
 
         var scheduledAt = DateTime.UtcNow.AddDays(3);
         var response = await client.SendAsync(ScheduleRequest(token, categoryId, scheduledAt, 10));
@@ -136,7 +145,7 @@ public class TeacherClassesEndpointTests : IClassFixture<ApiWebApplicationFactor
         var email = $"teacher.pastdate.{suffix}@example.com";
         await SeedUserAsync("Teach", email, "TeachPass1!", "Teacher");
         var token = await LoginAsync(client, email, "TeachPass1!");
-        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}");
+        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}", email);
 
         var response = await client.SendAsync(ScheduleRequest(token, categoryId, DateTime.UtcNow.AddDays(-1), 10));
 
@@ -155,7 +164,7 @@ public class TeacherClassesEndpointTests : IClassFixture<ApiWebApplicationFactor
         var email = $"teacher.zerocap.{suffix}@example.com";
         await SeedUserAsync("Teach", email, "TeachPass1!", "Teacher");
         var token = await LoginAsync(client, email, "TeachPass1!");
-        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}");
+        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}", email);
 
         var response = await client.SendAsync(ScheduleRequest(token, categoryId, DateTime.UtcNow.AddDays(1), 0));
 
@@ -173,7 +182,7 @@ public class TeacherClassesEndpointTests : IClassFixture<ApiWebApplicationFactor
         await SeedUserAsync("TeachB", emailB, "TeachPass1!", "Teacher");
         var tokenA = await LoginAsync(client, emailA, "TeachPass1!");
         var tokenB = await LoginAsync(client, emailB, "TeachPass1!");
-        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}");
+        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}", emailA);
 
         await client.SendAsync(ScheduleRequest(tokenA, categoryId, DateTime.UtcNow.AddDays(1), 10));
 
@@ -195,7 +204,7 @@ public class TeacherClassesEndpointTests : IClassFixture<ApiWebApplicationFactor
         var email = $"teacher.cancel.{suffix}@example.com";
         await SeedUserAsync("Teach", email, "TeachPass1!", "Teacher");
         var token = await LoginAsync(client, email, "TeachPass1!");
-        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}");
+        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}", email);
 
         var created = await (await client.SendAsync(ScheduleRequest(token, categoryId, DateTime.UtcNow.AddDays(1), 10)))
             .Content.ReadFromJsonAsync<ClassDto>();
@@ -218,7 +227,7 @@ public class TeacherClassesEndpointTests : IClassFixture<ApiWebApplicationFactor
         await SeedUserAsync("Other", otherEmail, "TeachPass1!", "Teacher");
         var ownerToken = await LoginAsync(client, ownerEmail, "TeachPass1!");
         var otherToken = await LoginAsync(client, otherEmail, "TeachPass1!");
-        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}");
+        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}", ownerEmail);
 
         var created = await (await client.SendAsync(ScheduleRequest(ownerToken, categoryId, DateTime.UtcNow.AddDays(1), 10)))
             .Content.ReadFromJsonAsync<ClassDto>();
@@ -236,7 +245,7 @@ public class TeacherClassesEndpointTests : IClassFixture<ApiWebApplicationFactor
         var email = $"teacher.doublecancel.{suffix}@example.com";
         await SeedUserAsync("Teach", email, "TeachPass1!", "Teacher");
         var token = await LoginAsync(client, email, "TeachPass1!");
-        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}");
+        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}", email);
 
         var created = await (await client.SendAsync(ScheduleRequest(token, categoryId, DateTime.UtcNow.AddDays(1), 10)))
             .Content.ReadFromJsonAsync<ClassDto>();
@@ -256,7 +265,7 @@ public class TeacherClassesEndpointTests : IClassFixture<ApiWebApplicationFactor
         var teacherEmail = $"teacher.attendance.{suffix}@example.com";
         await SeedUserAsync("Teach", teacherEmail, "TeachPass1!", "Teacher");
         var teacherToken = await LoginAsync(client, teacherEmail, "TeachPass1!");
-        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}");
+        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}", teacherEmail);
 
         var created = await (await client.SendAsync(ScheduleRequest(teacherToken, categoryId, DateTime.UtcNow.AddDays(1), 10)))
             .Content.ReadFromJsonAsync<ClassDto>();
@@ -293,7 +302,7 @@ public class TeacherClassesEndpointTests : IClassFixture<ApiWebApplicationFactor
         var teacherEmail = $"teacher.badattendance.{suffix}@example.com";
         await SeedUserAsync("Teach", teacherEmail, "TeachPass1!", "Teacher");
         var teacherToken = await LoginAsync(client, teacherEmail, "TeachPass1!");
-        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}");
+        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}", teacherEmail);
 
         var created = await (await client.SendAsync(ScheduleRequest(teacherToken, categoryId, DateTime.UtcNow.AddDays(1), 10)))
             .Content.ReadFromJsonAsync<ClassDto>();
@@ -322,5 +331,51 @@ public class TeacherClassesEndpointTests : IClassFixture<ApiWebApplicationFactor
         var response = await client.SendAsync(Authorized(HttpMethod.Get, "/api/teacher/classes", token));
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ScheduleClass_InASubjectTheTeacherDoesNotTeach_ReturnsBadRequestAndCreatesNothing()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var email = $"teacher.wrongsubject.{suffix}@example.com";
+        await SeedUserAsync("Teach", email, "TeachPass1!", "Teacher");
+        var token = await LoginAsync(client, email, "TeachPass1!");
+        await SeedCategoryAsync($"Mathematics-{suffix}", email);
+        var otherSubjectId = await SeedCategoryAsync($"Physics-{suffix}");
+
+        var response = await client.SendAsync(ScheduleRequest(token, otherSubjectId, DateTime.UtcNow.AddDays(1), 10));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var list = await (await client.SendAsync(Authorized(HttpMethod.Get, "/api/teacher/classes", token)))
+            .Content.ReadFromJsonAsync<List<ClassDto>>();
+        Assert.Empty(list!);
+    }
+
+    [Fact]
+    public async Task MarkAttendance_OnACancelledClass_ReturnsConflictAndSavesNothing()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var teacherEmail = $"teacher.cancelledattendance.{suffix}@example.com";
+        await SeedUserAsync("Teach", teacherEmail, "TeachPass1!", "Teacher");
+        var teacherToken = await LoginAsync(client, teacherEmail, "TeachPass1!");
+        var categoryId = await SeedCategoryAsync($"Mathematics-{suffix}", teacherEmail);
+
+        var created = await (await client.SendAsync(ScheduleRequest(teacherToken, categoryId, DateTime.UtcNow.AddDays(1), 10)))
+            .Content.ReadFromJsonAsync<ClassDto>();
+        var studentId = await SeedEnrolledStudentAsync(created!.Id, $"student.cancelledattendance.{suffix}@example.com");
+        await client.SendAsync(Authorized(HttpMethod.Post, $"/api/teacher/classes/{created.Id}/cancel", teacherToken));
+
+        var request = Authorized(HttpMethod.Post, $"/api/teacher/classes/{created.Id}/attendance", teacherToken);
+        request.Content = JsonContent.Create(new { entries = new[] { new { studentId, status = "Present" } } });
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.Empty(context.Attendances.Where(a => a.ClassId == created.Id));
     }
 }

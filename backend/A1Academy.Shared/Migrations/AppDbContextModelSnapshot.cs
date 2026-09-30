@@ -190,7 +190,6 @@ namespace A1Academy.Shared.Migrations
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("bytea");
 
                     b.Property<DateTime>("ScheduledAt")

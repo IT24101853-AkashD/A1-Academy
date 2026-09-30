@@ -60,6 +60,9 @@ namespace A1Academy.TeacherService.Controllers
         private async Task<bool> OwnsClassAsync(int classId, int teacherId) =>
             await _context.Classes.AnyAsync(c => c.Id == classId && c.TeacherId == teacherId);
 
+        private async Task<bool> IsCancelledAsync(int classId) =>
+            await _context.Classes.AnyAsync(c => c.Id == classId && c.Status == ClassStatus.Cancelled);
+
         [HttpGet]
         public async Task<ActionResult<List<MaterialSummary>>> GetMaterials(int classId)
         {
@@ -107,6 +110,11 @@ namespace A1Academy.TeacherService.Controllers
             if (!await OwnsClassAsync(classId, teacherId.Value))
             {
                 return NotFound(new { message = "Class not found." });
+            }
+
+            if (await IsCancelledAsync(classId))
+            {
+                return Conflict(new { message = "Materials can't be added to a cancelled class." });
             }
 
             if (file == null || file.Length == 0)

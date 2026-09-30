@@ -48,10 +48,18 @@ namespace A1Academy.Tests.Fixtures
                     .AddApplicationPart(typeof(A1Academy.TeacherService.Controllers.TeacherSubjectsController).Assembly)
                     .AddApplicationPart(typeof(A1Academy.StudentService.Controllers.ClassesController).Assembly);
 
-                var dbContextOptions = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
-                if (dbContextOptions != null)
+                // The services register AppDbContext with AddDbContextPool, which adds a singleton
+                // pool plus scoped lease services on top of DbContextOptions. Removing only the
+                // options leaves a pool that can't be built, so every registration tied to
+                // AppDbContext is dropped before the in-memory context is added.
+                var dbContextRegistrations = services
+                    .Where(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>)
+                        || d.ServiceType == typeof(AppDbContext)
+                        || (d.ServiceType.IsGenericType && d.ServiceType.GenericTypeArguments.Contains(typeof(AppDbContext))))
+                    .ToList();
+                foreach (var registration in dbContextRegistrations)
                 {
-                    services.Remove(dbContextOptions);
+                    services.Remove(registration);
                 }
 
                 // Name computed once and captured, not inlined in the lambda: AddDbContext's

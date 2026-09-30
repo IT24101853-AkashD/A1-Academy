@@ -191,4 +191,32 @@ public class StudentAssignmentsEndpointTests : IClassFixture<ApiWebApplicationFa
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Submit_ToACancelledClass_ReturnsConflictAndSavesNothing()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var studentEmail = $"student.cancelledsubmit.{suffix}@example.com";
+        var teacherId = await SeedUserAsync("Teach", $"teacher.cancelledsubmit.{suffix}@example.com", "TeachPass1!", "Teacher");
+        var studentId = await SeedUserAsync("Stu", studentEmail, "StuPass1!", "Student");
+        var studentToken = await LoginAsync(client, studentEmail, "StuPass1!");
+        var (classId, assignmentId) = await SeedClassWithAssignmentAsync(teacherId, suffix, DateTime.UtcNow.AddDays(3));
+        await EnrollAsync(classId, studentId);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var targetClass = await context.Classes.FindAsync(classId);
+            targetClass!.Status = ClassStatus.Cancelled;
+            await context.SaveChangesAsync();
+        }
+
+        var response = await client.SendAsync(SubmitRequest(studentToken, classId, assignmentId));
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyContext = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.Empty(verifyContext.AssignmentSubmissions.Where(s => s.AssignmentId == assignmentId));
+    }
 }

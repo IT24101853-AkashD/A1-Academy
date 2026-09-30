@@ -16,10 +16,10 @@ const renderPage = () => render(
   </MemoryRouter>
 );
 
-function mockFetch({ categories = [{ id: 1, name: 'Mathematics' }], scheduleOk = true, scheduleStatus = 201, scheduleBody = {} } = {}) {
+function mockFetch({ subjects = [{ categoryId: 1, name: 'Mathematics', description: '' }], scheduleOk = true, scheduleStatus = 201, scheduleBody = {} } = {}) {
   return vi.fn((url, options) => {
-    if (url.includes('/api/categories')) {
-      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(categories) });
+    if (url.includes('/api/teacher/subjects')) {
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(subjects) });
     }
     if (url.includes('/api/teacher/classes') && options?.method === 'POST') {
       return Promise.resolve({ ok: scheduleOk, status: scheduleStatus, json: () => Promise.resolve(scheduleBody) });
@@ -35,7 +35,7 @@ describe('ScheduleClassPage', () => {
     vi.restoreAllMocks();
   });
 
-  it('fetches categories and pre-selects the first one', async () => {
+  it('fetches only the teacher subjects and pre-selects the first one', async () => {
     global.fetch = mockFetch();
     renderPage();
 
