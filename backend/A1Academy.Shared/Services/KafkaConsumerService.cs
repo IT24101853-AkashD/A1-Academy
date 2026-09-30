@@ -8,11 +8,13 @@ namespace A1Academy.Shared.Services
     public class KafkaConsumerService : BackgroundService
     {
         private readonly IConfiguration _configuration;
+        private readonly IHostEnvironment _environment;
         private readonly ILogger<KafkaConsumerService> _logger;
 
-        public KafkaConsumerService(IConfiguration configuration, ILogger<KafkaConsumerService> logger)
+        public KafkaConsumerService(IConfiguration configuration, IHostEnvironment environment, ILogger<KafkaConsumerService> logger)
         {
             _configuration = configuration;
+            _environment = environment;
             _logger = logger;
         }
 
@@ -23,19 +25,26 @@ namespace A1Academy.Shared.Services
 
         private void StartConsuming(CancellationToken stoppingToken)
         {
-            var config = new ConsumerConfig
+            // One consumer group per service (e.g. "A1Academy.AdminService"), so every service
+            // receives every event. A shared group id would split messages between the services
+            // instead, while replicas of the same service still share the load as intended.
+            var groupId = _configuration["Kafka:GroupId"] ?? _environment.ApplicationName;
+            var topics = (_configuration["Kafka:Topics"] ?? "test-topic")
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            var config = KafkaClientConfig.Apply(new ConsumerConfig
             {
-                BootstrapServers = _configuration["Kafka:BootstrapServers"] ?? "localhost:9092",
-                GroupId = "a1-academy-consumer-group",
+                GroupId = groupId,
                 AutoOffsetReset = AutoOffsetReset.Earliest,
                 AllowAutoCreateTopics = true
-            };
+            }, _configuration);
 
             using var consumer = new ConsumerBuilder<Ignore, string>(config).Build();
-            consumer.Subscribe("test-topic");
+            consumer.Subscribe(topics);
 
             _logger.LogInformation("==================================================");
             _logger.LogInformation(" SUCCESS: Kafka Consumer connected & listening!");
+            _logger.LogInformation(" Group: {GroupId} | Topics: {Topics}", groupId, string.Join(", ", topics));
             _logger.LogInformation("==================================================");
 
             while (!stoppingToken.IsCancellationRequested)
