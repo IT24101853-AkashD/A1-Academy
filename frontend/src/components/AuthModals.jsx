@@ -27,10 +27,12 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
     // The Teacher application's subject checklist, and the error text shown if it fails to load.
     const [categories, setCategories] = useState([]);
     const [categoriesError, setCategoriesError] = useState('');
-    // Whether the "Other" row's free-text input is showing - it's its own checkbox alongside the
-    // real Categories rather than always-visible, so the common case (every subject already
-    // exists) stays a plain checklist.
-    const [showOtherSubject, setShowOtherSubject] = useState(false);
+    // Tracked separately from categories.length - an empty list is a valid answer (no Categories
+    // added yet), in which case "Other" is the Teacher's only option, not a loading state.
+    const [categoriesLoading, setCategoriesLoading] = useState(false);
+    // A Teacher registers for exactly one subject: a Category's id, 'other' (request a new
+    // subject via the free-text input), or '' while nothing is picked yet.
+    const [selectedSubject, setSelectedSubject] = useState('');
 
     // A caller can also open a specific registration modal directly (IndexPage's "Join as a
     // Student" / "Teach with Us" buttons do exactly that via window.openReactModal, bypassing
@@ -49,6 +51,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
     useEffect(() => {
         if (activeModal !== 'register-teacher-modal') return;
         let cancelled = false;
+        setCategoriesLoading(true);
         (async () => {
             try {
                 const res = await fetch(import.meta.env.VITE_API_URL + '/api/categories/public');
@@ -60,12 +63,14 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
                 }
             } catch (err) {
                 if (!cancelled) setCategoriesError('Could not load the subject list. Please close and reopen this form to try again.');
+            } finally {
+                if (!cancelled) setCategoriesLoading(false);
             }
         })();
         // A fresh open of the form starts with "Other" collapsed - otherwise a leftover value
         // from a previous attempt (e.g. one rejected for a duplicate email) would silently ride
         // along on the next submission.
-        setShowOtherSubject(false);
+        setSelectedSubject('');
         return () => { cancelled = true; };
     }, [activeModal]);
 
@@ -88,8 +93,6 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
                 closeModal();
                 if (result.role === 'Admin') {
                     window.location.href = '/admin';
-                } else {
-                    openModal('success-login-modal');
                 }
                 } else {
                     const errorText = await res.text();
@@ -369,7 +372,12 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
             if (!teacherFile) {
                 errors['teacher-qualifications'] = 'Please upload your professional qualification certificate.';
             }
-
+            const otherSubjectValue = (formData.get('otherSubject') || '').trim();
+            if (!selectedSubject) {
+                errors['teacher-categories'] = "Select the subject you teach, or request a new one under “Other”.";
+            } else if (selectedSubject === 'other' && !otherSubjectValue) {
+                errors['teacher-categories'] = 'Type the subject you want to request.';
+            }
         }
 
         if (Object.keys(errors).length > 0) {
@@ -435,8 +443,6 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
                 closeModal();
                 if (result.role === 'Admin') {
                     window.location.href = '/admin';
-                } else {
-                    openModal('success-login-modal');
                 }
             } else {
                 try {
@@ -848,7 +854,47 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
                         <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">* Required for administrative verification. Please upload certificates.</p>
                     </div>
 
-
+                    {/* Subject: exactly one existing Category, or request a new one via "Other" */}
+                    <div>
+                        <span className="block font-bold text-slate-900 dark:text-white mb-1">Subject You Teach</span>
+                        {categoriesError ? (
+                            <p className="text-sm font-bold text-red-500 dark:text-red-400">{categoriesError}</p>
+                        ) : categoriesLoading ? (
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Loading subjects…</p>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-2">
+                                {[...categories.map((c) => ({ value: String(c.id), label: c.name })), { value: 'other', label: 'Other (request a subject)' }].map((option) => (
+                                    <label key={option.value} className={`flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border ${option.value === 'other' ? 'border-dashed border-slate-300 dark:border-slate-600' : 'border-slate-200 dark:border-slate-700'} rounded-lg px-3 py-2 text-sm font-medium text-slate-900 dark:text-white cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 dark:has-[:checked]:bg-amber-500/10`}>
+                                        <input
+                                            type="radio" name="teacherSubjectChoice" value={option.value}
+                                            checked={selectedSubject === option.value}
+                                            className="accent-amber-500"
+                                            onChange={() => {
+                                                setSelectedSubject(option.value);
+                                                if (formErrors['teacher-categories']) setFormErrors({ ...formErrors, 'teacher-categories': null });
+                                            }}
+                                        />
+                                        <span>{option.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        )}
+                        {/* Only the picked Category is submitted, so the API always receives at most one. */}
+                        {selectedSubject && selectedSubject !== 'other' && (
+                            <input type="hidden" name="categoryIds" value={selectedSubject} />
+                        )}
+                        {selectedSubject === 'other' && (
+                            <input
+                                type="text" name="otherSubject" id="teacher-other-subject"
+                                placeholder="Type the subject you teach"
+                                maxLength={100}
+                                className="mt-2 w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-base font-medium text-slate-900 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all"
+                                onChange={() => { if (formErrors['teacher-categories']) setFormErrors({ ...formErrors, 'teacher-categories': null }); }}
+                            />
+                        )}
+                        {formErrors['teacher-categories'] && <p className="text-sm font-bold text-red-500 dark:text-red-400 mt-1">{formErrors['teacher-categories']}</p>}
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">* One subject per teacher. Not listed? Choose "Other" and type it - an administrator will review your request.</p>
+                    </div>
 
                     {/* Password with Toggle (Stacked) */}
                     <div>

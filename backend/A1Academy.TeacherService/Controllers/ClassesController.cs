@@ -116,6 +116,16 @@ namespace A1Academy.TeacherService.Controllers
                 return BadRequest(new { message = "Select a valid subject category." });
             }
 
+            // A Teacher may only schedule classes in a subject they're registered to teach
+            // (TeacherSubjects - chosen at registration, or granted when an Admin approves their
+            // "Other" subject request).
+            var teachesSubject = await _context.TeacherSubjects
+                .AnyAsync(ts => ts.TeacherId == teacherId && ts.CategoryId == request.CategoryId);
+            if (!teachesSubject)
+            {
+                return BadRequest(new { message = "You can only schedule classes for a subject you're registered to teach." });
+            }
+
             if (request.ScheduledAt <= DateTime.UtcNow)
             {
                 return BadRequest(new { message = "Class date and time must be in the future." });
@@ -176,21 +186,37 @@ namespace A1Academy.TeacherService.Controllers
                 return Unauthorized();
             }
 
-            var targetClass = await _context.Classes.Include(c => c.Category).SingleOrDefaultAsync(c => c.Id == id);
-            if (targetClass == null || targetClass.TeacherId != teacherId)
+            // Retried on a concurrency conflict: the status change bumps Class.RowVersion so that
+            // an enrolment racing this cancellation (StudentService.Enroll) re-reads the class and
+            // sees it cancelled, and if an enrolment saved first, this simply re-reads and retries.
+            for (var attempt = 1; attempt <= 3; attempt++)
             {
-                return NotFound(new { message = "Class not found." });
+                var targetClass = await _context.Classes.Include(c => c.Category).SingleOrDefaultAsync(c => c.Id == id);
+                if (targetClass == null || targetClass.TeacherId != teacherId)
+                {
+                    return NotFound(new { message = "Class not found." });
+                }
+
+                if (targetClass.Status == ClassStatus.Cancelled)
+                {
+                    return Conflict(new { message = "This class has already been cancelled." });
+                }
+
+                targetClass.Status = ClassStatus.Cancelled;
+                targetClass.BumpConcurrencyStamp();
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                    return Ok(ToSummary(targetClass));
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    _context.ChangeTracker.Clear();
+                }
             }
 
-            if (targetClass.Status == ClassStatus.Cancelled)
-            {
-                return Conflict(new { message = "This class has already been cancelled." });
-            }
-
-            targetClass.Status = ClassStatus.Cancelled;
-            await _context.SaveChangesAsync();
-
-            return Ok(ToSummary(targetClass));
+            return Conflict(new { message = "This class is busy right now. Please try again." });
         }
 
         // The roster an attendance-marking screen needs: every Student currently enrolled in
@@ -243,10 +269,18 @@ namespace A1Academy.TeacherService.Controllers
                 return Unauthorized();
             }
 
-            var owns = await _context.Classes.AnyAsync(c => c.Id == id && c.TeacherId == teacherId);
-            if (!owns)
+            var classStatus = await _context.Classes
+                .Where(c => c.Id == id && c.TeacherId == teacherId)
+                .Select(c => c.Status)
+                .SingleOrDefaultAsync();
+            if (classStatus == null)
             {
                 return NotFound(new { message = "Class not found." });
+            }
+
+            if (classStatus == ClassStatus.Cancelled)
+            {
+                return Conflict(new { message = "Attendance can't be marked for a cancelled class." });
             }
 
             var entries = request.Entries ?? new List<AttendanceEntry>();
