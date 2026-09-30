@@ -257,4 +257,32 @@ public class TeacherAssignmentsEndpointTests : IClassFixture<ApiWebApplicationFa
         var bytes = await response.Content.ReadAsByteArrayAsync();
         Assert.Equal(new byte[] { 9, 8, 7 }, bytes);
     }
+
+    private async Task CancelClassAsync(int classId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var targetClass = await context.Classes.FindAsync(classId);
+        targetClass!.Status = ClassStatus.Cancelled;
+        await context.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task CreateAssignment_ForACancelledClass_ReturnsConflictAndCreatesNothing()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var email = $"teacher.cancelledasg.{suffix}@example.com";
+        var teacherId = await SeedUserAsync("Teach", email, "TeachPass1!", "Teacher");
+        var token = await LoginAsync(client, email, "TeachPass1!");
+        var classId = await SeedClassAsync(teacherId, suffix);
+        await CancelClassAsync(classId);
+
+        var response = await client.SendAsync(CreateAssignmentRequest(token, classId, DateTime.UtcNow.AddDays(7)));
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.Empty(context.Assignments.Where(a => a.ClassId == classId));
+    }
 }

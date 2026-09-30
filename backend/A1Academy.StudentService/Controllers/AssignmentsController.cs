@@ -103,6 +103,12 @@ namespace A1Academy.StudentService.Controllers
                 return Forbid();
             }
 
+            var classCancelled = await _context.Classes.AnyAsync(c => c.Id == classId && c.Status == ClassStatus.Cancelled);
+            if (classCancelled)
+            {
+                return Conflict(new { message = "This class has been cancelled, so submissions are closed." });
+            }
+
             var assignment = await _context.Assignments
                 .SingleOrDefaultAsync(a => a.Id == assignmentId && a.ClassId == classId);
             if (assignment == null)

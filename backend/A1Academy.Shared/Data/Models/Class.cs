@@ -43,13 +43,17 @@ namespace A1Academy.Shared.Data.Models
         // round trip instead of a separate COUNT query per attempt.
         public int EnrolledCount { get; set; } = 0;
 
-        // EF Core concurrency token - Npgsql maps this to a real row-version column, and the
-        // InMemory provider the test suite uses honors it too, so the enroll endpoint's
-        // check-then-increment-then-save can detect a concurrent enrollment (via
-        // DbUpdateConcurrencyException) and retry instead of silently overselling seats when two
-        // requests race for the last one.
-        [Timestamp]
+        // App-managed optimistic concurrency token. PostgreSQL has no auto-updating rowversion
+        // type, so a database-generated [Timestamp] here was never actually refreshed and every
+        // UPDATE matched. Instead, every change to seats or status calls BumpConcurrencyStamp():
+        // EF Core adds "WHERE RowVersion = <value we read>" to the UPDATE, so if another request
+        // (possibly on another replica) changed the row first, zero rows match and EF throws
+        // DbUpdateConcurrencyException - the caller then reloads and re-checks capacity/status.
+        // The InMemory provider used by the tests enforces the same check.
+        [ConcurrencyCheck]
         public byte[]? RowVersion { get; set; }
+
+        public void BumpConcurrencyStamp() => RowVersion = Guid.NewGuid().ToByteArray();
 
         // "Active" vs "Cancelled". Reassigning to a different category is just changing
         // CategoryId, not a status change.

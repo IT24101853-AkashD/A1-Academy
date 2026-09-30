@@ -20,12 +20,13 @@ export default function ScheduleClassPage() {
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        fetch(`${import.meta.env.VITE_API_URL}/api/categories`, {
+        // Only the subjects this Teacher is registered to teach - the API rejects any other.
+        fetch(`${import.meta.env.VITE_API_URL}/api/teacher/subjects`, {
             headers: { Authorization: `Bearer ${token}` },
         })
             .then((res) => (res.ok ? res.json() : []))
             .then((data) => {
-                const list = Array.isArray(data) ? data : [];
+                const list = (Array.isArray(data) ? data : []).map((s) => ({ id: s.categoryId, name: s.name }));
                 setCategories(list);
                 if (list.length > 0) {
                     setCategoryId(String(list[0].id));
@@ -143,6 +144,11 @@ export default function ScheduleClassPage() {
                                 <option key={cat.id} value={cat.id}>{cat.name}</option>
                             ))}
                         </select>
+                        {categories.length === 0 && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
+                                You don't have a subject yet. If you requested a new subject at registration, you can schedule classes once an administrator approves it.
+                            </p>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
