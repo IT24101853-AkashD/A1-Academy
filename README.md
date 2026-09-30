@@ -339,3 +339,37 @@ To support highly scalable, asynchronous communication between microservices, Ap
 - **Security and Compliance:** Integrate Static Application Security Testing (SAST) and dependency vulnerability scanning into the CI pipelines.
 - **Environment Promotion:** Establish staging environments with manual approval gates before pushing to production.
 - **Observability:** Implement centralized logging and application performance monitoring (APM) to track the health of the deployed microservices.
+---
+
+## ☁️ DevOps & Cloud Infrastructure (Final Deployment)
+
+This project utilizes a modern cloud-native deployment strategy on **Microsoft Azure**, fully automated via **GitHub Actions**.
+
+### 🚀 CI/CD Pipelines (GitHub Actions)
+* **Automated Frontend Deployment:** Pushes to the main branch automatically build and deploy the React application directly to Azure App Service using Publish Profiles.
+* **Automated Backend Builds:** Microservices are automatically built into Docker containers and pushed to Docker Hub upon code changes.
+
+### 🌩️ Cloud Hosting (Azure)
+* **Azure Container Apps:** The backend is hosted on Azure Container Apps, ensuring each microservice (Gateway, Auth, Admin, Student, Teacher) runs independently in a highly scalable environment.
+* **Secure Networking:** The API Gateway is configured to route traffic internally using secure HTTPS endpoints, complying with Azure's strict "Express Environment" security policies.
+
+### 🔐 Security & Configuration
+* **Secrets Management:** Sensitive data, such as SMTP App Passwords and JWT Secret Keys, are securely injected at runtime using Azure Environment Variables.
+* **CORS & Region Routing:** Configured strict CORS policies in the API Gateway to securely accept requests strictly from our live Azure frontend domain in the Malaysia West region.
+
+## 🛠️ DevOps Workflow & Engineering Challenges
+
+As the DevOps Engineer for this project, the goal was to ensure a seamless transition from local development to a production-grade cloud environment. 
+
+### The CI/CD Lifecycle
+1. **Local Dev:** Developers use docker-compose to spin up PostgreSQL, Kafka, Zookeeper, and the .NET microservices locally.
+2. **Version Control:** Code is pushed to GitHub, requiring PR reviews before merging into the main branch.
+3. **Continuous Integration:** GitHub Actions automatically builds the code, packages the microservices into Docker Images, and pushes them to Docker Hub.
+4. **Continuous Deployment:** The React frontend is automatically built and deployed to Azure App Service, while Azure Container Apps pull the latest backend images to serve live traffic.
+
+### ⚠️ DevOps Challenges Overcome
+Deploying a distributed system to the cloud introduced several complex infrastructure challenges that were successfully resolved:
+
+* **Azure Region Migration & CORS:** Due to Azure quota limits, the entire cloud infrastructure was migrated to the Malaysia West region. This caused URL changes that triggered strict CORS blocks. This was resolved by dynamically updating the API Gateway CORS policies to accept traffic from the new regional frontend URLs.
+* **Azure "Express Environment" Security:** Azure's new Express Environments actively block unencrypted internal HTTP traffic, causing the API Gateway to return 502 Bad Gateway errors. This was resolved by overriding the YARP proxy environment variables to enforce strict, secure HTTPS routing between all internal containers.
+* **Cloud Database SSL Connectivity:** Migrating from a local Docker database to a managed Azure PostgreSQL database resulted in connection rejections. This was fixed by configuring strict SSL modes (SslMode=Require) and securely injecting the new cloud connection strings into the containers at runtime.
