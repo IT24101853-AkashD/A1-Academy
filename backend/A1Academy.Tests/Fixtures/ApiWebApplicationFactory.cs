@@ -48,10 +48,15 @@ namespace A1Academy.Tests.Fixtures
                     .AddApplicationPart(typeof(A1Academy.TeacherService.Controllers.TeacherSubjectsController).Assembly)
                     .AddApplicationPart(typeof(A1Academy.StudentService.Controllers.ClassesController).Assembly);
 
-                var dbContextOptions = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
-                if (dbContextOptions != null)
+                var dbContextDescriptors = services
+                    .Where(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>) 
+                             || d.ServiceType == typeof(AppDbContext)
+                             || d.ServiceType.Name.Contains("DbContextPool")
+                             || d.ServiceType.Name.Contains("IDbContextPool"))
+                    .ToList();
+                foreach (var descriptor in dbContextDescriptors)
                 {
-                    services.Remove(dbContextOptions);
+                    services.Remove(descriptor);
                 }
 
                 // Name computed once and captured, not inlined in the lambda: AddDbContext's
@@ -60,7 +65,7 @@ namespace A1Academy.Tests.Fixtures
                 // hand each request a *different* named in-memory database - one request's
                 // seeded/written data would then be invisible to the next.
                 var databaseName = $"ApiWebApplicationFactory_{Guid.NewGuid()}";
-                services.AddDbContext<AppDbContext>(options =>
+                services.AddDbContextPool<AppDbContext>(options =>
                     options.UseInMemoryDatabase(databaseName));
             });
         }

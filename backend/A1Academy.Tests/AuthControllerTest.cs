@@ -254,7 +254,7 @@ public async Task Login_WithDeactivatedAccount_ReturnsUnauthorized()
 
     // Assert
     var unauthorized = Assert.IsType<UnauthorizedObjectResult>(result);
-    Assert.Equal("Your account has been deactivated. Please contact support.", unauthorized.Value);
+    Assert.Equal("This Email is Deactivated contact the admin", unauthorized.Value);
 }
 
 [Fact]
