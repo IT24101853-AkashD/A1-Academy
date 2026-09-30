@@ -1126,6 +1126,84 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         public int TotalCount { get; set; }
         public int TotalPages { get; set; }
     }
+
+    private async Task<int> SeedClassAsync(int teacherId, string suffix, int enrolledCount = 0)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var category = new Category { Name = $"DeleteTests-{suffix}", Description = "Seeded for delete tests." };
+        context.Categories.Add(category);
+        await context.SaveChangesAsync();
+        var targetClass = new Class
+        {
+            Name = "Algebra Basics",
+            CategoryId = category.Id,
+            TeacherId = teacherId,
+            ScheduledAt = DateTime.UtcNow.AddDays(1),
+            Capacity = 10,
+            EnrolledCount = enrolledCount,
+        };
+        context.Classes.Add(targetClass);
+        await context.SaveChangesAsync();
+        return targetClass.Id;
+    }
+
+    [Fact]
+    public async Task DeleteUser_TeacherWithClasses_ReturnsConflictWithAReasonAndKeepsTheAccount()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var adminEmail = $"deleteteacheradmin.{suffix}@example.com";
+        var teacherEmail = $"deleteteacherwithclass.{suffix}@example.com";
+        await SeedUserAsync("Delete", "Admin", adminEmail, "AdminPass1!", "Admin");
+        await SeedUserAsync("Busy", "Teacher", teacherEmail, "TeachPass1!", "Teacher");
+        var token = await LoginAsync(client, adminEmail, "AdminPass1!");
+        var teacherId = await FindUserIdAsync(client, token, teacherEmail);
+        await SeedClassAsync(teacherId, suffix);
+
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/users/{teacherId}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("Deactivate it instead", body.GetProperty("message").GetString());
+
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.True(await context.Users.AnyAsync(u => u.Id == teacherId));
+    }
+
+    [Fact]
+    public async Task DeleteUser_EnrolledStudent_FreesTheirSeatInTheClass()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var adminEmail = $"deletestudentadmin.{suffix}@example.com";
+        var teacherEmail = $"deletestudentteacher.{suffix}@example.com";
+        var studentEmail = $"deleteenrolledstudent.{suffix}@example.com";
+        await SeedUserAsync("Delete", "Admin", adminEmail, "AdminPass1!", "Admin");
+        await SeedUserAsync("Class", "Teacher", teacherEmail, "TeachPass1!", "Teacher");
+        await SeedUserAsync("Enrolled", "Student", studentEmail, "StuPass1!", "Student");
+        var token = await LoginAsync(client, adminEmail, "AdminPass1!");
+        var teacherId = await FindUserIdAsync(client, token, teacherEmail);
+        var studentId = await FindUserIdAsync(client, token, studentEmail);
+        var classId = await SeedClassAsync(teacherId, suffix, enrolledCount: 1);
+        using (var seedScope = _factory.Services.CreateScope())
+        {
+            var seedContext = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            seedContext.Enrollments.Add(new Enrollment { ClassId = classId, StudentId = studentId });
+            await seedContext.SaveChangesAsync();
+        }
+
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/users/{studentId}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.Equal(0, (await context.Classes.SingleAsync(c => c.Id == classId)).EnrolledCount);
+        Assert.False(await context.Enrollments.AnyAsync(e => e.StudentId == studentId));
+    }
 }
-
-

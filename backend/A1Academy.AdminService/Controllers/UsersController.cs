@@ -167,6 +167,40 @@ namespace A1Academy.AdminService.Controllers
                 return BadRequest(new { message = "Only Student and Teacher accounts can be deleted." });
             }
 
+            // Classes.TeacherId is ON DELETE RESTRICT on purpose - deleting a Teacher who still
+            // has classes would wipe out their students' enrolments, submissions and attendance.
+            // Say so plainly instead of letting the database reject it as a 500.
+            if (user.Role == "Teacher")
+            {
+                var classCount = await _context.Classes.CountAsync(c => c.TeacherId == id);
+                if (classCount > 0)
+                {
+                    return Conflict(new
+                    {
+                        message = $"This teacher has {classCount} class{(classCount == 1 ? "" : "es")}, so the account can't be deleted. Deactivate it instead."
+                    });
+                }
+            }
+
+            // A Student's enrolments cascade away with the account at the database level, but
+            // Class.EnrolledCount is a stored counter - free each seat they held explicitly, or
+            // the class would stay one seat short forever. Bumping the concurrency stamp makes a
+            // concurrent enrolment in the same class re-read the corrected count.
+            if (user.Role == "Student")
+            {
+                var enrolledClassIds = await _context.Enrollments
+                    .Where(e => e.StudentId == id)
+                    .Select(e => e.ClassId)
+                    .ToListAsync();
+                var enrolledClasses = await _context.Classes.Where(c => enrolledClassIds.Contains(c.Id)).ToListAsync();
+                foreach (var enrolledClass in enrolledClasses)
+                {
+                    enrolledClass.EnrolledCount = Math.Max(enrolledClass.EnrolledCount - 1, 0);
+                    enrolledClass.BumpConcurrencyStamp();
+                }
+                _context.Enrollments.RemoveRange(_context.Enrollments.Where(e => e.StudentId == id));
+            }
+
             // AppDbContext configures TeacherSubject/TeacherSubjectRequest to cascade on
             // TeacherId, but that only becomes a real database-level ON DELETE CASCADE on a
             // relational provider - EF Core's cascade delete otherwise only reaches entities
@@ -178,7 +212,16 @@ namespace A1Academy.AdminService.Controllers
             _context.TeacherSubjectRequests.RemoveRange(teacherSubjectRequests);
 
             _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // A class this Student was in changed at the same moment (e.g. someone enrolled).
+                // Nothing was saved; retrying re-reads the current seat counts.
+                return Conflict(new { message = "One of this student's classes changed at the same time. Please try again." });
+            }
 
             return NoContent();
         }
