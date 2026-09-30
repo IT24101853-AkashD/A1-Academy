@@ -207,14 +207,19 @@ export default function AdminUsersPage() {
             }
 
             if (!res.ok) {
-                throw new Error(`delete failed with status ${res.status}`);
+                // A 400/409 carries a specific reason (e.g. "This teacher has 2 classes...") -
+                // show that instead of the generic message whenever the API sent one.
+                const body = await Promise.resolve().then(() => res.json()).catch(() => null);
+                const error = new Error(`delete failed with status ${res.status}`);
+                error.serverMessage = body?.message;
+                throw error;
             }
 
             setUsers((current) => current.filter((u) => u.id !== user.id));
             setTotalCount((count) => Math.max(count - 1, 0));
             setConfirmingDeleteId(null);
-        } catch {
-            setActionError(ACTION_ERROR_MESSAGES.delete);
+        } catch (err) {
+            setActionError(err?.serverMessage || ACTION_ERROR_MESSAGES.delete);
             setConfirmingDeleteId(null);
         } finally {
             setPendingActionId(null);
