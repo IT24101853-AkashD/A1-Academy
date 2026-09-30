@@ -1,37 +1,50 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Hosting;
 using Confluent.Kafka;
 
 namespace A1Academy.Shared.Services
 {
-    public class KafkaProducerService : IKafkaProducerService
+    // Registered as a singleton: a Kafka producer is thread-safe and expensive to create
+    // (it opens broker connections), so one instance is reused for the app's lifetime.
+    public class KafkaProducerService : IKafkaProducerService, IDisposable
     {
-        private readonly IConfiguration _configuration;
+        private readonly IProducer<Null, string> _producer;
+        private readonly ILogger<KafkaProducerService> _logger;
 
-        public KafkaProducerService(IConfiguration configuration)
+        public KafkaProducerService(IConfiguration configuration, ILogger<KafkaProducerService> logger)
         {
-            _configuration = configuration;
+            _logger = logger;
+
+            var config = KafkaClientConfig.Apply(new ProducerConfig
+            {
+                // Fail a request in seconds rather than the 5-minute default when the broker is down
+                MessageTimeoutMs = 10000
+            }, configuration);
+
+            _producer = new ProducerBuilder<Null, string>(config).Build();
         }
 
         public async Task<bool> ProduceEventAsync(string topic, string message)
         {
-            var config = new ProducerConfig
+            try
             {
-                BootstrapServers = _configuration["Kafka:BootstrapServers"] ?? "localhost:9092"
-            };
+                var result = await _producer.ProduceAsync(
+                    topic,
+                    new Message<Null, string> { Value = message });
 
-            using var producer = new ProducerBuilder<Null, string>(config).Build();
+                return result.Status == PersistenceStatus.Persisted;
+            }
+            catch (KafkaException ex)
+            {
+                _logger.LogError(ex, "Failed to publish to Kafka topic {Topic}", topic);
+                return false;
+            }
+        }
 
-            var result = await producer.ProduceAsync(
-                topic,
-                new Message<Null, string> { Value = message });
-
-            return result.Status == PersistenceStatus.Persisted;
+        public void Dispose()
+        {
+            _producer.Flush(TimeSpan.FromSeconds(5));
+            _producer.Dispose();
         }
     }
 }
-
-
-
-

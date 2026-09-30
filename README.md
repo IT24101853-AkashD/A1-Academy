@@ -104,6 +104,23 @@ The backend will output on startup:
 SUCCESS: Kafka Consumer connected & listening!
 ```
 
+The broker has two listeners: containers in the compose network use `kafka:29092` (set via
+`Kafka__BootstrapServers` in `docker-compose.yml`), apps started with `dotnet run` on your machine
+use `localhost:9092`. Each service consumes in its own consumer group (its assembly name, e.g.
+`A1Academy.AdminService`), so every service receives every event.
+
+End-to-end check - publish from inside the broker and watch all four services log it:
+
+```powershell
+docker exec -it local_kafka bash -c "echo hello-sprint4 | kafka-console-producer --bootstrap-server localhost:29092 --topic test-topic"
+docker compose logs auth admin teacher student | Select-String "KAFKA RECEIVED"
+```
+
+In Azure, the services connect to an Azure Event Hubs namespace through its Kafka endpoint
+(SASL_SSL). [`scripts/devops-azure-setup.sh`](scripts/devops-azure-setup.sh) provisions the
+namespace and topics and sets the `Kafka__*` env vars on each Container App. Event Hubs does
+not auto-create topics, so add any new topic to `KAFKA_TOPICS` in that script.
+
 ### Backend Database Connection
 
 The ASP.NET Core backend uses the connection string configured in `appsettings.Development.json`:
