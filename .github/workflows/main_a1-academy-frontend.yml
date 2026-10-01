@@ -7,6 +7,14 @@ on:
   push:
     branches:
       - main
+  # Pull requests (including Dependabot's) get lint + build only, so a broken dependency bump
+  # shows red before merge; the deploy job below never runs for them.
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/main_a1-academy-frontend.yml'
   workflow_dispatch:
 
 jobs:
@@ -46,6 +54,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
+    if: github.event_name != 'pull_request'
     
     steps:
       - name: Download artifact from build job

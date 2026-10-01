@@ -49,9 +49,10 @@ jobs:
         # Pull requests only build (to prove the Dockerfile works); only main publishes, so
         # unmerged code can never land on the :latest tag or a deployable SHA tag.
         push: ${{ github.event_name != 'pull_request' }}
+        # Dependabot PRs get no secrets, so fall back to a local name (PR builds never push).
         tags: |
-          ${{ secrets.DOCKER_USERNAME }}/a1academy-admin:latest
-          ${{ secrets.DOCKER_USERNAME }}/a1academy-admin:${{ github.sha }}
+          ${{ secrets.DOCKER_USERNAME || 'local' }}/a1academy-admin:latest
+          ${{ secrets.DOCKER_USERNAME || 'local' }}/a1academy-admin:${{ github.sha }}
 
   deploy:
     needs: build-and-dockerize
