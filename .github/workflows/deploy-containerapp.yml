@@ -1,6 +1,6 @@
 # Reusable deploy step for the backend Container Apps, called by each ci-*.yml after its image
 # has been pushed to Docker Hub. Moves the Container App onto the image tagged with this commit's
-# SHA, then fails the run if the new revision doesn't come up healthy.
+# SHA, restarts it, then fails the run unless a new container actually came up running.
 #
 # Azure login uses GitHub OIDC against a user-assigned managed identity (no password stored in
 # GitHub). Required repository secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID.
@@ -41,33 +41,44 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    - name: Deploy image to Container App
+    - name: Deploy, restart and verify
       uses: azure/cli@v2
       with:
         inlineScript: |
+          set -e
+          APP="${{ inputs.app-name }}"
           IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/${{ inputs.image-repo }}:${{ github.sha }}"
-          echo "Deploying $IMAGE to ${{ inputs.app-name }}"
-          az containerapp update \
-            --name "${{ inputs.app-name }}" \
-            --resource-group "$RESOURCE_GROUP" \
-            --image "$IMAGE" \
-            -o none
+          START=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-    - name: Verify new revision is healthy
-      uses: azure/cli@v2
-      with:
-        inlineScript: |
-          for i in $(seq 1 18); do
-            STATE=$(az containerapp revision list \
-              --name "${{ inputs.app-name }}" \
-              --resource-group "$RESOURCE_GROUP" \
-              --query "[?properties.active && contains(properties.template.containers[0].image, '${{ github.sha }}')] | [0].properties.healthState" \
-              -o tsv)
-            echo "Attempt $i: health=$STATE"
-            if [ "$STATE" = "Healthy" ]; then
+          echo "Updating $APP to $IMAGE"
+          az containerapp update --name "$APP" --resource-group "$RESOURCE_GROUP" --image "$IMAGE" -o none
+
+          # These apps run on an Express environment, where an update changes the app's template
+          # but does not reliably replace the running container (and revision restart isn't
+          # supported). An explicit stop/start is what guarantees the new image and config load.
+          SUB=$(az account show --query id -o tsv)
+          URL="https://management.azure.com/subscriptions/$SUB/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.App/containerApps/$APP"
+          echo "Restarting $APP (stop/start)"
+          az rest --method post --url "$URL/stop?api-version=2024-03-01" -o none
+          for i in $(seq 1 12); do
+            [ "$(az containerapp show -n "$APP" -g "$RESOURCE_GROUP" --query properties.runningStatus -o tsv)" = "Stopped" ] && break
+            sleep 5
+          done
+          az rest --method post --url "$URL/start?api-version=2024-03-01" -o none
+
+          # Pass only once a container started after this deploy began is Running - checking the
+          # template alone would report success while the old container keeps serving.
+          REVISION=$(az containerapp show -n "$APP" -g "$RESOURCE_GROUP" --query properties.latestRevisionName -o tsv)
+          for i in $(seq 1 24); do
+            # ISO-8601 timestamps compare correctly as strings.
+            if az containerapp replica list -n "$APP" -g "$RESOURCE_GROUP" --revision "$REVISION" \
+                 --query "[].[properties.createdTime, properties.runningState]" -o tsv \
+               | awk -v start="$START" '$2 == "Running" && $1 > start { found = 1 } END { exit !found }'; then
+              echo "OK: $APP is running a new container on $IMAGE"
               exit 0
             fi
+            echo "Attempt $i: waiting for a new running container..."
             sleep 10
           done
-          echo "::error::${{ inputs.app-name }} did not become healthy on ${{ github.sha }} within 3 minutes"
+          echo "::error::$APP has no new running container 4 minutes after deploying $IMAGE"
           exit 1
