@@ -42,4 +42,15 @@ jobs:
           ${{ secrets.DOCKER_USERNAME }}/a1academy-gateway:latest
           ${{ secrets.DOCKER_USERNAME }}/a1academy-gateway:${{ github.sha }}
 
-
+  deploy:
+    needs: build-and-dockerize
+    # Deploy only merged code on main - pull requests stop after the image build.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-containerapp.yml
+    with:
+      app-name: a1academy-gateway
+      image-repo: a1academy-gateway
+    secrets: inherit

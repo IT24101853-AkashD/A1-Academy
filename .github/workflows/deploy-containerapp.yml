@@ -1,0 +1,73 @@
+# Reusable deploy step for the backend Container Apps, called by each ci-*.yml after its image
+# has been pushed to Docker Hub. Moves the Container App onto the image tagged with this commit's
+# SHA, then fails the run if the new revision doesn't come up healthy.
+#
+# Azure login uses GitHub OIDC against a user-assigned managed identity (no password stored in
+# GitHub). Required repository secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID.
+
+name: Deploy Container App
+
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: Container App name, e.g. a1academy-admin
+        required: true
+        type: string
+      image-repo:
+        description: Docker Hub repository name, e.g. a1academy-admin
+        required: true
+        type: string
+
+env:
+  RESOURCE_GROUP: A1-Academy-RG
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # One deploy per app at a time; a newer merge waits instead of racing an older one.
+    concurrency:
+      group: deploy-${{ inputs.app-name }}
+      cancel-in-progress: false
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+    - name: Azure Login (OIDC)
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Deploy image to Container App
+      uses: azure/cli@v2
+      with:
+        inlineScript: |
+          IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/${{ inputs.image-repo }}:${{ github.sha }}"
+          echo "Deploying $IMAGE to ${{ inputs.app-name }}"
+          az containerapp update \
+            --name "${{ inputs.app-name }}" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "$IMAGE" \
+            -o none
+
+    - name: Verify new revision is healthy
+      uses: azure/cli@v2
+      with:
+        inlineScript: |
+          for i in $(seq 1 18); do
+            STATE=$(az containerapp revision list \
+              --name "${{ inputs.app-name }}" \
+              --resource-group "$RESOURCE_GROUP" \
+              --query "[?properties.active && contains(properties.template.containers[0].image, '${{ github.sha }}')] | [0].properties.healthState" \
+              -o tsv)
+            echo "Attempt $i: health=$STATE"
+            if [ "$STATE" = "Healthy" ]; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::${{ inputs.app-name }} did not become healthy on ${{ github.sha }} within 3 minutes"
+          exit 1
