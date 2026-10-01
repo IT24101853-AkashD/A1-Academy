@@ -1,6 +1,8 @@
 name: Teacher Service CI
 
 on:
+  # Manual "Run workflow" button in the Actions tab: test, build and redeploy main on demand.
+  workflow_dispatch:
   push:
     branches: [ "main" ]
     paths:
@@ -50,8 +52,8 @@ jobs:
 
   deploy:
     needs: build-and-dockerize
-    # Deploy only merged code on main - pull requests stop after the image build.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Deploy only main (merges or a manual run) - pull requests stop after the image build.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     permissions:
       id-token: write
       contents: read

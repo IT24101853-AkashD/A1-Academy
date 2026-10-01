@@ -41,11 +41,13 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+    # Runs straight on the ubuntu runner (Azure CLI preinstalled, logged in by the step above)
+    # rather than in azure/cli's minimal container, which lacks basic tools such as awk.
     - name: Deploy, restart and verify
-      uses: azure/cli@v2
-      with:
-        inlineScript: |
+      shell: bash
+      run: |
           set -e
+          az extension add --name containerapp --upgrade --yes --only-show-errors
           APP="${{ inputs.app-name }}"
           IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/${{ inputs.image-repo }}:${{ github.sha }}"
           START=$(date -u +%Y-%m-%dT%H:%M:%SZ)
