@@ -1,0 +1,17 @@
+# Build context for every service image is ./backend (see the Dockerfiles and docker-compose.yml).
+# Keep local build output out of it: each Dockerfile restores packages and then does COPY . .,
+# so host bin/obj folders would otherwise be copied over the container's clean restore.
+
+**/bin/
+**/obj/
+**/TestResults/
+**/.vs/
+**/.vscode/
+**/*.user
+
+# Not part of any service image
+A1Academy.Tests/
+A1Academy.API/
+**/uploads/
+docker-compose*.yml
+*.ps1
