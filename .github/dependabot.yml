@@ -15,6 +15,22 @@ updates:
     groups:
       backend-minor-and-patch:
         update-types: [minor, patch]
+    # These families are coupled to each other and to the .NET version (EF Core needs a matching
+    # Npgsql provider; the JWT/IdentityModel packages move together). Major bumps arriving one PR
+    # at a time can't build, so they're done as one planned upgrade instead of via Dependabot.
+    ignore:
+      - dependency-name: "Microsoft.EntityFrameworkCore*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Npgsql*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.AspNetCore.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.IdentityModel.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "System.IdentityModel.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.ApplicationInsights*"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: "deps(backend)"
 
