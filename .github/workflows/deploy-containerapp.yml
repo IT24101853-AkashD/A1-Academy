@@ -45,11 +45,17 @@ jobs:
     # rather than in azure/cli's minimal container, which lacks basic tools such as awk.
     - name: Deploy, restart and verify
       shell: bash
+      # Secrets and inputs reach the script as environment variables rather than being pasted
+      # into its text with ${{ }}, so their values can never be interpreted as shell code.
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        APP: ${{ inputs.app-name }}
+        IMAGE_REPO: ${{ inputs.image-repo }}
+        COMMIT_SHA: ${{ github.sha }}
       run: |
           set -e
           az extension add --name containerapp --upgrade --yes --only-show-errors
-          APP="${{ inputs.app-name }}"
-          IMAGE="docker.io/${{ secrets.DOCKER_USERNAME }}/${{ inputs.image-repo }}:${{ github.sha }}"
+          IMAGE="docker.io/$DOCKER_USERNAME/$IMAGE_REPO:$COMMIT_SHA"
           START=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
           echo "Updating $APP to $IMAGE"

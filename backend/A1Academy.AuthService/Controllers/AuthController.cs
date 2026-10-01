@@ -535,7 +535,9 @@ namespace A1Academy.AuthService.Controllers
         private static string SafeFileName(string fileName)
         {
             var name = Path.GetFileName(fileName.Replace('\\', '/'));
-            name = System.Text.RegularExpressions.Regex.Replace(name, @"[^A-Za-z0-9._-]", "_").Trim('.');
+            // Plain character filter rather than a regex: same result, and no regex engine whose
+            // execution time a crafted name could stretch (Sonar S6444).
+            name = new string(name.Select(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or '-' ? c : '_').ToArray()).Trim('.');
             if (name.Length > 100) name = name[^100..];
             return string.IsNullOrEmpty(name) ? "document" : name;
         }
