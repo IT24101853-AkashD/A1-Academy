@@ -1,0 +1,87 @@
+# Static analysis + Quality Gate for the backend, on SonarCloud (hosted SonarQube).
+# Computes Cognitive Complexity, code smells, duplication, Technical Debt Ratio and the A-E
+# Maintainability Rating, imports test coverage from coverlet, and then waits for SonarCloud's
+# Quality Gate verdict - this job fails if the gate fails, so the PR shows a red check.
+#
+# Requires: repository secret SONAR_TOKEN, and Automatic Analysis turned OFF for the project
+# in SonarCloud (Administration -> Analysis Method), since this workflow is the CI-based analysis.
+
+name: SonarCloud Quality Gate
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/sonarcloud.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/sonarcloud.yml'
+
+env:
+  SONAR_ORGANIZATION: it24101853-akashdt
+  SONAR_PROJECT_KEY: IT24101853-AkashD_A1-Academy
+
+jobs:
+  sonarcloud:
+    runs-on: ubuntu-latest
+    # PRs from forks and from Dependabot get no repository secrets, so the scan can't authenticate
+    # there; skip instead of failing (Dependabot PRs are still checked by the service CIs' tests).
+    if: >-
+      github.event_name == 'push' ||
+      (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v7
+      with:
+        # Full history so SonarCloud can tell new code from old (the gate judges new code).
+        fetch-depth: 0
+
+    - name: Setup Java (required by the Sonar scanner)
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Install SonarScanner for .NET
+      run: dotnet tool install --global dotnet-sonarscanner
+
+    - name: Begin analysis
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: >
+        dotnet sonarscanner begin
+        /k:"$SONAR_PROJECT_KEY"
+        /o:"$SONAR_ORGANIZATION"
+        /d:sonar.host.url="https://sonarcloud.io"
+        /d:sonar.token="$SONAR_TOKEN"
+        /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
+        /d:sonar.exclusions="**/Migrations/**,**/bin/**,**/obj/**,**/uploads/**"
+        /d:sonar.coverage.exclusions="**/Migrations/**,**/Program.cs,backend/A1Academy.Tests/**"
+        /d:sonar.qualitygate.wait=true
+        /d:sonar.qualitygate.timeout=300
+
+    - name: Build
+      run: dotnet build backend/A1Academy.sln --configuration Release
+
+    - name: Test with coverage
+      run: >
+        dotnet test backend/A1Academy.Tests/A1Academy.Tests.csproj
+        --configuration Release --no-build
+        --filter "Category!=E2E"
+        --collect:"XPlat Code Coverage"
+        --results-directory ./coverage
+        -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+    - name: End analysis and check Quality Gate
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
