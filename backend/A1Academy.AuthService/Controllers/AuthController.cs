@@ -115,9 +115,15 @@ namespace A1Academy.AuthService.Controllers
                 var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
                 if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
                 
-                var uniqueFileName = Guid.NewGuid().ToString() + "_" + request.QualificationDocument.FileName;
-                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-                
+                // The client controls FileName, so never use it as a path: a name like
+                // "../../appsettings.json" would otherwise write outside the uploads folder.
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + SafeFileName(request.QualificationDocument.FileName);
+                var filePath = Path.GetFullPath(Path.Combine(uploadsFolder, uniqueFileName));
+                if (!filePath.StartsWith(Path.GetFullPath(uploadsFolder) + Path.DirectorySeparatorChar))
+                {
+                    return BadRequest("Invalid file name.");
+                }
+
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await request.QualificationDocument.CopyToAsync(stream);
@@ -497,7 +503,44 @@ namespace A1Academy.AuthService.Controllers
             });
         }
 
-        public class OtpRequest { public string Email { get; set; } = string.Empty; public string FirstName { get; set; } = string.Empty; public bool SkipEmailCheck { get; set; } = false; }
+        // Codes stay 5 digits because the signup/reset UI has five input boxes. With only 90,000
+        // possibilities, what keeps them unguessable is (1) a cryptographically secure generator,
+        // so codes can't be predicted, and (2) a hard cap on wrong guesses per code, so they can't
+        // be brute-forced within the 5-minute window. Codes are never written to logs.
+        private const int MaxOtpAttempts = 5;
+        private const string AttemptsSuffix = "_ATTEMPTS";
+        private const string TooManyAttemptsMessage = "Too many incorrect attempts. Please request a new code.";
+
+        private static string GenerateOtp() =>
+            System.Security.Cryptography.RandomNumberGenerator.GetInt32(10000, 100000).ToString();
+
+        // Counts a wrong guess against the pending code stored under otpKey. On the last allowed
+        // attempt the code itself is discarded, so the user has to request a fresh one. Returns
+        // true once that limit has been reached.
+        private bool RecordFailedOtpAttempt(string otpKey)
+        {
+            var attempts = (_cache.TryGetValue(otpKey + AttemptsSuffix, out int previous) ? previous : 0) + 1;
+            if (attempts >= MaxOtpAttempts)
+            {
+                _cache.Remove(otpKey);
+                _cache.Remove(otpKey + AttemptsSuffix);
+                return true;
+            }
+            _cache.Set(otpKey + AttemptsSuffix, attempts, TimeSpan.FromMinutes(5));
+            return false;
+        }
+
+        // Keeps only the last path segment of a client-supplied file name and replaces anything
+        // outside a conservative character set, so it can't contain directory separators or "..".
+        private static string SafeFileName(string fileName)
+        {
+            var name = Path.GetFileName(fileName.Replace('\\', '/'));
+            name = System.Text.RegularExpressions.Regex.Replace(name, @"[^A-Za-z0-9._-]", "_").Trim('.');
+            if (name.Length > 100) name = name[^100..];
+            return string.IsNullOrEmpty(name) ? "document" : name;
+        }
+
+        public class OtpRequest {public string Email { get; set; } = string.Empty; public string FirstName { get; set; } = string.Empty; public bool SkipEmailCheck { get; set; } = false; }
         public class VerifyOtpRequest { public string Email { get; set; } = string.Empty; public string Otp { get; set; } = string.Empty; }
 
         [HttpPost("send-otp")]
@@ -507,9 +550,9 @@ namespace A1Academy.AuthService.Controllers
             {
                 return BadRequest("This email is already taken.");
             }
-            var otp = new Random().Next(10000, 99999).ToString();
-            Console.WriteLine($"SendOtp Called! Generated OTP '{otp}' for {request.FirstName} ({request.Email})");
+            var otp = GenerateOtp();
             _cache.Set(request.Email + "_OTP", otp, TimeSpan.FromMinutes(5));
+            _cache.Remove(request.Email + "_OTP" + AttemptsSuffix);
 
             var emailBody = GetEmailTemplate(request.FirstName, otp, "Thank you for registering. Your A1 Academy verification code is:");
             await _emailService.SendEmailAsync(request.Email, "A1 Academy - Verification Code", emailBody);
@@ -520,7 +563,12 @@ namespace A1Academy.AuthService.Controllers
         public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request)
         {
             _cache.TryGetValue(request.Email + "_OTP", out string? cachedOtp);
-            Console.WriteLine($"VerifyOtp Called! Email: '{request.Email}', Input OTP: '{request.Otp}', Cached OTP: '{cachedOtp}'");
+            if (cachedOtp != null && cachedOtp != request.Otp)
+            {
+                return BadRequest(RecordFailedOtpAttempt(request.Email + "_OTP")
+                    ? TooManyAttemptsMessage
+                    : "Invalid or expired OTP.");
+            }
             if (cachedOtp != null && cachedOtp == request.Otp)
             {
                 var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == request.Email);
@@ -576,8 +624,9 @@ namespace A1Academy.AuthService.Controllers
             var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == request.Email && u.FirstName == request.FirstName);
             if (user == null) return BadRequest("We couldn't find an account matching that Name and Email.");
 
-            var otp = new Random().Next(10000, 99999).ToString();
+            var otp = GenerateOtp();
             _cache.Set(request.Email + "_RESET_OTP", otp, TimeSpan.FromMinutes(5));
+            _cache.Remove(request.Email + "_RESET_OTP" + AttemptsSuffix);
             var emailBody = GetEmailTemplate(request.FirstName, otp, "We received a request to reset your password. Your A1 Academy password reset code is:");
             await _emailService.SendEmailAsync(request.Email, "A1 Academy - Password Reset Code", emailBody);
             return Ok(new { message = "Reset code sent successfully." });
@@ -586,6 +635,12 @@ namespace A1Academy.AuthService.Controllers
         [HttpPost("verify-reset-otp")]
         public IActionResult VerifyResetOtp([FromBody] VerifyResetOtpRequest request)
         {
+            if (_cache.TryGetValue(request.Email + "_RESET_OTP", out string? pendingOtp) && pendingOtp != request.Otp)
+            {
+                return BadRequest(RecordFailedOtpAttempt(request.Email + "_RESET_OTP")
+                    ? TooManyAttemptsMessage
+                    : "Invalid or expired reset code.");
+            }
             if (_cache.TryGetValue(request.Email + "_RESET_OTP", out string? cachedOtp) && cachedOtp == request.Otp)
             {
                 var resetToken = Guid.NewGuid().ToString();

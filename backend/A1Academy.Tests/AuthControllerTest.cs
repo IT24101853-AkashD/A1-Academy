@@ -611,6 +611,119 @@ public void DebugOtp_OutsideDevelopmentOrTesting_ReturnsNotFound()
     Assert.IsType<NotFoundResult>(result);
 }
 
+// --- OTP hardening (found by SonarCloud: predictable codes, no brute-force limit) ---
+
+[Fact]
+public async Task SendOtp_StoresAFiveDigitNumericCode()
+{
+    var email = "fresh.student@example.com";
+
+    await _controller.SendOtp(new AuthController.OtpRequest { Email = email, FirstName = "Fresh" });
+
+    Assert.True(_cache.TryGetValue(email + "_OTP", out string? otp));
+    Assert.Matches("^[1-9][0-9]{4}$", otp!);
+}
+
+[Fact]
+public async Task VerifyOtp_AfterFourWrongGuesses_StillAcceptsTheCorrectCode()
+{
+    var email = "student@example.com";
+    _cache.Set(email + "_OTP", "12345", TimeSpan.FromMinutes(5));
+
+    for (var i = 0; i < 4; i++)
+    {
+        Assert.IsType<BadRequestObjectResult>(await _controller.VerifyOtp(
+            new AuthController.VerifyOtpRequest { Email = email, Otp = "00000" }));
+    }
+
+    Assert.IsType<OkObjectResult>(await _controller.VerifyOtp(
+        new AuthController.VerifyOtpRequest { Email = email, Otp = "12345" }));
+}
+
+[Fact]
+public async Task VerifyOtp_AfterFiveWrongGuesses_DiscardsTheCodeSoEvenTheCorrectOneFails()
+{
+    var email = "student@example.com";
+    _cache.Set(email + "_OTP", "12345", TimeSpan.FromMinutes(5));
+
+    IActionResult last = null!;
+    for (var i = 0; i < 5; i++)
+    {
+        last = await _controller.VerifyOtp(new AuthController.VerifyOtpRequest { Email = email, Otp = "00000" });
+    }
+
+    Assert.Equal("Too many incorrect attempts. Please request a new code.",
+        Assert.IsType<BadRequestObjectResult>(last).Value);
+    Assert.IsType<BadRequestObjectResult>(await _controller.VerifyOtp(
+        new AuthController.VerifyOtpRequest { Email = email, Otp = "12345" }));
+}
+
+[Fact]
+public void VerifyResetOtp_AfterFiveWrongGuesses_DiscardsTheCodeSoEvenTheCorrectOneFails()
+{
+    var email = "student@example.com";
+    _cache.Set(email + "_RESET_OTP", "54321", TimeSpan.FromMinutes(5));
+
+    for (var i = 0; i < 5; i++)
+    {
+        _controller.VerifyResetOtp(new AuthController.VerifyResetOtpRequest { Email = email, Otp = "00000" });
+    }
+
+    Assert.IsType<BadRequestObjectResult>(_controller.VerifyResetOtp(
+        new AuthController.VerifyResetOtpRequest { Email = email, Otp = "54321" }));
+    Assert.False(_cache.TryGetValue(email + "_RESET_TOKEN", out string? _));
+}
+
+[Fact]
+public async Task SendOtp_IssuingANewCode_ResetsTheWrongGuessCounter()
+{
+    var email = "fresh.student@example.com";
+    await _controller.SendOtp(new AuthController.OtpRequest { Email = email, FirstName = "Fresh" });
+    for (var i = 0; i < 4; i++)
+    {
+        await _controller.VerifyOtp(new AuthController.VerifyOtpRequest { Email = email, Otp = "00000" });
+    }
+
+    await _controller.SendOtp(new AuthController.OtpRequest { Email = email, FirstName = "Fresh" });
+    _cache.TryGetValue(email + "_OTP", out string? newOtp);
+
+    // Without the reset this would be the 5th strike and burn the brand-new code.
+    await _controller.VerifyOtp(new AuthController.VerifyOtpRequest { Email = email, Otp = "00000" });
+    Assert.IsType<OkObjectResult>(await _controller.VerifyOtp(
+        new AuthController.VerifyOtpRequest { Email = email, Otp = newOtp! }));
+}
+
+// --- Upload path traversal (found by SonarCloud) ---
+
+[Fact]
+public async Task Register_TeacherDocumentWithPathTraversalName_IsSavedInsideUploadsFolder()
+{
+    var uploads = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "uploads"));
+    var content = new MemoryStream(new byte[] { 1, 2, 3 });
+    var document = new Microsoft.AspNetCore.Http.FormFile(content, 0, content.Length, "QualificationDocument", "../../evil config.pdf");
+
+    var result = await _controller.Register(new AuthController.RegisterRequest
+    {
+        FirstName = "Path",
+        LastName = "Traversal",
+        Email = "path.traversal@example.com",
+        Password = "Password123!",
+        Role = "Teacher",
+        Qualifications = "BSc",
+        OtherSubject = "Robotics",
+        QualificationDocument = document
+    });
+
+    Assert.IsType<OkObjectResult>(result);
+    var saved = (await _context.Users.SingleAsync(u => u.Email == "path.traversal@example.com")).QualificationDocumentPath!;
+    Assert.StartsWith("/uploads/", saved);
+    Assert.DoesNotContain("..", saved);
+    Assert.EndsWith("_evil_config.pdf", saved);
+    var savedFile = Path.Combine(uploads, saved["/uploads/".Length..]);
+    Assert.True(File.Exists(savedFile));
+    File.Delete(savedFile);
+}
+
 }
 
 
