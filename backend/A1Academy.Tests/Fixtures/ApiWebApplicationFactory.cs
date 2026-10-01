@@ -1,10 +1,13 @@
 using System.Linq;
 using A1Academy.Shared.Data;
+using A1Academy.Shared.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Moq;
 
 namespace A1Academy.Tests.Fixtures
 {
@@ -67,6 +70,13 @@ namespace A1Academy.Tests.Fixtures
                 // gets its own scope), so a Guid.NewGuid() evaluated inside the lambda would
                 // hand each request a *different* named in-memory database - one request's
                 // seeded/written data would then be invisible to the next.
+                // Tests must never send real email: appsettings.json points at a live Gmail SMTP
+                // account, so without this every deactivate/reactivate/OTP test tried to log in
+                // to it (and failed in CI, where there's no password). A Moq default completes
+                // every SendEmailAsync call successfully without doing anything.
+                services.RemoveAll<IEmailService>();
+                services.AddSingleton(Mock.Of<IEmailService>());
+
                 var databaseName = $"ApiWebApplicationFactory_{Guid.NewGuid()}";
                 services.AddDbContext<AppDbContext>(options =>
                     options.UseInMemoryDatabase(databaseName));

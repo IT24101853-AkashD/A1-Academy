@@ -25,6 +25,10 @@ jobs:
       with:
         dotnet-version: '10.0.x'
 
+    - name: Run backend tests
+      # Gate: a failing test stops the image build, and therefore the deploy job, for this commit.
+      run: dotnet test backend/A1Academy.Tests/A1Academy.Tests.csproj --configuration Release --filter "Category!=E2E"
+
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:

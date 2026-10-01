@@ -5,9 +5,11 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using A1Academy.Shared.Data;
 using A1Academy.Shared.Data.Models;
+using A1Academy.Shared.Services;
 using A1Academy.Tests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Xunit;
 
 namespace A1Academy.Tests;
@@ -517,6 +519,53 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         Assert.Equal(HttpStatusCode.Unauthorized, loginResponse.StatusCode);
         var loginBody = await loginResponse.Content.ReadAsStringAsync();
         Assert.Contains("deactivated", loginBody, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task DeactivateUser_WhenNotificationEmailFails_StillSucceeds()
+    {
+        // Regression: the status change is saved before the notification email goes out, so an
+        // SMTP failure used to surface as a 500 even though the account really was deactivated.
+        var failingEmail = new Mock<IEmailService>();
+        failingEmail
+            .Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ThrowsAsync(new InvalidOperationException("SMTP unavailable"));
+        var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services => services.AddSingleton(failingEmail.Object)));
+
+        var client = factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var adminEmail = $"smtpfail.admin.{suffix}@example.com";
+        var studentEmail = $"smtpfail.student.{suffix}@example.com";
+        using (var scope = factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            foreach (var (email, role) in new[] { (adminEmail, "Admin"), (studentEmail, "Student") })
+            {
+                context.Users.Add(new User
+                {
+                    FirstName = role,
+                    Email = email,
+                    Role = role,
+                    AuthProvider = "Local",
+                    IsEmailVerified = true,
+                    AccountStatus = AccountStatus.Active,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("SmtpFail1!")
+                });
+            }
+            await context.SaveChangesAsync();
+        }
+
+        var token = await LoginAsync(client, adminEmail, "SmtpFail1!");
+        var studentId = await FindUserIdAsync(client, token, studentEmail);
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/users/{studentId}/deactivate");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Deactivated", (await response.Content.ReadFromJsonAsync<UserSummaryDto>())!.Status);
+        failingEmail.Verify(e => e.SendEmailAsync(studentEmail, It.IsAny<string>(), It.IsAny<string>()), Times.Once);
     }
 
     [Fact]

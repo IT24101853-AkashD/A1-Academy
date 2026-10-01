@@ -22,11 +22,13 @@ namespace A1Academy.AdminService.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IEmailService _emailService;
+        private readonly ILogger<UsersController> _logger;
 
-        public UsersController(AppDbContext context, IEmailService emailService)
+        public UsersController(AppDbContext context, IEmailService emailService, ILogger<UsersController> logger)
         {
             _context = context;
             _emailService = emailService;
+            _logger = logger;
         }
 
         public class UserSummary
@@ -267,15 +269,25 @@ namespace A1Academy.AdminService.Controllers
 
             await _context.SaveChangesAsync();
 
-            if (action == AccountStatusTransitions.Deactivate)
+            // The notification email is best-effort: the status change above is already saved
+            // (and the user's sessions already revoked), so an SMTP failure must not turn a
+            // successful deactivation into a 500 that tells the admin it didn't happen.
+            try
             {
-                var body = GetStatusEmailTemplate(user.FirstName, "Your account has been deactivated by the administrator.", "Please contact the admin if you believe this was a mistake or need further assistance.");
-                await _emailService.SendEmailAsync(user.Email, "A1 Academy - Account Deactivated", body);
+                if (action == AccountStatusTransitions.Deactivate)
+                {
+                    var body = GetStatusEmailTemplate(user.FirstName, "Your account has been deactivated by the administrator.", "Please contact the admin if you believe this was a mistake or need further assistance.");
+                    await _emailService.SendEmailAsync(user.Email, "A1 Academy - Account Deactivated", body);
+                }
+                else if (action == AccountStatusTransitions.Reactivate)
+                {
+                    var body = GetStatusEmailTemplate(user.FirstName, "Your account has been successfully reactivated.", "You can now log in and resume using the platform normally.");
+                    await _emailService.SendEmailAsync(user.Email, "A1 Academy - Account Reactivated", body);
+                }
             }
-            else if (action == AccountStatusTransitions.Reactivate)
+            catch (Exception ex)
             {
-                var body = GetStatusEmailTemplate(user.FirstName, "Your account has been successfully reactivated.", "You can now log in and resume using the platform normally.");
-                await _emailService.SendEmailAsync(user.Email, "A1 Academy - Account Reactivated", body);
+                _logger.LogWarning(ex, "Account {UserId} was moved to {Status}, but the notification email could not be sent.", user.Id, user.AccountStatus);
             }
 
             return Ok(new UserSummary

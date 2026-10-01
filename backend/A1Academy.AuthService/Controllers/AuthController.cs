@@ -89,7 +89,10 @@ namespace A1Academy.AuthService.Controllers
             {
                 // A Teacher needs to declare at least one subject somehow - either an existing
                 // Category checkbox, the free-text "Other" field, or both - but not neither.
-
+                if (requestedCategoryIds.Count == 0 && otherSubject.Length == 0)
+                {
+                    return BadRequest("Please select the subject you teach, or type it in under \"Other\".");
+                }
 
                 if (otherSubject.Length > 100)
                 {
@@ -224,7 +227,7 @@ namespace A1Academy.AuthService.Controllers
         {
             AccountStatus.Pending => "Your account is pending administrator approval.",
             AccountStatus.Rejected => "Your registration was not approved. Please contact support.",
-            AccountStatus.Deactivated => "This Email is Deactivated contact the admin",
+            AccountStatus.Deactivated => "Your account has been deactivated. Please contact support.",
             _ => "Your account cannot log in at this time. Please contact support."
         };
 
