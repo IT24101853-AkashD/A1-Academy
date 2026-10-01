@@ -1,0 +1,43 @@
+# Weekly dependency update PRs. Minor/patch bumps are grouped into a single PR per ecosystem so
+# the team reviews one PR instead of dozens; major versions (which may need code changes, e.g. an
+# EF Core / Npgsql major) still arrive as their own PRs. Security fixes are raised immediately,
+# independent of this schedule, once Dependabot security updates are enabled in repo settings.
+# Backend PRs run the service CIs (tests + image build, no push), so a breaking bump shows red.
+
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      backend-minor-and-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "deps(backend)"
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      frontend-minor-and-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "deps(frontend)"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "ci(deps)"
