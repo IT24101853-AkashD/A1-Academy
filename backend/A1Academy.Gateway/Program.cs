@@ -14,6 +14,8 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddHealthChecks();
+
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
@@ -21,4 +23,7 @@ var app = builder.Build();
 
 app.UseCors("AllowFrontend");
 app.MapReverseProxy();
+// The gateway has no database of its own, so ready == live: the process is up and routing.
+app.MapHealthChecks("/health/live");
+app.MapHealthChecks("/health/ready");
 app.Run();
