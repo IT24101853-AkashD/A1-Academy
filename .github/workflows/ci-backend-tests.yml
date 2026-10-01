@@ -1,0 +1,31 @@
+# Runs the backend test suite on every pull request that touches backend/. The service CIs only
+# trigger on their own service folder (+ Shared), so a PR that changes only the test project or
+# its packages (e.g. a Dependabot bump of coverlet or xunit) would otherwise run no tests at all.
+# Needs no secrets, so it also works for Dependabot and fork PRs.
+
+name: Backend Tests
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/ci-backend-tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v7
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Build
+      run: dotnet build backend/A1Academy.sln --configuration Release
+
+    - name: Run backend tests
+      run: dotnet test backend/A1Academy.Tests/A1Academy.Tests.csproj --configuration Release --no-build --filter "Category!=E2E"
