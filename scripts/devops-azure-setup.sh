@@ -53,6 +53,10 @@ SECRET_SETTINGS=(
 
 API_VERSION="2024-03-01"
 
+# Hide az's informational warnings (e.g. "behavior altered by extension") so the script's own
+# output - especially the plain-text-secret WARNINGs from `status` - stays readable. Errors still show.
+export AZURE_CORE_ONLY_SHOW_ERRORS=true
+
 log() { printf '\n== %s\n' "$*"; }
 
 require_login() {
