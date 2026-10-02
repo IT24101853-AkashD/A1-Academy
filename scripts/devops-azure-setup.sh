@@ -27,10 +27,12 @@
 #   ADMIN_PASSWORD        Only used to create the FIRST Admin account on an empty database; changing it
 #                         does not change an existing Admin's password.
 #   SMTP_PASSWORD         Gmail app password for the OTP / notification emails.
+#   SENDER_EMAIL          (not a secret) Gmail address the emails are sent from. It is also the SMTP login,
+#                         so it must belong to the same account as SMTP_PASSWORD - change both together.
 #
 # Typical runs:
 #   bash scripts/devops-azure-setup.sh status
-#   SMTP_PASSWORD='...' bash scripts/devops-azure-setup.sh secrets && bash scripts/devops-azure-setup.sh restart
+#   SENDER_EMAIL=me@gmail.com bash scripts/devops-azure-setup.sh secrets && bash scripts/devops-azure-setup.sh restart
 set -euo pipefail
 
 RESOURCE_GROUP="A1-Academy-RG"
@@ -161,6 +163,22 @@ cmd_secrets() {
     echo "  $var: stored as secret '$secret' on ${#BACKEND_APPS[@]} apps"
     changed=1
   done
+
+  # The sender address isn't secret, so it's a plain setting (visible input). It is the SMTP
+  # login too, so it should change together with SMTP_PASSWORD.
+  local sender="${SENDER_EMAIL:-}"
+  if [ -z "$sender" ] && [ -t 0 ]; then
+    read -rp "SENDER_EMAIL (leave empty to keep current): " sender
+  fi
+  if [ -n "$sender" ]; then
+    for app in "${BACKEND_APPS[@]}"; do
+      az containerapp update -n "$app" -g "$RESOURCE_GROUP" --set-env-vars "EmailSettings__SenderEmail=$sender" -o none
+    done
+    echo "  SENDER_EMAIL: set to $sender on ${#BACKEND_APPS[@]} apps"
+    changed=1
+  else
+    echo "  SENDER_EMAIL: unchanged"
+  fi
   [ "$changed" = 1 ] && { echo; echo "Next: bash $0 restart   (secrets only take effect after a restart)"; } || true
 }
 
@@ -207,7 +225,7 @@ main() {
   shift || true
   case "$command" in
     status|kafka|secrets|restart) require_login; "cmd_$command" "$@" ;;
-    *) sed -n '2,33p' "$0"; exit 1 ;;
+    *) sed -n '2,35p' "$0"; exit 1 ;;
   esac
 }
 
