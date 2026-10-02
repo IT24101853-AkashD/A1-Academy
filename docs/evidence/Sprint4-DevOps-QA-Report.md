@@ -6,7 +6,7 @@
 | **Sprint** | Sprint 4, the **final sprint** (30 September – 2 October 2026) |
 | **Role** | DevOps / Quality Assurance: INKARAN (INKARAN001) |
 | **Repository** | `IT24101853-AkashD/A1-Academy` (public) |
-| **Work covered** | Pull requests **#50 – #83** (29 merged PRs) |
+| **Work covered** | Pull requests **#50 – #86** (32 merged PRs) |
 | **Report date** | 2 October 2026 |
 
 ---
@@ -215,7 +215,7 @@ Each security fix was confirmed by running its regression tests **against the pr
 | Control | Status |
 |---|---|
 | Secrets out of source code (`appsettings.json` blanked) | ✅ #55 |
-| Production secrets as Container App secrets (`secretref`) | ✅ JWT, DB, admin, Kafka (SMTP pending, §8) |
+| Production secrets as Container App secrets (`secretref`) | ✅ All: JWT, DB, admin, Kafka, SMTP (verified with `status`: no plain-text secrets on any app) |
 | No credentials in GitHub (OIDC federated login) | ✅ #53 |
 | Admin-only internal endpoints | ✅ #52 |
 | Secure OTP generation, attempt limit, no logging | ✅ #78 |
@@ -237,7 +237,7 @@ Each security fix was confirmed by running its regression tests **against the pr
 | **Impact** | Anyone could read the database, forge an Admin token, or log in as Admin. |
 | **Response** | (1) Confirmed exposure without printing secrets. (2) Generated new values. (3) Stored them as Container App secrets. (4) Changed the database password. (5) Set a new admin password directly in the database. (6) Removed the values from source (#55). |
 | **Verification** | Old admin password → 401; new admin login → token; cross-service call with new token → 200; Kafka back to 8 connections. |
-| **Follow-up** | Unused secrets were also found as plain text on the gateway; they were removed with the new ops script on 2 October (`status` now shows no warnings for the gateway). |
+| **Follow-up** | Unused secrets were also found as plain text on the gateway; they were removed with the new ops script on 2 October. The last plain-text secret (SMTP) was replaced the same day with a new sender account and app password; `status` now reports no plain-text secrets on any app. |
 
 ### 7.2 Login Outage During Rotation (~30 minutes, 1 October 2026)
 
@@ -258,7 +258,7 @@ Sprint 4 is the **final sprint** of the project. This section lists what remains
 
 | # | Item | Owner | Status |
 |---|---|---|---|
-| 1 | A Gmail app password was committed in the removed `scratch/remove_secrets.js` (still in Git history); the SMTP password is plain text on 4 services | Account owner revokes it; DevOps stores the new one with `secrets` + `restart` | ⏳ Waiting for the new app password |
+| 1 | A Gmail app password was committed in the removed `scratch/remove_secrets.js` (still in Git history) and the SMTP password was plain text on 4 services | DevOps | ✅ **Done (2 Oct):** emails now sent from a new account (`karanaathi001@gmail.com`) with a new app password stored as the `smtp-password` secret; all 4 services restarted healthy; production OTP send verified (HTTP 200). The leaked password is no longer used; its owner should still revoke it. |
 | 2 | Manual Gateway CI run to exercise the pinned Docker/Azure actions end-to-end | DevOps | ⏳ Pending |
 | 3 | Decide whether to keep the uploaded files committed under `backend/A1Academy.API/uploads/` | Team | ⏳ Pending |
 
@@ -279,7 +279,7 @@ These were identified during the sprint but are outside the remaining project ti
 
 ## 9. Recommendations for Future Maintenance
 
-1. Complete the SMTP rotation (item 1) as soon as the new app password is available. Until then, treat the old password as compromised.
+1. Ask the owner of the old Gmail account to revoke the leaked app password (it is no longer used by production, but remains in Git history).
 2. Enable branch protection on `main` so the existing quality checks are enforced rather than advisory.
 3. Use `scripts/devops-azure-setup.sh status` as the first check when anything looks wrong in production, and `restart` after any configuration change.
 4. Keep merging Dependabot PRs only when their checks are green; plan the .NET 10 package upgrade as a single change.
@@ -312,6 +312,9 @@ These were identified during the sprint but are outside the remaining project ti
 | #80 | Remove 47 dead files |
 | #81, #82 | Safe Azure setup / ops script |
 | #83 | Pin GitHub Actions to commit SHAs |
+| #84 | This report |
+| #85 | Setup script can switch the email sender account |
+| #86 | Default sender address updated; report close-out |
 
 ## Appendix B: How to Re-verify
 
