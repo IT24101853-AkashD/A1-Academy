@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Project** | A1 Academy: Online Learning & Tutoring Platform |
-| **Sprint** | Sprint 4 (30 September – 2 October 2026) |
+| **Sprint** | Sprint 4, the **final sprint** (30 September – 2 October 2026) |
 | **Role** | DevOps / Quality Assurance: INKARAN (INKARAN001) |
 | **Repository** | `IT24101853-AkashD/A1-Academy` (public) |
 | **Work covered** | Pull requests **#50 – #83** (29 merged PRs) |
@@ -136,7 +136,7 @@ The gate was effective during the sprint: in #78 it **caught a new regex without
 - **Dependabot** checks NuGet, npm and GitHub Actions weekly; minor and patch updates are grouped into one PR per ecosystem.
 - **Breaking update caught by CI:** the grouped backend update (#66) failed to build. Root cause: EF Core `Design`/`Tools` moved to 8.0.31 while the services still compiled against EF Core 8.0.11 (CS1705). Fixed in #73 by referencing EF Core 8.0.31 directly in `Shared`.
 - **Hidden build defect found:** a stray `A1Academy.TeacherService.csproj` inside the Auth folder shared Auth's `obj/` directory, so local restores could build Auth with an outdated package list. Removed in #73.
-- **Coupled major versions** (EF Core, Npgsql, ASP.NET Core, IdentityModel, Application Insights) are excluded from Dependabot and planned as one .NET 10 upgrade.
+- **Coupled major versions** (EF Core, Npgsql, ASP.NET Core, IdentityModel, Application Insights) are excluded from Dependabot, because they must be upgraded together (see §8.2).
 - 20 backend packages, 15 frontend packages, 10 GitHub Actions and 3 test-tooling packages updated; all deployed and verified healthy.
 
 ### 3.7 Repository Hygiene (#58, #80)
@@ -250,29 +250,41 @@ Each security fix was confirmed by running its regression tests **against the pr
 
 ---
 
-## 8. Known Issues and Open Items
+## 8. Project Close-out
+
+Sprint 4 is the **final sprint** of the project. This section lists what remains at close.
+
+### 8.1 Actions to Complete Before Hand-over
 
 | # | Item | Owner | Status |
 |---|---|---|---|
-| 1 | A Gmail app password was committed in the removed `scratch/remove_secrets.js` (still in Git history); the SMTP password is plain text on 4 services | Account owner revokes; DevOps stores the new one with `secrets` + `restart` | ⏳ Waiting for the new app password |
-| 2 | 31 frontend unit tests fail: they target the pre-redesign UI (features still exist) | Frontend | Update tests, then add as a CI gate |
-| 3 | Containers run as root (SonarCloud S6471, 7 findings) | DevOps | Planned |
-| 4 | SonarCloud Security E / Reliability D on legacy code (18 vulnerabilities, 18 bugs, mainly frontend and Dockerfiles) | Team | Backlog |
-| 5 | README and backend E2E defaults still describe the old monolith (`A1Academy.API`, port 5123) | DevOps | Planned |
-| 6 | Uploaded files committed under `backend/A1Academy.API/uploads/` | Team decision | Pending |
-| 7 | Coupled major upgrades (EF Core 10, Npgsql 10, JwtBearer 10, App Insights 3) | Backend | Planned as one upgrade |
-| 8 | Manual Gateway CI run to exercise the pinned Docker/Azure actions end-to-end | DevOps | Pending |
-| 9 | Branch protection: require Backend Tests and SonarCloud before merge | Repository owner | Recommended |
+| 1 | A Gmail app password was committed in the removed `scratch/remove_secrets.js` (still in Git history); the SMTP password is plain text on 4 services | Account owner revokes it; DevOps stores the new one with `secrets` + `restart` | ⏳ Waiting for the new app password |
+| 2 | Manual Gateway CI run to exercise the pinned Docker/Azure actions end-to-end | DevOps | ⏳ Pending |
+| 3 | Decide whether to keep the uploaded files committed under `backend/A1Academy.API/uploads/` | Team | ⏳ Pending |
+
+### 8.2 Known Limitations at Project Close
+
+These were identified during the sprint but are outside the remaining project time. They do not block the delivered features.
+
+| # | Limitation | Impact | Recommended fix |
+|---|---|---|---|
+| 4 | 31 frontend unit tests fail because they target the pre-redesign UI (the features still exist and work) | Frontend changes are not covered by an automated gate | Update the selectors to the new UI, then add the suite as a CI gate |
+| 5 | Containers run as root (SonarCloud S6471, 7 findings) | Larger impact if a container is compromised | Add a non-root `USER` to the Dockerfiles, with write access to `uploads/` |
+| 6 | SonarCloud Security E / Reliability D on legacy code (18 vulnerabilities, 18 bugs, mainly frontend and Dockerfiles) | Lower code-quality rating on code outside this sprint's scope | Work through the SonarCloud issue list by severity |
+| 7 | README and backend E2E defaults still describe the old monolith (`A1Academy.API`, port 5123) | Setup instructions can mislead new developers | Update to the microservice layout (gateway on port 5100) |
+| 8 | Coupled major upgrades (EF Core 10, Npgsql 10, JwtBearer 10, App Insights 3) not applied | Running on supported 8.x packages; no functional impact | Upgrade them together in one change, then run the full test suite |
+| 9 | No branch protection on `main` | Quality checks report failures but do not prevent a merge | Require Backend Tests and SonarCloud status checks |
 
 ---
 
-## 9. Recommendations for Sprint 5
+## 9. Recommendations for Future Maintenance
 
-1. Complete the SMTP rotation (item 1) as soon as the new app password is available.
-2. Make the frontend tests a merge gate once the 31 tests are updated.
-3. Enable branch protection on `main` so the existing quality checks are enforced, not advisory.
-4. Run containers as a non-root user, and plan the .NET 10 package upgrade.
-5. Consider moving the Container Apps from the Express environment to a standard environment (supports revisions, restart and log streaming).
+1. Complete the SMTP rotation (item 1) as soon as the new app password is available. Until then, treat the old password as compromised.
+2. Enable branch protection on `main` so the existing quality checks are enforced rather than advisory.
+3. Use `scripts/devops-azure-setup.sh status` as the first check when anything looks wrong in production, and `restart` after any configuration change.
+4. Keep merging Dependabot PRs only when their checks are green; plan the .NET 10 package upgrade as a single change.
+5. If the platform continues, move the Container Apps from the Express environment to a standard one (supports revisions, restart and log streaming).
+6. **Cost:** the Azure Event Hubs Standard namespace (~US$22/month) and the Container Apps draw on the student subscription credit. Delete the `A1-Academy-RG` resources (or at least the Event Hubs namespace) once the project is assessed and no longer needs to run.
 
 ---
 
