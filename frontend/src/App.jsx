@@ -10,6 +10,7 @@ import TermsPage from './pages/TermsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import ProfilePage from './pages/ProfilePage';
 import CategoryManagementPage from './pages/CategoryManagementPage';
+import AdminBadgeManagementPage from './pages/AdminBadgeManagementPage';
 import StudentCategoriesPage from './pages/StudentCategoriesPage';
 import ClassesPage from './pages/ClassesPage';
 import ScheduleClassPage from './pages/ScheduleClassPage';
@@ -45,6 +46,7 @@ function App() {
         <Route path="/terms.html" element={<TermsPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<AdminUsersPage />} />
+        <Route path="/admin/badges" element={<AdminBadgeManagementPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/admin/categories" element={<CategoryManagementPage />} />
         <Route path="/student/categories" element={<StudentCategoriesPage />} />

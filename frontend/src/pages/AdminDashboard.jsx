@@ -167,6 +167,19 @@ export default function AdminDashboard() {
                                         Manage Categories <span className="material-symbols-outlined text-sm">arrow_forward</span>
                                     </div>
                                 </Link>
+                                
+                                <Link to="/admin/badges" data-aos="fade-up" className="block group bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-xl transition-all hover:border-amber-200 lg:col-span-2 xl:col-span-1">
+                                    <div className="w-16 h-16 rounded-full bg-slate-50 dark:bg-slate-900 group-hover:bg-amber-50 text-slate-600 dark:text-slate-300 group-hover:text-amber-600 flex items-center justify-center mb-6 transition-colors">
+                                        <span className="material-symbols-outlined text-3xl">military_tech</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Master Badges</h3>
+                                    <p className="text-slate-500 dark:text-slate-400 font-medium mb-6">
+                                        Create and manage achievement badges that teachers can award.
+                                    </p>
+                                    <div className="text-amber-600 font-bold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
+                                        Manage Badges <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                                    </div>
+                                </Link>
 
                             </div>
                         </div>
