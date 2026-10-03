@@ -19,6 +19,7 @@ namespace A1Academy.Shared.Data
         public DbSet<Assignment> Assignments { get; set; }
         public DbSet<AssignmentSubmission> AssignmentSubmissions { get; set; }
         public DbSet<Attendance> Attendances { get; set; }
+        public DbSet<MasterBadgeTemplate> MasterBadgeTemplates { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
