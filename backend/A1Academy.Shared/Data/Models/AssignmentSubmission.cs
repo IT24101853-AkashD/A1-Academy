@@ -41,5 +41,11 @@ namespace A1Academy.Shared.Data.Models
         [Required]
         [StringLength(20)]
         public string Status { get; set; } = SubmissionStatus.Submitted;
+
+        [Range(0, 100)]
+        public int? Grade { get; set; }
+
+        [StringLength(1000)]
+        public string? Feedback { get; set; }
     }
 }
