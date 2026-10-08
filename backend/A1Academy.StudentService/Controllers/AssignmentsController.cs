@@ -33,6 +33,8 @@ namespace A1Academy.StudentService.Controllers
             public string Description { get; set; } = string.Empty;
             public DateTime DueAt { get; set; }
             public string? MySubmissionStatus { get; set; }
+            public int? Grade { get; set; }
+            public string? Feedback { get; set; }
         }
 
         private int? CurrentStudentId()
@@ -67,20 +69,28 @@ namespace A1Academy.StudentService.Controllers
             var assignments = await _context.Assignments
                 .Where(a => a.ClassId == classId)
                 .OrderBy(a => a.DueAt)
-                .Select(a => new AssignmentSummary
+                .Select(a => new
                 {
-                    Id = a.Id,
-                    Title = a.Title,
-                    Description = a.Description,
-                    DueAt = a.DueAt,
-                    MySubmissionStatus = _context.AssignmentSubmissions
-                        .Where(s => s.AssignmentId == a.Id && s.StudentId == studentId)
-                        .Select(s => s.Status)
-                        .FirstOrDefault(),
+                    a.Id,
+                    a.Title,
+                    a.Description,
+                    a.DueAt,
+                    Submission = _context.AssignmentSubmissions.FirstOrDefault(s => s.AssignmentId == a.Id && s.StudentId == studentId)
                 })
                 .ToListAsync();
 
-            return Ok(assignments);
+            var result = assignments.Select(a => new AssignmentSummary
+            {
+                Id = a.Id,
+                Title = a.Title,
+                Description = a.Description,
+                DueAt = a.DueAt,
+                MySubmissionStatus = a.Submission?.Status,
+                Grade = a.Submission?.Grade,
+                Feedback = a.Submission?.Feedback
+            }).ToList();
+
+            return Ok(result);
         }
 
         // Scenario 1 (AA-56) - an enrolled Student uploads their completed file and it's
