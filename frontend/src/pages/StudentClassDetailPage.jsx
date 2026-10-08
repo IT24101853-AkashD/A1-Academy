@@ -148,14 +148,30 @@ export default function StudentClassDetailPage() {
                                 <li key={a.id} className="px-4 py-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 text-sm">
                                     <div className="flex items-center justify-between mb-1">
                                         <span className="font-semibold text-slate-800 dark:text-slate-100">{a.title}</span>
-                                        {a.mySubmissionStatus && (
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${a.mySubmissionStatus === 'Late' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300'}`}>
-                                                {a.mySubmissionStatus}
-                                            </span>
-                                        )}
+                                        <div className="flex items-center gap-2">
+                                            {a.grade !== null && a.grade !== undefined && (
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                                                    Grade: {a.grade}/100
+                                                </span>
+                                            )}
+                                            {a.mySubmissionStatus && (
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${a.mySubmissionStatus === 'Late' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300'}`}>
+                                                    {a.mySubmissionStatus}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{a.description}</p>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Due {new Date(a.dueAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</p>
+
+                                    {a.feedback && (
+                                        <div className="mt-2 mb-3 p-3 bg-indigo-50 dark:bg-indigo-900/10 rounded-lg border-l-4 border-indigo-400 dark:border-indigo-600">
+                                            <p className="text-xs text-indigo-800 dark:text-indigo-300 italic">
+                                                <span className="font-semibold not-italic block mb-1">Teacher Feedback:</span>
+                                                "{a.feedback}"
+                                            </p>
+                                        </div>
+                                    )}
 
                                     {!a.mySubmissionStatus && (
                                         <form

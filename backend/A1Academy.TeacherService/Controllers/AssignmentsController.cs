@@ -51,6 +51,8 @@ namespace A1Academy.TeacherService.Controllers
             public long FileSizeBytes { get; set; }
             public DateTime SubmittedAt { get; set; }
             public string Status { get; set; } = string.Empty;
+            public int? Grade { get; set; }
+            public string? Feedback { get; set; }
         }
 
         private int? CurrentTeacherId()
@@ -202,6 +204,8 @@ namespace A1Academy.TeacherService.Controllers
                     FileSizeBytes = s.FileSizeBytes,
                     SubmittedAt = s.SubmittedAt,
                     Status = s.Status,
+                    Grade = s.Grade,
+                    Feedback = s.Feedback
                 })
                 .ToListAsync();
 
@@ -232,6 +236,37 @@ namespace A1Academy.TeacherService.Controllers
             }
 
             return File(submission.Content, submission.ContentType, submission.FileName);
+        }
+
+        [HttpPatch("{assignmentId}/submissions/{submissionId}/grade")]
+        public async Task<IActionResult> GradeSubmission(int classId, int assignmentId, int submissionId, [FromBody] Models.GradeSubmissionDto request)
+        {
+            var teacherId = CurrentTeacherId();
+            if (teacherId == null)
+            {
+                return Unauthorized();
+            }
+
+            if (!await OwnsClassAsync(classId, teacherId.Value))
+            {
+                return NotFound(new { message = "Class not found." });
+            }
+
+            var submission = await _context.Set<AssignmentSubmission>()
+                .Include(s => s.Assignment)
+                .FirstOrDefaultAsync(s => s.Id == submissionId && s.AssignmentId == assignmentId && s.Assignment!.ClassId == classId);
+
+            if (submission == null)
+            {
+                return NotFound(new { message = "Submission not found." });
+            }
+
+            submission.Grade = request.Grade;
+            submission.Feedback = request.Feedback;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Grade updated successfully." });
         }
     }
 }
