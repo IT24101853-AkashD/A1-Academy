@@ -60,7 +60,8 @@ export default function AdminBadgeManagementPage() {
             setViewState('denied');
             return;
         }
-        fetchBadges();
+        // fetchBadges handles its own errors; `void` marks the promise as intentionally not awaited.
+        void fetchBadges();
     }, [role]);
 
     const handleCreate = async (e) => {
