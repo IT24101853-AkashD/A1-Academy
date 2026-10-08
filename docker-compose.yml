@@ -71,6 +71,9 @@ services:
     environment:
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=appdb;Username=appuser;Password=SecurePassword123!
       - Kafka__BootstrapServers=kafka:29092
+      # LOCAL DEVELOPMENT ONLY - production uses Azure Container App secrets (see scripts/devops-azure-setup.sh).
+      - Jwt__Key=local-dev-only-jwt-signing-key-not-used-in-production-000000
+      - Admin__Password=LocalAdmin123!
     depends_on:
       postgres:
         condition: service_started
@@ -85,6 +88,9 @@ services:
     environment:
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=appdb;Username=appuser;Password=SecurePassword123!
       - Kafka__BootstrapServers=kafka:29092
+      # LOCAL DEVELOPMENT ONLY - production uses Azure Container App secrets (see scripts/devops-azure-setup.sh).
+      - Jwt__Key=local-dev-only-jwt-signing-key-not-used-in-production-000000
+      - Admin__Password=LocalAdmin123!
     depends_on:
       postgres:
         condition: service_started
@@ -99,6 +105,8 @@ services:
     environment:
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=appdb;Username=appuser;Password=SecurePassword123!
       - Kafka__BootstrapServers=kafka:29092
+      # LOCAL DEVELOPMENT ONLY - production uses Azure Container App secrets (see scripts/devops-azure-setup.sh).
+      - Jwt__Key=local-dev-only-jwt-signing-key-not-used-in-production-000000
     depends_on:
       postgres:
         condition: service_started
@@ -113,6 +121,8 @@ services:
     environment:
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=appdb;Username=appuser;Password=SecurePassword123!
       - Kafka__BootstrapServers=kafka:29092
+      # LOCAL DEVELOPMENT ONLY - production uses Azure Container App secrets (see scripts/devops-azure-setup.sh).
+      - Jwt__Key=local-dev-only-jwt-signing-key-not-used-in-production-000000
     depends_on:
       postgres:
         condition: service_started
