@@ -1,392 +1,215 @@
 # A1 Academy - Online Learning & Tutoring Platform
 
-Welcome to the A1 Academy project repository!
+[![Backend Tests](https://github.com/IT24101853-AkashD/A1-Academy/actions/workflows/ci-backend-tests.yml/badge.svg)](https://github.com/IT24101853-AkashD/A1-Academy/actions/workflows/ci-backend-tests.yml)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=IT24101853-AkashD_A1-Academy&metric=alert_status)](https://sonarcloud.io/project/overview?id=IT24101853-AkashD_A1-Academy)
+
+A1 Academy is a learning platform for **Students**, **Teachers** and **Administrators**: teachers
+schedule classes and share materials and assignments, students enrol and submit work, and admins
+manage users, subjects and teacher approvals - all governed by role-based access control.
+
+| | URL |
+|---|---|
+| **Live site** | https://a1-academy-frontend-d4d6h7fuhebqbyfm.malaysiawest-01.azurewebsites.net |
+| **API (gateway)** | https://a1academy-gateway.greenfield-88918092.malaysiawest.azurecontainerapps.io |
+| **Code quality** | [SonarCloud dashboard](https://sonarcloud.io/project/overview?id=IT24101853-AkashD_A1-Academy) |
 
-## Project Structure
-- `/frontend`: React.js (Vite) application
-- `/backend/A1Academy.API`: ASP.NET Core 10 Web API (Configured for PostgreSQL & Kafka)
-- `/backend/A1Academy.Tests`: xUnit automated tests
-- `/.github/workflows`: GitHub Actions CI/CD pipelines (Azure deployment & automated tests)
-
-## Local Setup Instructions
-
-### Prerequisites
-- **Node.js** (v20+ recommended) for the frontend.
-- **.NET 10 SDK** for the backend API and testing.
-- **Docker Desktop** (Optional, but recommended for spinning up PostgreSQL and Kafka easily).
-
-### Development Configuration
-
-The backend requires configuration through `appsettings.Development.json`. This file is excluded from version control for security reasons.
-
-1. Copy the template file to create your local development settings:
-```bash
-cd backend/A1Academy.API
-cp appsettings.Development.json.template appsettings.Development.json
-```
-
-2. Update the placeholders in `appsettings.Development.json` with your actual credentials:
-   - `<YOUR_DB_PASSWORD>` - Database password (from docker-compose.yml)
-   - `<YOUR_JWT_SECRET_KEY>` - A secure random key for JWT authentication
-   - `<YOUR_GOOGLE_CLIENT_ID>` - Your Google OAuth client ID
-   - `<YOUR_SENDER_EMAIL>` - Email address for SMTP
-   - `<YOUR_SMTP_PASSWORD>` - SMTP password (e.g., Gmail app password)
-   - `<YOUR_APPLICATION_INSIGHTS_CONNECTION_STRING>` - Application Insights key (optional)
-   - `<YOUR_ADMIN_EMAIL>` / `<YOUR_ADMIN_PASSWORD>` - credentials for the bootstrap Administrator account, created automatically on first run (there's no self-registration path for Admin - see [Admin User Directory evidence](docs/evidence/Admin-User-Directory.md))
-
-**⚠️ Important:** Never commit `appsettings.Development.json` with real credentials to version control.
-
-### 1. Database & Infrastructure (Docker)
-If you have Docker installed, you can spin up the required PostgreSQL database and Kafka instance automatically:
-```bash
-docker-compose up -d
-```
-
-### 2. Backend (ASP.NET Core 10)
-1. Navigate to the API directory: `cd backend/A1Academy.API`
-2. Install dependencies/restore: `dotnet restore`
-3. Run the backend server: `dotnet run`
-
-### 3. Frontend (React + Vite)
-1. Open a new terminal and navigate to the frontend: `cd frontend`
-2. Install Node dependencies: `npm install`
-3. Start the Vite development server: `npm run dev`
-
-## Local Infrastructure Setup & Verification
-
-The A1 Academy backend uses Docker Compose to run the required local infrastructure services.
-
-### Services
-
-| Service | Image | Port | Purpose |
-|---|---|---:|---|
-| PostgreSQL | postgres:16-alpine | 5432 | Application database |
-| ZooKeeper | confluentinc/cp-zookeeper:7.5.0 | 2181 | Kafka coordination |
-| Kafka | confluentinc/cp-kafka:7.5.0 | 9092 | Event streaming & messaging |
-
-### Starting Infrastructure
-
-Start all services with:
-
-```powershell
-docker compose up -d
-```
-
-Verify services are running:
-
-```powershell
-docker compose ps
-```
-
-### PostgreSQL Verification
-
-Verify PostgreSQL connectivity:
-
-```powershell
-docker exec local_postgres pg_isready -U appuser -d appdb
-```
-
-Expected output:
-```
-/var/run/postgresql:5432 - accepting connections
-```
-
-### Kafka Verification
-
-Verify Kafka is healthy by checking container logs:
-
-```powershell
-docker logs local_kafka --tail 20
-```
-
-The backend will output on startup:
-```
-SUCCESS: Kafka Consumer connected & listening!
-```
-
-The broker has two listeners: containers in the compose network use `kafka:29092` (set via
-`Kafka__BootstrapServers` in `docker-compose.yml`), apps started with `dotnet run` on your machine
-use `localhost:9092`. Each service consumes in its own consumer group (its assembly name, e.g.
-`A1Academy.AdminService`), so every service receives every event.
-
-End-to-end check - publish from inside the broker and watch all four services log it:
-
-```powershell
-docker exec -it local_kafka bash -c "echo hello-sprint4 | kafka-console-producer --bootstrap-server localhost:29092 --topic test-topic"
-docker compose logs auth admin teacher student | Select-String "KAFKA RECEIVED"
-```
-
-In Azure, the services connect to an Azure Event Hubs namespace through its Kafka endpoint
-(SASL_SSL). [`scripts/devops-azure-setup.sh`](scripts/devops-azure-setup.sh) provisions the
-namespace and topics and sets the `Kafka__*` env vars on each Container App. Event Hubs does
-not auto-create topics, so add any new topic to `KAFKA_TOPICS` in that script.
-
-### Backend Database Connection
-
-The ASP.NET Core backend uses the connection string configured in `appsettings.Development.json`:
-
-```
-Host=localhost
-Port=5432
-Database=appdb
-Username=appuser
-```
-
-On successful startup, you should see:
-```
-SUCCESS: Backend connected to PostgreSQL
-```
-
-### API & Swagger Verification
-
-Once the backend is running on `http://localhost:5123`, verify the API is accessible:
-
-```powershell
-(Invoke-WebRequest http://localhost:5123/swagger/index.html -UseBasicParsing).StatusCode
-```
-
-Expected output: `200`
-
-Visit [http://localhost:5123/swagger/index.html](http://localhost:5123/swagger/index.html) in your browser to explore the API.
-
-## Automated Testing
-To run the unit tests locally, navigate to the tests folder and execute them:
-```bash
-cd backend/A1Academy.Tests
-dotnet test --filter "Category!=E2E"
-```
-
-### End-to-End (Selenium) Testing
-
-`AuthenticationFlowE2ETests` drives a real Chrome browser through Student signup (including
-OTP verification) followed by login, and checks that an authenticated session with the correct
-role is reached. It runs against a live local environment rather than starting one itself:
-
-```bash
-docker-compose up -d postgres kafka zookeeper   # from the repo root
-dotnet run --project backend/A1Academy.API      # http://localhost:5123, ASPNETCORE_ENVIRONMENT=Development
-npm run dev --prefix frontend                   # http://localhost:5173
-
-cd backend/A1Academy.Tests
-dotnet test --filter Category=E2E
-```
-
-A Chromium-based browser must be installed - Chrome, Brave, or Edge are all auto-detected from
-their usual install locations (override with `E2E_BROWSER_BINARY` if yours lives elsewhere);
-Selenium downloads a matching `chromedriver` for it automatically. Override `E2E_FRONTEND_URL` /
-`E2E_API_URL` if your servers run elsewhere, and set `E2E_HEADLESS=false` to watch the browser
-drive itself. This suite relies on a
-Development/Testing-only endpoint (`GET /api/auth/debug-otp`) to read the signup OTP instead of
-a real mailbox, and only covers the Student role — Teacher signups start unapproved and can't
-log in until an admin approves them. It's excluded from the default `dotnet test` run and from
-CI (see `.github/workflows/ci.yml`).
-
-### Load Testing (JMeter)
-
-[`performance/jmeter/login-load-test.jmx`](performance/jmeter/login-load-test.jmx) drives
-concurrent `POST /api/auth/login` requests against a running API instance to check it holds up
-under load:
-
-```bash
-docker-compose up -d postgres kafka zookeeper
-dotnet run --project backend/A1Academy.API
-
-cd performance/jmeter
-./seed-load-test-user.sh                                         # once, creates the test account
-jmeter -n -t login-load-test.jmx -l results.jtl -Jusers=50 -JrampUp=10 -Jloops=10
-jmeter -g results.jtl -o report/                                 # HTML dashboard with percentiles
-```
-
-See [`performance/jmeter/README.md`](performance/jmeter/README.md) for the full profile list
-(baseline/stress/higher-load) and [`docs/evidence/Login-Load-Testing.md`](docs/evidence/Login-Load-Testing.md)
-for the locally verified results. Apache JMeter 5.6.3 executed all three profiles against the
-running API, with 0% errors and response times under the ticket's 5-second threshold.
-
-## Evidence
-
-The following screenshots provide evidence that the local infrastructure and backend integration were successfully verified.
-
-### E2E Authentication
-
-The Selenium flow completed Student registration, email verification, and login successfully.
-
-![E2E Authentication Test](docs/evidence/AA-21-E2E-authentication.png)
-
-### Login Load Testing
-
-The JMeter execution covered 50, 100, and 200 concurrent users with 0% errors and response times
-under the 5-second threshold. Full numbers and analysis are in
-[`docs/evidence/Login-Load-Testing.md`](docs/evidence/Login-Load-Testing.md).
-
-![Login Load Test - Baseline (50 users)](docs/evidence/login-load-test-baseline-dashboard.png)
-![Login Load Test - Higher Load (200 users)](docs/evidence/login-load-test-highload-dashboard.png)
-
-### Admin User Directory
-
-`GET /api/users` is restricted server-side to the Admin role (`[Authorize(Roles = "Admin")]`) —
-verified with 200/403/403/401 for Admin/Student/Teacher/unauthenticated requests, both in
-automated tests and against the live running API. Full writeup in
-[`docs/evidence/Admin-User-Directory.md`](docs/evidence/Admin-User-Directory.md).
-
-![Admin User Directory](docs/evidence/admin-user-directory.png)
-![Access Denied for non-Admin](docs/evidence/admin-user-directory-access-denied.png)
-
-### Directory Pagination
-
-`GET /api/users` paginates (`?page=`/`?pageSize=`) and the directory table uses a windowed
-Previous/page-numbers/Next control. Verified against 21 real seeded users (3 pages) by actually
-clicking Next in a live browser session. Full writeup in
-[`docs/evidence/Directory-Pagination.md`](docs/evidence/Directory-Pagination.md).
-
-![Directory Pagination - page 1](docs/evidence/admin-user-directory-page1.png)
-![Directory Pagination - page 2](docs/evidence/admin-user-directory-page2.png)
-
-### Filter Pending Teachers
-
-`GET /api/users` now takes `?role=`/`?status=` filters, and the directory has a one-click
-"Pending Teacher Applications" button (role=Teacher + status=Pending) alongside generic Role/
-Status dropdowns. Verified against real seeded data. Full writeup in
-[`docs/evidence/Filter-Pending-Teachers.md`](docs/evidence/Filter-Pending-Teachers.md).
-
-![Unfiltered directory](docs/evidence/admin-user-directory-unfiltered.png)
-![Pending Teacher Applications filter applied](docs/evidence/admin-user-directory-pending-teachers-filter.png)
-
-### Teacher Approval
-
-Admins can now act on what the pending-teacher filter finds - `PATCH /api/users/{id}/approve`
-flips a Teacher from Pending to Active, and the directory shows an "Approve" button on any
-Pending row. Verified end to end with a real registered teacher: blocked from logging in while
-Pending, able to log in immediately after approval, plus the 400/404/403 error paths. Full
-writeup in [`docs/evidence/Teacher-Approval.md`](docs/evidence/Teacher-Approval.md).
-
-![Pending teachers before approval](docs/evidence/admin-user-directory-pending-before-approval.png)
-![After approval](docs/evidence/admin-user-directory-after-approval.png)
-
-### User Deactivation
-
-Accounts now move through a real state machine - Pending/Active/Rejected/Deactivated - instead
-of a single approved bool, with a dedicated, pure-C# rules module deciding which moves are legal
-(`AccountStatusTransitions`). Backed by `PATCH /api/users/{id}/{approve|reject|deactivate|reactivate}`,
-each enforced the same way, and `AuthController.Login` blocking anyone whose account isn't
-Active with a status-specific message. Verified with real registered accounts end to end -
-deactivation blocks login, reactivation unblocks it again - plus every invalid transition (like
-re-approving an already-Active account) checked live. Full writeup in
-[`docs/evidence/User-Deactivation.md`](docs/evidence/User-Deactivation.md).
-
-![Pending actions](docs/evidence/admin-user-directory-pending-actions.png)
-![Deactivated actions](docs/evidence/admin-user-directory-deactivated-actions.png)
-![Rejected view](docs/evidence/admin-user-directory-rejected-view.png)
-
-### Docker Compose Services
-
-PostgreSQL, Kafka, and ZooKeeper were successfully started using Docker Compose.
-
-![Docker Compose Services](docs/evidence/docker%20.png)
-
-### PostgreSQL
-
-Backend connectivity to PostgreSQL was successfully verified.
-
-![PostgreSQL Verification](docs/evidence/postgresql.png)
-
-### Kafka
-
-Kafka consumer successfully connected and listened for messages.
-
-![Kafka Verification](docs/evidence/kafka.png)
-
-### Backend
-
-The backend successfully connected to the required infrastructure services.
-
-![Backend Verification](docs/evidence/backend%20working.png)
-
-### Swagger API
-
-Swagger was successfully served by the ASP.NET Core backend with HTTP 200.
-
-![Swagger Verification](docs/evidence/swagger.png)
-
-### Integration Testing
-
-The automated integration test suite was executed successfully.
-
-![Integration Testing](docs/evidence/git%20integration%20testing.png)
-
-Test result:
-
-- **Total:** 12
-- **Passed:** 12
-- **Failed:** 0
-- **Skipped:** 0
-- **Build:** Successful
-
-## Infrastructure and DevOps Engineering Report — Sprint 2
-
-### Executive Summary
-During Sprint 2, the core DevOps infrastructure was successfully provisioned and integrated. The primary objectives were to eliminate manual deployment overhead, establish secure cloud communication, and implement a scalable event-driven architecture. The application is now fully supported by automated CI/CD pipelines via GitHub Actions and is successfully deployed to the Azure cloud ecosystem.
-
-### 1. Continuous Integration (CI) Architecture
-To optimize the developer experience and reduce build times, a granular, microservice-specific CI strategy was implemented using GitHub Actions.
-
-- **Decoupled Workflows:** Rather than a monolithic pipeline, distinct CI workflows were engineered for each backend service (Admin, Auth, Gateway, Student, Teacher) as well as the Frontend.
-- **Path-Based Triggers:** Workflows are configured with path filtering, ensuring that builds and automated tests are only triggered for the specific microservice that was modified. This drastically reduces compute waste and accelerates feedback loops for developers.
-- **Build and Validation:** The CI pipelines automatically provision the .NET environment, restore dependencies, compile the application, and execute unit testing frameworks to prevent regressions from merging into the main branch.
-
-### 2. Continuous Deployment (CD) and Azure Cloud Integration
-The transition from local development to a live cloud environment was finalized, establishing a seamless Continuous Deployment pipeline to Azure.
-
-- **Automated Azure Deployments:** The CD pipeline is configured to securely package and promote validated code directly to the live Azure environment upon successful merge to the production branch.
-- **Centralized Cloud Database:** Refactored the appsettings.json configurations across all microservices to deprecate local database dependencies. All services are now securely authenticated and connected to a centralized Azure PostgreSQL Flexible Server, ensuring data consistency across the distributed system.
-- **API Gateway and CORS Remediation:** Resolved cross-origin blocking issues in the live environment by reconfiguring the A1Academy.Gateway (Program.cs). The Gateway now properly routes external requests and manages CORS policies, allowing the live React frontend to successfully consume backend APIs.
-- **Environment Variable Management:** Updated frontend production environments (.env.production) to dynamically point to the live Azure Gateway URL during the build phase.
-
-### 3. Event-Driven Messaging Architecture (Apache Kafka)
-To support highly scalable, asynchronous communication between microservices, Apache Kafka was implemented as the central message broker.
-
-- **Shared Kafka Infrastructure:** Engineered centralized KafkaProducerService and KafkaConsumerService abstractions within the A1Academy.Shared library utilizing the Confluent.Kafka SDK.
-- **Service Injection:** Integrated Kafka via Dependency Injection into the Program.cs lifecycle of all microservices. This empowers any service to act as an event publisher or subscriber without tight coupling.
-- **Containerized Local Development:** Orchestrated Kafka and Zookeeper within the docker-compose.yml stack. This allows the engineering team to spin up the entire event-driven messaging topology locally with a single Docker command, ensuring development parity with production.
-
-### 4. Operational Adjustments and Technical Debt
-- **Pipeline Unblocking:** Identified an issue where failing frontend unit tests were actively blocking the CD pipeline from deploying critical backend infrastructure. To unblock the release, the failing test suite was temporarily bypassed in .github/workflows/main_a1-academy-frontend.yml.
-- **Action Item:** A task has been allocated to the frontend engineering team for Sprint 3 to resolve the broken tests and re-enable strict CI validation.
-
-### Proposed DevOps Roadmap for Sprint 3
-- **Security and Compliance:** Integrate Static Application Security Testing (SAST) and dependency vulnerability scanning into the CI pipelines.
-- **Environment Promotion:** Establish staging environments with manual approval gates before pushing to production.
-- **Observability:** Implement centralized logging and application performance monitoring (APM) to track the health of the deployed microservices.
 ---
 
-## ☁️ DevOps & Cloud Infrastructure (Final Deployment)
+## Architecture
 
-This project utilizes a modern cloud-native deployment strategy on **Microsoft Azure**, fully automated via **GitHub Actions**.
+```
+Browser ─► Frontend (React + Vite, Azure Web App)
+              │
+              ▼
+         API Gateway (YARP) ─┬─► Auth service     ─┐
+                             ├─► Admin service    ─┤
+                             ├─► Teacher service  ─┼─► PostgreSQL
+                             └─► Student service  ─┘
+                                   ▲  │
+                                   └──┴─ Kafka (Azure Event Hubs in production)
+```
 
-### 🚀 CI/CD Pipelines (GitHub Actions)
-* **Automated Frontend Deployment:** Pushes to the main branch automatically build and deploy the React application directly to Azure App Service using Publish Profiles.
-* **Automated Backend Builds:** Microservices are automatically built into Docker containers and pushed to Docker Hub upon code changes.
+All backend services are ASP.NET Core 10 and share the `A1Academy.Shared` library (EF Core data
+model, Kafka producer/consumer, email service, health checks).
 
-### 🌩️ Cloud Hosting (Azure)
-* **Azure Container Apps:** The backend is hosted on Azure Container Apps, ensuring each microservice (Gateway, Auth, Admin, Student, Teacher) runs independently in a highly scalable environment.
-* **Secure Networking:** The API Gateway is configured to route traffic internally using secure HTTPS endpoints, complying with Azure's strict "Express Environment" security policies.
+| Gateway route | Service |
+|---|---|
+| `/api/auth/*` | Auth: register, login, OTP, password reset, profile |
+| `/api/users/*`, `/api/categories/*`, `/api/teacher-subject-requests/*` | Admin |
+| `/api/teacher/subjects/*`, `/api/teacher/classes/*` | Teacher |
+| `/api/student/classes/*` | Student |
 
-### 🔐 Security & Configuration
-* **Secrets Management:** Sensitive data, such as SMTP App Passwords and JWT Secret Keys, are securely injected at runtime using Azure Environment Variables.
-* **CORS & Region Routing:** Configured strict CORS policies in the API Gateway to securely accept requests strictly from our live Azure frontend domain in the Malaysia West region.
+Every service also exposes `/health/live` (process up) and `/health/ready` (database reachable).
 
-## 🛠️ DevOps Workflow & Engineering Challenges
+## Repository Structure
 
-As the DevOps Engineer for this project, the goal was to ensure a seamless transition from local development to a production-grade cloud environment. 
+| Path | Contents |
+|---|---|
+| `frontend/` | React + Vite app; unit tests in `src/**/__tests__`, WebdriverIO E2E tests in `e2e/` |
+| `backend/A1Academy.Gateway/` | YARP API gateway |
+| `backend/A1Academy.{Auth,Admin,Teacher,Student}Service/` | The four microservices |
+| `backend/A1Academy.Shared/` | Data model, EF Core migrations, Kafka, email, health checks |
+| `backend/A1Academy.Tests/` | xUnit unit + integration tests (and Selenium E2E, excluded by default) |
+| `performance/jmeter/` | Login load test |
+| `scripts/devops-azure-setup.sh` | Production operations script (status, secrets, restart) |
+| `.github/workflows/` | CI/CD pipelines |
+| `docs/evidence/` | Sprint evidence and reports |
 
-### The CI/CD Lifecycle
-1. **Local Dev:** Developers use docker-compose to spin up PostgreSQL, Kafka, Zookeeper, and the .NET microservices locally.
-2. **Version Control:** Code is pushed to GitHub, requiring PR reviews before merging into the main branch.
-3. **Continuous Integration:** GitHub Actions automatically builds the code, packages the microservices into Docker Images, and pushes them to Docker Hub.
-4. **Continuous Deployment:** The React frontend is automatically built and deployed to Azure App Service, while Azure Container Apps pull the latest backend images to serve live traffic.
+---
 
-### ⚠️ DevOps Challenges Overcome
-Deploying a distributed system to the cloud introduced several complex infrastructure challenges that were successfully resolved:
+## Running Locally
 
-* **Azure Region Migration & CORS:** Due to Azure quota limits, the entire cloud infrastructure was migrated to the Malaysia West region. This caused URL changes that triggered strict CORS blocks. This was resolved by dynamically updating the API Gateway CORS policies to accept traffic from the new regional frontend URLs.
-* **Azure "Express Environment" Security:** Azure's new Express Environments actively block unencrypted internal HTTP traffic, causing the API Gateway to return 502 Bad Gateway errors. This was resolved by overriding the YARP proxy environment variables to enforce strict, secure HTTPS routing between all internal containers.
-* **Cloud Database SSL Connectivity:** Migrating from a local Docker database to a managed Azure PostgreSQL database resulted in connection rejections. This was fixed by configuring strict SSL modes (SslMode=Require) and securely injecting the new cloud connection strings into the containers at runtime.
+### Prerequisites
+- **Docker Desktop**
+- **.NET 10 SDK** (only needed to run tests or a single service outside Docker)
+- **Node.js 22+**
+
+### 1. Start the backend (one command)
+
+```bash
+docker compose up -d --build
+```
+
+This starts PostgreSQL, Kafka (with ZooKeeper), the four services and the gateway. First build
+takes a few minutes.
+
+| Service | Address on your machine |
+|---|---|
+| API gateway | http://localhost:5100 |
+| PostgreSQL | `localhost:5433` (user `appuser`, database `appdb`) |
+| Kafka | `localhost:9092` |
+
+The four services are only reachable through the gateway. On first start an Admin account is
+created: **`admin@a1academy.com` / `LocalAdmin123!`**. The JWT key and admin password in
+`docker-compose.yml` are **local-development values only**; production uses Azure secrets.
+
+Check everything is up:
+
+```bash
+docker compose ps
+curl http://localhost:5100/health/ready        # -> Healthy
+```
+
+### 2. Start the frontend
+
+```bash
+cd frontend
+npm install
+npm run dev                                    # http://localhost:5173
+```
+
+`frontend/.env.development` already points the app at the local gateway (`http://localhost:5100`).
+
+### 3. Optional: verify Kafka end to end
+
+```bash
+docker exec -it local_kafka bash -c \
+  "echo hello | kafka-console-producer --bootstrap-server localhost:29092 --topic test-topic"
+docker compose logs auth admin teacher student | grep "KAFKA RECEIVED"   # all 4 services log it
+```
+
+### Running a single service outside Docker
+
+Useful for debugging in an IDE. Configuration comes from .NET user secrets, so nothing sensitive
+goes into `appsettings.json`:
+
+```bash
+docker compose up -d postgres kafka zookeeper
+cd backend/A1Academy.AuthService
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5433;Database=appdb;Username=appuser;Password=SecurePassword123!"
+dotnet user-secrets set "Jwt:Key" "local-dev-only-jwt-signing-key-not-used-in-production-000000"
+dotnet run                                     # http://localhost:5185
+```
+
+Local ports: Auth `5185`, Admin `5219`, Teacher `5194`, Student `5208`, Gateway `5088`.
+
+> **Never commit real secrets.** `appsettings.json` deliberately leaves passwords and keys empty.
+
+---
+
+## Testing
+
+| Suite | Command | Notes |
+|---|---|---|
+| **Backend** (unit + integration, 195 tests) | `dotnet test backend/A1Academy.Tests/A1Academy.Tests.csproj --filter "Category!=E2E"` | No database or Kafka needed (in-memory DB, mocked email/Kafka). Runs on every backend PR. |
+| **Frontend unit** (Vitest) | `cd frontend && npm run test:unit` | 31 tests still target the pre-redesign UI and fail; see the [Sprint 4 report](docs/evidence/Sprint4-DevOps-QA-Report.md). |
+| **Backend E2E** (Selenium) | `dotnet test backend/A1Academy.Tests --filter Category=E2E` | Needs the full stack running. Set `E2E_API_URL=http://localhost:5100`; the auth service must run with `ASPNETCORE_ENVIRONMENT=Development` (it reads the signup code from `/api/auth/debug-otp`). |
+| **Frontend E2E** (WebdriverIO) | `cd frontend && npm run e2e` | Needs the full stack and the dev server running. |
+| **Load** (JMeter) | see [performance/jmeter/README.md](performance/jmeter/README.md) | Point it at the gateway with `-Jport=5100`. |
+
+---
+
+## CI/CD
+
+| Workflow | Runs on | What it does |
+|---|---|---|
+| `ci-backend-tests.yml` | Every PR touching `backend/` | Builds the solution and runs the backend tests |
+| `ci-{auth,admin,teacher,student}.yml` | PRs and merges touching that service or `Shared` | Tests, builds the Docker image; on `main` pushes it and deploys |
+| `ci-gateway.yml` | PRs and merges touching the gateway | Builds; on `main` pushes and deploys |
+| `deploy-containerapp.yml` | Called by the service pipelines (main only) | Deploys the commit's image, restarts the app, waits for `/health/ready = 200` |
+| `sonarcloud.yml` | PRs and merges touching `backend/` | Static analysis + coverage; **fails if the Quality Gate fails** |
+| `main_a1-academy-frontend.yml` | Every merge to `main`; PRs touching `frontend/` | Lint + build; on `main` deploys to Azure Web App |
+
+- **Merging to `main` deploys automatically.** Every service pipeline also has a **Run workflow**
+  button (Actions tab) to redeploy `main` manually.
+- Azure login uses **GitHub OIDC** (no password stored in GitHub). Pull request builds never push images.
+- All GitHub Actions are **pinned to commit SHAs**; **Dependabot** opens weekly update PRs for NuGet,
+  npm and Actions. Coupled major upgrades (EF Core, Npgsql, ASP.NET Core auth, App Insights) are
+  excluded and should be done together.
+
+---
+
+## Production (Azure)
+
+| Resource | Name |
+|---|---|
+| Resource group | `A1-Academy-RG` (Malaysia West) |
+| Container Apps (Express environment) | `a1academy-gateway`, `-auth`, `-admin`, `-teacher`, `-student` |
+| Database | Azure Database for PostgreSQL Flexible Server `a1-academy-final-db` |
+| Messaging | Azure Event Hubs (Kafka endpoint) `a1academy-kafka-sprint4` |
+| Frontend | Azure Web App `a1-academy-frontend` |
+| Images | Docker Hub `a1academy-<service>:<commit-sha>` |
+
+All secrets (JWT key, database connection, admin password, SMTP password, Kafka key) are stored as
+**Container App secrets**, never in the repository. Manage production with the ops script from
+**Azure Cloud Shell**:
+
+```bash
+git clone --depth 1 https://github.com/IT24101853-AkashD/A1-Academy.git && cd A1-Academy
+bash scripts/devops-azure-setup.sh status            # health, images, flags any plain-text secret
+bash scripts/devops-azure-setup.sh secrets           # rotate secrets (hidden prompts)
+bash scripts/devops-azure-setup.sh restart [app]     # required after any configuration change
+```
+
+> **Express environment:** changing a Container App's settings does **not** restart the running
+> container. Always run `restart` afterwards (the deploy pipeline does this automatically).
+
+> **Cost:** Event Hubs Standard and the Container Apps use the student subscription's credit.
+> Delete the resource group once the project no longer needs to run.
+
+---
+
+## Documentation and Evidence
+
+**Sprint 4 (final sprint)**
+
+| Topic | Evidence |
+|---|---|
+| **DevOps & QA report**: Kafka, CI/CD, security, SonarCloud, tests, incidents | [Markdown](docs/evidence/Sprint4-DevOps-QA-Report.md) · [PDF](docs/evidence/Sprint4-DevOps-QA-Report.pdf) |
+| Kafka locally and on Azure Event Hubs | [Sprint4-Kafka-Azure.md](docs/evidence/Sprint4-Kafka-Azure.md) |
+
+**Earlier sprints**
+
+| Topic | Evidence |
+|---|---|
+| User deactivation and account state machine | [User-Deactivation.md](docs/evidence/User-Deactivation.md) |
+| Teacher approval | [Teacher-Approval.md](docs/evidence/Teacher-Approval.md) |
+| Filter pending teachers | [Filter-Pending-Teachers.md](docs/evidence/Filter-Pending-Teachers.md) |
+| Directory pagination | [Directory-Pagination.md](docs/evidence/Directory-Pagination.md) |
+| Admin user directory (role-restricted) | [Admin-User-Directory.md](docs/evidence/Admin-User-Directory.md) |
+| Login load testing (50/100/200 users, 0 % errors) | [Login-Load-Testing.md](docs/evidence/Login-Load-Testing.md) |
+| E2E authentication (Selenium) | [E2E-Authentication-Testing.md](docs/evidence/E2E-Authentication-Testing.md) |
+| Frontend component testing | [AA-19-Frontend-Testing.md](docs/evidence/AA-19-Frontend-Testing.md) |
+
+Some earlier evidence documents refer to the original single-project backend (`A1Academy.API`,
+port 5123), which has since been split into the microservices described above.

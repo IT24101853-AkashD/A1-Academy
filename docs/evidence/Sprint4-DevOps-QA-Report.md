@@ -6,7 +6,7 @@
 | **Sprint** | Sprint 4, the **final sprint** (30 September – 2 October 2026) |
 | **Role** | DevOps / Quality Assurance: INKARAN (INKARAN001) |
 | **Repository** | `IT24101853-AkashD/A1-Academy` (public) |
-| **Work covered** | Pull requests **#50 – #86** (32 merged PRs) |
+| **Work covered** | Pull requests **#50 – #85** plus the final close-out PR (31 PRs) |
 | **Report date** | 2 October 2026 |
 
 ---
@@ -254,13 +254,13 @@ Each security fix was confirmed by running its regression tests **against the pr
 
 Sprint 4 is the **final sprint** of the project. This section lists what remains at close.
 
-### 8.1 Actions to Complete Before Hand-over
+### 8.1 Hand-over Actions (all completed)
 
 | # | Item | Owner | Status |
 |---|---|---|---|
 | 1 | A Gmail app password was committed in the removed `scratch/remove_secrets.js` (still in Git history) and the SMTP password was plain text on 4 services | DevOps | ✅ **Done (2 Oct):** emails now sent from a new account (`karanaathi001@gmail.com`) with a new app password stored as the `smtp-password` secret; all 4 services restarted healthy; production OTP send verified (HTTP 200). The leaked password is no longer used; its owner should still revoke it. |
-| 2 | Manual Gateway CI run to exercise the pinned Docker/Azure actions end-to-end | DevOps | ⏳ Pending |
-| 3 | Decide whether to keep the uploaded files committed under `backend/A1Academy.API/uploads/` | Team | ⏳ Pending |
+| 2 | Manual Gateway CI run to exercise the pinned Docker/Azure actions end-to-end | DevOps | ✅ **Done:** Gateway Service CI run #24 on `main` (`4ea4f66`) succeeded in 2 m 19 s; build and deploy jobs both green |
+| 3 | Decide whether to keep the uploaded files committed under `backend/A1Academy.API/uploads/` | Team | ✅ **Done:** the team deleted the folder (`b679b88`) |
 
 ### 8.2 Known Limitations at Project Close
 
@@ -271,7 +271,7 @@ These were identified during the sprint but are outside the remaining project ti
 | 4 | 31 frontend unit tests fail because they target the pre-redesign UI (the features still exist and work) | Frontend changes are not covered by an automated gate | Update the selectors to the new UI, then add the suite as a CI gate |
 | 5 | Containers run as root (SonarCloud S6471, 7 findings) | Larger impact if a container is compromised | Add a non-root `USER` to the Dockerfiles, with write access to `uploads/` |
 | 6 | SonarCloud Security E / Reliability D on legacy code (18 vulnerabilities, 18 bugs, mainly frontend and Dockerfiles) | Lower code-quality rating on code outside this sprint's scope | Work through the SonarCloud issue list by severity |
-| 7 | README and backend E2E defaults still describe the old monolith (`A1Academy.API`, port 5123) | Setup instructions can mislead new developers | Update to the microservice layout (gateway on port 5100) |
+| 7 | Backend E2E test defaults still use the old monolith port (5123) | Running E2E needs `E2E_API_URL` set | Change the default to the gateway (`http://localhost:5100`); the README already documents the override |
 | 8 | Coupled major upgrades (EF Core 10, Npgsql 10, JwtBearer 10, App Insights 3) not applied | Running on supported 8.x packages; no functional impact | Upgrade them together in one change, then run the full test suite |
 | 9 | No branch protection on `main` | Quality checks report failures but do not prevent a merge | Require Backend Tests and SonarCloud status checks |
 
@@ -314,7 +314,7 @@ These were identified during the sprint but are outside the remaining project ti
 | #83 | Pin GitHub Actions to commit SHAs |
 | #84 | This report |
 | #85 | Setup script can switch the email sender account |
-| #86 | Default sender address updated; report close-out |
+| Close-out PR | Default sender address; README rewritten for the current architecture; local Docker JWT/admin settings; report close-out |
 
 ## Appendix B: How to Re-verify
 
