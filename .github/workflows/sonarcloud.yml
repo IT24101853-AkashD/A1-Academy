@@ -54,6 +54,11 @@ jobs:
     - name: Install SonarScanner for .NET
       run: dotnet tool install --global dotnet-sonarscanner
 
+    # Coverage: this job only runs the backend tests, so only backend coverage is reported.
+    # frontend/** is excluded from the coverage measurement (it is still analysed for bugs,
+    # vulnerabilities and code smells) - otherwise every new React line counts as 0% covered
+    # and any PR touching the frontend fails the 80% new-code coverage condition regardless
+    # of how well its backend is tested. Remove it once frontend coverage (lcov) is reported.
     - name: Begin analysis
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -65,7 +70,7 @@ jobs:
         /d:sonar.token="$SONAR_TOKEN"
         /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
         /d:sonar.exclusions="**/Migrations/**,**/bin/**,**/obj/**,**/uploads/**"
-        /d:sonar.coverage.exclusions="**/Migrations/**,**/Program.cs,backend/A1Academy.Tests/**"
+        /d:sonar.coverage.exclusions="**/Migrations/**,**/Program.cs,backend/A1Academy.Tests/**,frontend/**"
         /d:sonar.qualitygate.wait=true
         /d:sonar.qualitygate.timeout=300
 
