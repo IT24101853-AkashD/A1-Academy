@@ -254,7 +254,7 @@ namespace A1Academy.TeacherService.Controllers
 
             var submission = await _context.Set<AssignmentSubmission>()
                 .Include(s => s.Assignment)
-                .FirstOrDefaultAsync(s => s.Id == submissionId && s.AssignmentId == assignmentId && s.Assignment.ClassId == classId);
+                .FirstOrDefaultAsync(s => s.Id == submissionId && s.AssignmentId == assignmentId && s.Assignment!.ClassId == classId);
 
             if (submission == null)
             {

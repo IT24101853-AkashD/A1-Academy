@@ -75,7 +75,12 @@ namespace A1Academy.StudentService.Controllers
                     a.Title,
                     a.Description,
                     a.DueAt,
-                    Submission = _context.AssignmentSubmissions.FirstOrDefault(s => s.AssignmentId == a.Id && s.StudentId == studentId)
+                    // Project only what the list shows: loading the whole submission row would
+                    // also pull the uploaded file's bytes (Content) for every assignment.
+                    Submission = _context.AssignmentSubmissions
+                        .Where(s => s.AssignmentId == a.Id && s.StudentId == studentId)
+                        .Select(s => new { s.Status, s.Grade, s.Feedback })
+                        .FirstOrDefault()
                 })
                 .ToListAsync();
 
