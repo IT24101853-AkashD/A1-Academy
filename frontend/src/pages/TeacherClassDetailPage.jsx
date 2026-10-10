@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { clearSession } from '../utils/session';
+import AwardBadgeModal from '../components/modals/AwardBadgeModal';
 
 const authHeader = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
 
@@ -41,6 +42,9 @@ export default function TeacherClassDetailPage() {
     const [attendanceDraft, setAttendanceDraft] = useState({});
     const [isSavingAttendance, setIsSavingAttendance] = useState(false);
     const [attendanceSaved, setAttendanceSaved] = useState(false);
+    
+    // Badges
+    const [awardingStudent, setAwardingStudent] = useState(null);
 
     const onUnauthorized = () => {
         clearSession();
@@ -472,6 +476,13 @@ export default function TeacherClassDetailPage() {
                                         <div className="flex gap-2">
                                             <button
                                                 type="button"
+                                                onClick={() => setAwardingStudent(s)}
+                                                className="px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full font-semibold text-xs hover:bg-amber-200"
+                                            >
+                                                Award Badge
+                                            </button>
+                                            <button
+                                                type="button"
                                                 onClick={() => setAttendanceDraft((prev) => ({ ...prev, [s.id]: 'Present' }))}
                                                 className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${attendanceDraft[s.id] === 'Present' ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`}
                                             >
@@ -500,6 +511,12 @@ export default function TeacherClassDetailPage() {
                     )}
                 </div>
             </section>
+            <AwardBadgeModal
+                isOpen={!!awardingStudent}
+                onClose={() => setAwardingStudent(null)}
+                student={awardingStudent}
+                classId={id}
+            />
         </Layout>
     );
 }
