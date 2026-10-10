@@ -9,7 +9,7 @@ export default function AwardBadgeModal({ isOpen, onClose, student, classId }) {
 
     useEffect(() => {
         if (isOpen) {
-            fetchTemplates();
+            void fetchTemplates();
         }
     }, [isOpen]);
 
@@ -48,7 +48,7 @@ export default function AwardBadgeModal({ isOpen, onClose, student, classId }) {
                 },
                 body: JSON.stringify({
                     studentId: student.id,
-                    masterBadgeTemplateId: parseInt(selectedTemplateId),
+                    masterBadgeTemplateId: Number.parseInt(selectedTemplateId, 10),
                     comments
                 })
             });
@@ -83,8 +83,9 @@ export default function AwardBadgeModal({ isOpen, onClose, student, classId }) {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Select Badge</label>
+                        <label htmlFor="badgeSelect" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Select Badge</label>
                         <select
+                            id="badgeSelect"
                             value={selectedTemplateId}
                             onChange={(e) => setSelectedTemplateId(e.target.value)}
                             className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
@@ -97,8 +98,9 @@ export default function AwardBadgeModal({ isOpen, onClose, student, classId }) {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Comments (Optional)</label>
+                        <label htmlFor="badgeComments" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Comments (Optional)</label>
                         <textarea
+                            id="badgeComments"
                             value={comments}
                             onChange={(e) => setComments(e.target.value)}
                             className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"

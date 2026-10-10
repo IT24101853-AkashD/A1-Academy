@@ -6,7 +6,7 @@ export default function PublicRecognitionBoard() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchBadges();
+        void fetchBadges();
     }, []);
 
     const fetchBadges = async () => {

@@ -77,7 +77,7 @@ namespace A1Academy.TeacherService.Controllers
             // (Optional) Verify the student is enrolled in one of the teacher's classes
             var hasEnrollment = await _context.Enrollments
                 .Include(e => e.Class)
-                .AnyAsync(e => e.StudentId == dto.StudentId && e.Class.TeacherId == teacherId);
+                .AnyAsync(e => e.StudentId == dto.StudentId && e.Class != null && e.Class.TeacherId == teacherId);
 
             if (!hasEnrollment)
             {
@@ -86,8 +86,8 @@ namespace A1Academy.TeacherService.Controllers
 
             var studentBadge = new StudentBadge
             {
-                StudentId = dto.StudentId,
-                MasterBadgeTemplateId = dto.MasterBadgeTemplateId,
+                StudentId = dto.StudentId.Value,
+                MasterBadgeTemplateId = dto.MasterBadgeTemplateId.Value,
                 AwardedByTeacherId = teacherId,
                 Comments = dto.Comments,
                 AwardedAt = DateTime.UtcNow
@@ -103,11 +103,11 @@ namespace A1Academy.TeacherService.Controllers
     public class AwardBadgeDto
     {
         [Required]
-        public int StudentId { get; set; }
+        public int? StudentId { get; set; }
 
         [Required]
-        public int MasterBadgeTemplateId { get; set; }
+        public int? MasterBadgeTemplateId { get; set; }
 
-        public string Comments { get; set; }
+        public string? Comments { get; set; }
     }
 }

@@ -20,15 +20,15 @@ namespace A1Academy.Shared.Data.Models
         public DateTime AwardedAt { get; set; } = DateTime.UtcNow;
 
         [StringLength(2000)]
-        public string Comments { get; set; }
+        public string? Comments { get; set; }
 
         [ForeignKey(nameof(StudentId))]
-        public User Student { get; set; }
+        public User? Student { get; set; }
 
         [ForeignKey(nameof(MasterBadgeTemplateId))]
-        public MasterBadgeTemplate MasterBadgeTemplate { get; set; }
+        public MasterBadgeTemplate? MasterBadgeTemplate { get; set; }
 
         [ForeignKey(nameof(AwardedByTeacherId))]
-        public User AwardedByTeacher { get; set; }
+        public User? AwardedByTeacher { get; set; }
     }
 }
