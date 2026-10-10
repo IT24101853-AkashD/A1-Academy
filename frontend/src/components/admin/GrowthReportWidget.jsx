@@ -24,3 +24,9 @@ export default function GrowthReportWidget() {
             const res = await fetch(${import.meta.env.VITE_API_URL}/api/users/growth-report?startDate=&endDate=, {
                 headers: { Authorization: \Bearer \\ }
             });
+            if (res.ok) {
+                const data = await res.json();
+                setReport(data);
+            } else {
+                setError('Failed to fetch report');
+            }
