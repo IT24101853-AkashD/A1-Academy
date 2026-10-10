@@ -1255,4 +1255,39 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         Assert.Equal(0, (await context.Classes.SingleAsync(c => c.Id == classId)).EnrolledCount);
         Assert.False(await context.Enrollments.AnyAsync(e => e.StudentId == studentId));
     }
+    [Fact]
+    public async Task GetGrowthReport_AsAdmin_ReturnsAccurateData()
+    {
+        var suffix = Guid.NewGuid().ToString("N");
+        var client = _factory.CreateClient();
+        var adminEmail = $"admin.growth.{suffix}@example.com";
+        await SeedUserAsync("Admin", "User", adminEmail, "AdminPass1!", "Admin");
+        var token = await LoginAsync(client, adminEmail, "AdminPass1!");
+
+        // Seed some new students and teachers
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            context.Users.Add(new User { Email = $"s1.{suffix}@ex.com", PasswordHash = "x", Role = "Student", CreatedAt = DateTime.UtcNow, FirstName = "S1", LastName = "S", AccountStatus = AccountStatus.Active });
+            context.Users.Add(new User { Email = $"t1.{suffix}@ex.com", PasswordHash = "x", Role = "Teacher", CreatedAt = DateTime.UtcNow, FirstName = "T1", LastName = "T", AccountStatus = AccountStatus.Active });
+            context.Users.Add(new User { Email = $"t2.{suffix}@ex.com", PasswordHash = "x", Role = "Teacher", CreatedAt = DateTime.UtcNow, FirstName = "T2", LastName = "T", AccountStatus = AccountStatus.Active });
+            await context.SaveChangesAsync();
+        }
+
+        var startDate = DateTime.UtcNow.AddDays(-1).ToString("yyyy-MM-dd");
+        var endDate = DateTime.UtcNow.AddDays(1).ToString("yyyy-MM-dd");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/api/users/growth-report?startDate={startDate}&endDate={endDate}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        
+        var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+
+        var json = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        var totalStudents = json.GetProperty("totalStudents").GetInt32();
+        var totalTeachers = json.GetProperty("totalTeachers").GetInt32();
+
+        Assert.True(totalStudents >= 1);
+        Assert.True(totalTeachers >= 2);
+    }
 }
