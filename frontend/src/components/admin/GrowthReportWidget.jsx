@@ -5,3 +5,4 @@ export default function GrowthReportWidget() {
     const [endDate, setEndDate] = useState('');
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
