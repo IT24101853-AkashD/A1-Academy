@@ -81,3 +81,6 @@ export default function GrowthReportWidget() {
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
