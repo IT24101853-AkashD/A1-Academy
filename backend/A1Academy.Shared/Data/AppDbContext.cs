@@ -20,6 +20,7 @@ namespace A1Academy.Shared.Data
         public DbSet<AssignmentSubmission> AssignmentSubmissions { get; set; }
         public DbSet<Attendance> Attendances { get; set; }
         public DbSet<MasterBadgeTemplate> MasterBadgeTemplates { get; set; }
+        public DbSet<StudentBadge> StudentBadges { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -167,6 +168,24 @@ namespace A1Academy.Shared.Data
                 .WithMany()
                 .HasForeignKey(a => a.StudentId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<StudentBadge>()
+                .HasOne(sb => sb.Student)
+                .WithMany()
+                .HasForeignKey(sb => sb.StudentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<StudentBadge>()
+                .HasOne(sb => sb.MasterBadgeTemplate)
+                .WithMany()
+                .HasForeignKey(sb => sb.MasterBadgeTemplateId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<StudentBadge>()
+                .HasOne(sb => sb.AwardedByTeacher)
+                .WithMany()
+                .HasForeignKey(sb => sb.AwardedByTeacherId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

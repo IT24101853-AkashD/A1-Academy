@@ -18,6 +18,7 @@ import TeacherClassesPage from './pages/TeacherClassesPage';
 import TeacherClassDetailPage from './pages/TeacherClassDetailPage';
 import StudentMyClassesPage from './pages/StudentMyClassesPage';
 import StudentClassDetailPage from './pages/StudentClassDetailPage';
+import PublicRecognitionBoard from './pages/PublicRecognitionBoard';
 import AdminDashboard from './pages/AdminDashboard';
 import AuthModals from './components/AuthModals';
 import Navbar from './components/Navbar';
@@ -43,6 +44,7 @@ function App() {
         <Route path="/contact.html" element={<ContactPage />} />
         <Route path="/help.html" element={<HelpPage />} />
         <Route path="/privacy.html" element={<PrivacyPage />} />
+        <Route path="/recognition" element={<PublicRecognitionBoard />} />
         <Route path="/terms.html" element={<TermsPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<AdminUsersPage />} />

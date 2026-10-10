@@ -279,6 +279,41 @@ namespace A1Academy.Shared.Migrations
                     b.ToTable("MasterBadgeTemplates");
                 });
 
+            modelBuilder.Entity("A1Academy.Shared.Data.Models.StudentBadge", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AwardedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("AwardedByTeacherId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Comments")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("MasterBadgeTemplateId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AwardedByTeacherId");
+
+                    b.HasIndex("MasterBadgeTemplateId");
+
+                    b.HasIndex("StudentId");
+
+                    b.ToTable("StudentBadges");
+                });
+
             modelBuilder.Entity("A1Academy.Shared.Data.Models.StudyMaterial", b =>
                 {
                     b.Property<int>("Id")
@@ -536,6 +571,32 @@ namespace A1Academy.Shared.Migrations
                         .IsRequired();
 
                     b.Navigation("Class");
+
+                    b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("A1Academy.Shared.Data.Models.StudentBadge", b =>
+                {
+                    b.HasOne("A1Academy.Shared.Data.Models.User", "AwardedByTeacher")
+                        .WithMany()
+                        .HasForeignKey("AwardedByTeacherId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("A1Academy.Shared.Data.Models.MasterBadgeTemplate", "MasterBadgeTemplate")
+                        .WithMany()
+                        .HasForeignKey("MasterBadgeTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("A1Academy.Shared.Data.Models.User", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AwardedByTeacher");
+
+                    b.Navigation("MasterBadgeTemplate");
 
                     b.Navigation("Student");
                 });
