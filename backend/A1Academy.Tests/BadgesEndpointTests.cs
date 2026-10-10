@@ -67,4 +67,44 @@ public class BadgesEndpointTests : IClassFixture<ApiWebApplicationFactory>
         var templates = await res.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
         Assert.True(templates.GetArrayLength() >= 1);
     }
+
+    [Fact]
+    public async Task AwardBadge_ValidData_ReturnsSuccess()
+    {
+        var client = _factory.CreateClient();
+        var teacherLogin = await LoginAsNewUserAsync(client, "Teacher");
+        var studentLogin = await LoginAsNewUserAsync(client, "Student");
+        
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", teacherLogin.token);
+
+        int templateId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var template = new MasterBadgeTemplate { Name = "Super Star", Criteria = "Amazing work" };
+            context.MasterBadgeTemplates.Add(template);
+            
+            var course = new Course { Title = "Test Course", Description = "Testing" };
+            context.Courses.Add(course);
+            await context.SaveChangesAsync();
+
+            var classObj = new Class { CourseId = course.Id, TeacherId = teacherLogin.userId, StartDate = DateTime.UtcNow, EndDate = DateTime.UtcNow.AddMonths(1) };
+            context.Classes.Add(classObj);
+            await context.SaveChangesAsync();
+
+            context.Enrollments.Add(new Enrollment { ClassId = classObj.Id, StudentId = studentLogin.userId, Status = "Enrolled", EnrolledAt = DateTime.UtcNow });
+            await context.SaveChangesAsync();
+            
+            templateId = template.Id;
+        }
+
+        var res = await client.PostAsJsonAsync($"{BaseUrl}/award", new
+        {
+            StudentId = studentLogin.userId,
+            MasterBadgeTemplateId = templateId,
+            Comments = "Excellent job!"
+        });
+
+        res.EnsureSuccessStatusCode();
+    }
 }
