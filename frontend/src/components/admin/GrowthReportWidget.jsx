@@ -58,3 +58,4 @@ export default function GrowthReportWidget() {
                     {loading ? 'Loading...' : 'Generate Report'}
                 </button>
             </div>
+            {error && <div className="text-red-500 mb-4">{error}</div>}
