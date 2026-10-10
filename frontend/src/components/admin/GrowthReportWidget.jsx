@@ -21,8 +21,8 @@ export default function GrowthReportWidget() {
         setError('');
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(${import.meta.env.VITE_API_URL}/api/users/growth-report?startDate=&endDate=, {
-                headers: { Authorization: \Bearer \\ }
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/growth-report?startDate=${startDate}&endDate=${endDate}`, {
+                headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {
                 const data = await res.json();

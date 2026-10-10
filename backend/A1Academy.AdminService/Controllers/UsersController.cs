@@ -351,7 +351,6 @@ namespace A1Academy.AdminService.Controllers
     </table>
 </body>
 </html>";
-            return html;
         }
 
         [HttpGet("growth-report")]
