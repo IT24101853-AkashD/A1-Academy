@@ -294,7 +294,6 @@ namespace A1Academy.Shared.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("Comments")
-                        .IsRequired()
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
 
