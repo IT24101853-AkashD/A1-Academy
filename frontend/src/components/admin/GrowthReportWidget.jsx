@@ -36,3 +36,6 @@ export default function GrowthReportWidget() {
             setLoading(false);
         }
     };
+
+    return (
+        <div className="glass-card rounded-3xl p-8 mb-12">
