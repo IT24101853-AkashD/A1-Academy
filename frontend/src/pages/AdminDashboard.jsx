@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import GrowthReportWidget from '../components/admin/GrowthReportWidget';
 
 export default function AdminDashboard() {
     const role = localStorage.getItem('role');
@@ -131,6 +132,8 @@ export default function AdminDashboard() {
                             <p className="text-3xl font-extrabold text-slate-900 dark:text-white">45</p>
                         </div>
                     </div>
+
+                    <GrowthReportWidget />
 
                     {/* Quick Actions & Tasks */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

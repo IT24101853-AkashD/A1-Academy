@@ -352,6 +352,49 @@ namespace A1Academy.AdminService.Controllers
 </body>
 </html>";
         }
+
+        [HttpGet("growth-report")]
+        public async Task<IActionResult> GetGrowthReport([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+        {
+            // Normalize dates to ensure full day coverage if time is not provided
+            var start = startDate.Date;
+            var end = endDate.Date.AddDays(1).AddTicks(-1);
+
+            // Use SQL aggregation via EF Core GroupBy to count registrations by role
+            var roleCounts = await _context.Users
+                .Where(u => u.CreatedAt >= start && u.CreatedAt <= end)
+                .GroupBy(u => u.Role)
+                .Select(g => new
+                {
+                    Role = g.Key,
+                    Count = g.Count()
+                })
+                .ToListAsync();
+
+            var studentCount = roleCounts.FirstOrDefault(r => r.Role == "Student")?.Count ?? 0;
+            var teacherCount = roleCounts.FirstOrDefault(r => r.Role == "Teacher")?.Count ?? 0;
+
+            // Optional: Also group by date for a chart (timeline of growth)
+            var dailyRegistrations = await _context.Users
+                .Where(u => u.CreatedAt >= start && u.CreatedAt <= end)
+                .GroupBy(u => u.CreatedAt.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    Count = g.Count()
+                })
+                .OrderBy(g => g.Date)
+                .ToListAsync();
+
+            return Ok(new
+            {
+                startDate = start,
+                endDate = end,
+                totalStudents = studentCount,
+                totalTeachers = teacherCount,
+                timeline = dailyRegistrations
+            });
+        }
     }
 }
 
