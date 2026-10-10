@@ -30,3 +30,9 @@ export default function GrowthReportWidget() {
             } else {
                 setError('Failed to fetch report');
             }
+        } catch (err) {
+            setError('Network error');
+        } finally {
+            setLoading(false);
+        }
+    };
