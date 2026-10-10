@@ -84,15 +84,24 @@ public class BadgesEndpointTests : IClassFixture<ApiWebApplicationFactory>
             var template = new MasterBadgeTemplate { Name = "Super Star", Criteria = "Amazing work" };
             context.MasterBadgeTemplates.Add(template);
             
-            var course = new Course { Title = "Test Course", Description = "Testing" };
-            context.Courses.Add(course);
+            var category = new Category { Name = "Test Category" };
+            context.Categories.Add(category);
             await context.SaveChangesAsync();
 
-            var classObj = new Class { CourseId = course.Id, TeacherId = teacherLogin.userId, StartDate = DateTime.UtcNow, EndDate = DateTime.UtcNow.AddMonths(1) };
+            var classObj = new Class 
+            { 
+                Name = "Test Class",
+                CategoryId = category.Id, 
+                TeacherId = teacherLogin.userId, 
+                ScheduledAt = DateTime.UtcNow.AddMonths(1),
+                Capacity = 10,
+                Status = ClassStatus.Active
+            };
+            classObj.BumpConcurrencyStamp();
             context.Classes.Add(classObj);
             await context.SaveChangesAsync();
 
-            context.Enrollments.Add(new Enrollment { ClassId = classObj.Id, StudentId = studentLogin.userId, Status = "Enrolled", EnrolledAt = DateTime.UtcNow });
+            context.Enrollments.Add(new Enrollment { ClassId = classObj.Id, StudentId = studentLogin.userId, EnrolledAt = DateTime.UtcNow });
             await context.SaveChangesAsync();
             
             templateId = template.Id;
