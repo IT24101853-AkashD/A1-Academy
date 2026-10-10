@@ -45,3 +45,16 @@ export default function GrowthReportWidget() {
                     Platform Growth Report
                 </h2>
             </div>
+            <div className="flex flex-wrap gap-4 items-end mb-8 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl">
+                <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Start Date</label>
+                    <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800" />
+                </div>
+                <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">End Date</label>
+                    <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800" />
+                </div>
+                <button onClick={fetchReport} disabled={loading} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50">
+                    {loading ? 'Loading...' : 'Generate Report'}
+                </button>
+            </div>
