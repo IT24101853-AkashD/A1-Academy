@@ -14,3 +14,8 @@ export default function GrowthReportWidget() {
         setStartDate(start.toISOString().split('T')[0]);
         setEndDate(end.toISOString().split('T')[0]);
     }, []);
+
+    const fetchReport = async () => {
+        if (!startDate || !endDate) return;
+        setLoading(true);
+        setError('');
