@@ -19,3 +19,8 @@ export default function GrowthReportWidget() {
         if (!startDate || !endDate) return;
         setLoading(true);
         setError('');
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(${import.meta.env.VITE_API_URL}/api/users/growth-report?startDate=&endDate=, {
+                headers: { Authorization: \Bearer \\ }
+            });
