@@ -39,3 +39,9 @@ export default function GrowthReportWidget() {
 
     return (
         <div className="glass-card rounded-3xl p-8 mb-12">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span className="material-symbols-outlined text-indigo-500">monitoring</span>
+                    Platform Growth Report
+                </h2>
+            </div>
