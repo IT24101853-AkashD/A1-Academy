@@ -70,3 +70,14 @@ export default function GrowthReportWidget() {
                             <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{report.totalStudents}</p>
                         </div>
                     </div>
+                    <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-6 rounded-2xl flex items-center gap-4 shadow-sm">
+                        <div className="w-12 h-12 rounded-xl bg-violet-50 dark:bg-violet-900/30 text-violet-600 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-2xl">school</span>
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">New Teachers</p>
+                            <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{report.totalTeachers}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
