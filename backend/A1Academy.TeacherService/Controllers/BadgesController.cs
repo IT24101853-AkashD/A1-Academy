@@ -41,9 +41,8 @@ namespace A1Academy.TeacherService.Controllers
                 {
                     t.Id,
                     t.Name,
-                    t.Description,
-                    t.IconName,
-                    t.ColorHex
+                    t.Criteria,
+                    t.IconName
                 })
                 .ToListAsync();
 

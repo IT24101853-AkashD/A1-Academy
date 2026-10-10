@@ -33,7 +33,6 @@ namespace A1Academy.StudentService.Controllers
                     StudentName = sb.Student.FirstName + " " + (sb.Student.LastName ?? ""),
                     BadgeName = sb.MasterBadgeTemplate.Name,
                     BadgeIcon = sb.MasterBadgeTemplate.IconName,
-                    BadgeColor = sb.MasterBadgeTemplate.ColorHex,
                     TeacherName = sb.AwardedByTeacher != null ? (sb.AwardedByTeacher.FirstName + " " + sb.AwardedByTeacher.LastName) : "System",
                     sb.Comments,
                     sb.AwardedAt
