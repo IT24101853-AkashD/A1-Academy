@@ -59,3 +59,14 @@ export default function GrowthReportWidget() {
                 </button>
             </div>
             {error && <div className="text-red-500 mb-4">{error}</div>}
+            {report && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-6 rounded-2xl flex items-center gap-4 shadow-sm">
+                        <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-2xl">person</span>
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">New Students</p>
+                            <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{report.totalStudents}</p>
+                        </div>
+                    </div>
