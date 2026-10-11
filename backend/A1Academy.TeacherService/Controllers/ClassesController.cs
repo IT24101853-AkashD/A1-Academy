@@ -331,5 +331,147 @@ namespace A1Academy.TeacherService.Controllers
 
             return await GetRoster(id);
         }
+
+        public class GradeBucketDto
+        {
+            public string Label { get; set; } = string.Empty;
+            public string GradeRange { get; set; } = string.Empty;
+            public int Count { get; set; }
+            public double Percentage { get; set; }
+        }
+
+        public class AssignmentGradeStatDto
+        {
+            public int AssignmentId { get; set; }
+            public string Title { get; set; } = string.Empty;
+            public DateTime DueAt { get; set; }
+            public int SubmissionsCount { get; set; }
+            public int GradedCount { get; set; }
+            public double? AverageGrade { get; set; }
+            public int? MinGrade { get; set; }
+            public int? MaxGrade { get; set; }
+        }
+
+        public class GradeDistributionReportDto
+        {
+            public int ClassId { get; set; }
+            public string ClassName { get; set; } = string.Empty;
+            public string CategoryName { get; set; } = string.Empty;
+            public int EnrolledCount { get; set; }
+            public string Status { get; set; } = string.Empty;
+            public DateTime ScheduledAt { get; set; }
+            public int TotalAssignments { get; set; }
+            public int TotalSubmissions { get; set; }
+            public int GradedSubmissionsCount { get; set; }
+            public double AverageGrade { get; set; }
+            public List<GradeBucketDto> Distribution { get; set; } = new();
+            public List<AssignmentGradeStatDto> Assignments { get; set; } = new();
+        }
+
+        private static GradeBucketDto CreateBucket(string label, string range, int count, int totalGraded)
+        {
+            var percentage = totalGraded > 0 ? Math.Round((count / (double)totalGraded) * 100, 1) : 0.0;
+            return new GradeBucketDto
+            {
+                Label = label,
+                GradeRange = range,
+                Count = count,
+                Percentage = percentage
+            };
+        }
+
+        [HttpGet("{id}/grade-distribution")]
+        public async Task<ActionResult<GradeDistributionReportDto>> GetGradeDistributionReport(int id)
+        {
+            var teacherId = CurrentTeacherId();
+            if (teacherId == null)
+            {
+                return Unauthorized();
+            }
+
+            var targetClass = await _context.Classes
+                .Include(c => c.Category)
+                .SingleOrDefaultAsync(c => c.Id == id && c.TeacherId == teacherId);
+
+            if (targetClass == null)
+            {
+                return NotFound(new { message = "Class not found." });
+            }
+
+            if (targetClass.Status == ClassStatus.Cancelled)
+            {
+                return BadRequest(new { message = "Grade distribution reports are only available for active or completed classes." });
+            }
+
+            var assignments = await _context.Assignments
+                .Where(a => a.ClassId == id)
+                .OrderBy(a => a.DueAt)
+                .ToListAsync();
+
+            var assignmentIds = assignments.Select(a => a.Id).ToList();
+
+            var submissions = await _context.AssignmentSubmissions
+                .Where(s => assignmentIds.Contains(s.AssignmentId))
+                .ToListAsync();
+
+            var gradedSubmissions = submissions.Where(s => s.Grade.HasValue).ToList();
+
+            double averageGrade = 0.0;
+            if (gradedSubmissions.Count > 0)
+            {
+                averageGrade = Math.Round(gradedSubmissions.Average(s => s.Grade!.Value), 1);
+            }
+
+            var buckets = new List<GradeBucketDto>
+            {
+                CreateBucket("A (90-100%)", "90-100", gradedSubmissions.Count(s => s.Grade!.Value >= 90), gradedSubmissions.Count),
+                CreateBucket("B (80-89%)", "80-89", gradedSubmissions.Count(s => s.Grade!.Value >= 80 && s.Grade!.Value < 90), gradedSubmissions.Count),
+                CreateBucket("C (70-79%)", "70-79", gradedSubmissions.Count(s => s.Grade!.Value >= 70 && s.Grade!.Value < 80), gradedSubmissions.Count),
+                CreateBucket("D (60-69%)", "60-69", gradedSubmissions.Count(s => s.Grade!.Value >= 60 && s.Grade!.Value < 70), gradedSubmissions.Count),
+                CreateBucket("F (0-59%)", "0-59", gradedSubmissions.Count(s => s.Grade!.Value < 60), gradedSubmissions.Count)
+            };
+
+            var assignmentStats = assignments.Select(a =>
+            {
+                var subsForAssignment = submissions.Where(s => s.AssignmentId == a.Id).ToList();
+                var gradedForAssignment = subsForAssignment.Where(s => s.Grade.HasValue).ToList();
+
+                double? avg = gradedForAssignment.Count > 0
+                    ? Math.Round(gradedForAssignment.Average(s => s.Grade!.Value), 1)
+                    : null;
+                int? min = gradedForAssignment.Count > 0 ? gradedForAssignment.Min(s => s.Grade!.Value) : null;
+                int? max = gradedForAssignment.Count > 0 ? gradedForAssignment.Max(s => s.Grade!.Value) : null;
+
+                return new AssignmentGradeStatDto
+                {
+                    AssignmentId = a.Id,
+                    Title = a.Title,
+                    DueAt = a.DueAt,
+                    SubmissionsCount = subsForAssignment.Count,
+                    GradedCount = gradedForAssignment.Count,
+                    AverageGrade = avg,
+                    MinGrade = min,
+                    MaxGrade = max
+                };
+            }).ToList();
+
+            var report = new GradeDistributionReportDto
+            {
+                ClassId = targetClass.Id,
+                ClassName = targetClass.Name,
+                CategoryName = targetClass.Category?.Name ?? string.Empty,
+                EnrolledCount = targetClass.EnrolledCount,
+                Status = targetClass.Status,
+                ScheduledAt = targetClass.ScheduledAt,
+                TotalAssignments = assignments.Count,
+                TotalSubmissions = submissions.Count,
+                GradedSubmissionsCount = gradedSubmissions.Count,
+                AverageGrade = averageGrade,
+                Distribution = buckets,
+                Assignments = assignmentStats
+            };
+
+            return Ok(report);
+        }
     }
 }
