@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
+import StudentProgressCard from '../components/student/StudentProgressCard';
 import { clearSession } from '../utils/session';
 
 // Student's "My Classes" dashboard (AA-46/AA-13) - every class the Student is enrolled in,
@@ -65,6 +66,8 @@ export default function StudentMyClassesPage() {
 
                 {viewState === 'success' && (
                     <>
+                        <StudentProgressCard />
+
                         <div className="mb-8">
                             <div className="flex items-center gap-2 text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1 font-jakarta">
                                 <span className="material-symbols-outlined text-[16px]">school</span>
