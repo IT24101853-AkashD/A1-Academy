@@ -108,12 +108,21 @@ export default function TeacherClassesPage() {
                                 </div>
                                 <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white font-jakarta">Classes You're Teaching</h1>
                             </div>
-                            <Link
-                                to="/teacher/classes/new"
-                                className="px-6 py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm shadow-sm transition-all self-start"
-                            >
-                                + Schedule a Class
-                            </Link>
+                            <div className="flex flex-wrap gap-3 self-start">
+                                <Link
+                                    to="/teacher/reports"
+                                    className="px-5 py-3 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm shadow-sm transition-all flex items-center gap-2"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">analytics</span>
+                                    Grade Reports
+                                </Link>
+                                <Link
+                                    to="/teacher/classes/new"
+                                    className="px-6 py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm shadow-sm transition-all"
+                                >
+                                    + Schedule a Class
+                                </Link>
+                            </div>
                         </div>
 
                         {classes.length === 0 ? (
@@ -155,6 +164,15 @@ export default function TeacherClassesPage() {
                                                 <Link to={`/teacher/classes/${cls.id}`} className="flex-1 py-2 rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-200 text-xs font-semibold text-center transition-all">
                                                     Manage
                                                 </Link>
+                                                {!isCancelled && (
+                                                    <Link
+                                                        to={`/teacher/reports?classId=${cls.id}`}
+                                                        className="py-2 px-3 rounded-full border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs font-semibold text-center transition-all flex items-center justify-center"
+                                                        title="Grade Distribution Report"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[16px]">analytics</span>
+                                                    </Link>
+                                                )}
                                                 {!isCancelled && (
                                                     confirmingId === cls.id ? (
                                                         <button
