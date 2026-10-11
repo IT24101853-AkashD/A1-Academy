@@ -240,5 +240,133 @@ namespace A1Academy.StudentService.Controllers
             Status = c.Status,
             IsEnrolled = isEnrolled,
         };
+
+        public class StudentProgressDto
+        {
+            public int StudentId { get; set; }
+            public string StudentName { get; set; } = string.Empty;
+            public int EnrolledClassesCount { get; set; }
+            public int TotalAttendanceRecords { get; set; }
+            public int PresentAttendanceRecords { get; set; }
+            public double OverallAttendancePercentage { get; set; }
+            public int TotalSubmissionsCount { get; set; }
+            public int GradedSubmissionsCount { get; set; }
+            public double OverallAverageGrade { get; set; }
+            public List<ClassProgressItemDto> ClassDetails { get; set; } = new();
+        }
+
+        public class ClassProgressItemDto
+        {
+            public int ClassId { get; set; }
+            public string ClassName { get; set; } = string.Empty;
+            public string CategoryName { get; set; } = string.Empty;
+            public string TeacherName { get; set; } = string.Empty;
+            public int TotalAttendance { get; set; }
+            public int PresentAttendance { get; set; }
+            public double? AttendancePercentage { get; set; }
+            public int GradedSubmissions { get; set; }
+            public double? AverageGrade { get; set; }
+        }
+
+        // Scenario 1 & 2 - Personalised Student Progress Card: computes overall attendance
+        // percentage and average grade across all enrolled classes strictly for the authenticated
+        // student from their JWT claim, guaranteeing zero cross-student data leakage.
+        [HttpGet("my-progress")]
+        public async Task<ActionResult<StudentProgressDto>> GetMyProgress()
+        {
+            var studentId = CurrentStudentId();
+            if (studentId == null)
+            {
+                return Unauthorized();
+            }
+
+            var student = await _context.Users.FindAsync(studentId.Value);
+            if (student == null)
+            {
+                return NotFound(new { message = "Student not found." });
+            }
+
+            // 1. Enrolled classes
+            var enrollments = await _context.Enrollments
+                .Where(e => e.StudentId == studentId.Value)
+                .Include(e => e.Class!).ThenInclude(c => c.Category)
+                .Include(e => e.Class!).ThenInclude(c => c.Teacher)
+                .ToListAsync();
+
+            var enrolledClassIds = enrollments.Select(e => e.ClassId).ToList();
+
+            // 2. Attendance records for this student
+            var attendances = await _context.Attendances
+                .Where(a => a.StudentId == studentId.Value)
+                .ToListAsync();
+
+            var totalAttendanceRecords = attendances.Count;
+            var presentAttendanceRecords = attendances.Count(a => a.Status == AttendanceStatus.Present);
+            double overallAttendancePercentage = totalAttendanceRecords > 0
+                ? Math.Round((presentAttendanceRecords / (double)totalAttendanceRecords) * 100, 1)
+                : 0.0;
+
+            // 3. Assignment submissions for enrolled classes
+            var assignments = await _context.Assignments
+                .Where(a => enrolledClassIds.Contains(a.ClassId))
+                .ToListAsync();
+
+            var assignmentIds = assignments.Select(a => a.Id).ToList();
+
+            var submissions = await _context.AssignmentSubmissions
+                .Where(s => s.StudentId == studentId.Value && assignmentIds.Contains(s.AssignmentId))
+                .ToListAsync();
+
+            var gradedSubmissions = submissions.Where(s => s.Grade.HasValue).ToList();
+            double overallAverageGrade = gradedSubmissions.Count > 0
+                ? Math.Round(gradedSubmissions.Average(s => s.Grade!.Value), 1)
+                : 0.0;
+
+            // 4. Per-class breakdown
+            var classDetails = enrollments.Select(e =>
+            {
+                var c = e.Class!;
+                var classAttendances = attendances.Where(a => a.ClassId == c.Id).ToList();
+                var classPresent = classAttendances.Count(a => a.Status == AttendanceStatus.Present);
+                double? classAttPct = classAttendances.Count > 0
+                    ? Math.Round((classPresent / (double)classAttendances.Count) * 100, 1)
+                    : null;
+
+                var classAsgIds = assignments.Where(a => a.ClassId == c.Id).Select(a => a.Id).ToList();
+                var classSubs = submissions.Where(s => classAsgIds.Contains(s.AssignmentId) && s.Grade.HasValue).ToList();
+                double? classAvgGrade = classSubs.Count > 0
+                    ? Math.Round(classSubs.Average(s => s.Grade!.Value), 1)
+                    : null;
+
+                return new ClassProgressItemDto
+                {
+                    ClassId = c.Id,
+                    ClassName = c.Name,
+                    CategoryName = c.Category?.Name ?? string.Empty,
+                    TeacherName = c.Teacher != null ? $"{c.Teacher.FirstName} {c.Teacher.LastName}".Trim() : string.Empty,
+                    TotalAttendance = classAttendances.Count,
+                    PresentAttendance = classPresent,
+                    AttendancePercentage = classAttPct,
+                    GradedSubmissions = classSubs.Count,
+                    AverageGrade = classAvgGrade
+                };
+            }).ToList();
+
+            var result = new StudentProgressDto
+            {
+                StudentId = student.Id,
+                StudentName = $"{student.FirstName} {student.LastName}".Trim(),
+                EnrolledClassesCount = enrollments.Count,
+                TotalAttendanceRecords = totalAttendanceRecords,
+                PresentAttendanceRecords = presentAttendanceRecords,
+                OverallAttendancePercentage = overallAttendancePercentage,
+                TotalSubmissionsCount = submissions.Count,
+                GradedSubmissionsCount = gradedSubmissions.Count,
+                OverallAverageGrade = overallAverageGrade,
+                ClassDetails = classDetails
+            };
+
+            return Ok(result);
+        }
     }
 }
