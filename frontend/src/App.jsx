@@ -16,6 +16,7 @@ import ClassesPage from './pages/ClassesPage';
 import ScheduleClassPage from './pages/ScheduleClassPage';
 import TeacherClassesPage from './pages/TeacherClassesPage';
 import TeacherClassDetailPage from './pages/TeacherClassDetailPage';
+import TeacherGradeReportPage from './pages/TeacherGradeReportPage';
 import StudentMyClassesPage from './pages/StudentMyClassesPage';
 import StudentClassDetailPage from './pages/StudentClassDetailPage';
 import PublicRecognitionBoard from './pages/PublicRecognitionBoard';
@@ -58,6 +59,7 @@ function App() {
         <Route path="/teacher/classes" element={<TeacherClassesPage />} />
         <Route path="/teacher/classes/new" element={<ScheduleClassPage />} />
         <Route path="/teacher/classes/:id" element={<TeacherClassDetailPage />} />
+        <Route path="/teacher/reports" element={<TeacherGradeReportPage />} />
           </Routes>
         </div>
         <Footer />

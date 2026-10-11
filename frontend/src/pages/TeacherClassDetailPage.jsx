@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { clearSession } from '../utils/session';
 import AwardBadgeModal from '../components/modals/AwardBadgeModal';
@@ -269,6 +269,19 @@ export default function TeacherClassDetailPage() {
     return (
         <Layout>
             <section className="py-24 px-6 max-w-5xl mx-auto w-full min-h-[60vh] space-y-10">
+                <div className="flex items-center justify-between">
+                    <Link to="/teacher/classes" className="text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[16px]">arrow_back</span> Back to Classes
+                    </Link>
+                    <Link
+                        to={`/teacher/reports?classId=${id}`}
+                        className="px-4 py-2 rounded-full border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs font-semibold transition-all flex items-center gap-1.5"
+                    >
+                        <span className="material-symbols-outlined text-[16px]">analytics</span>
+                        Grade Distribution Report
+                    </Link>
+                </div>
+
                 {/* Study Materials */}
                 <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 shadow-level-1 p-8">
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white font-jakarta mb-4">Study Materials</h2>
