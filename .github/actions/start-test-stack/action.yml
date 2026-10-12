@@ -8,9 +8,24 @@ description: Build and start the docker-compose test stack and wait for it to be
 runs:
   using: composite
   steps:
+    # "up" fails outright if one container dies while starting (Kafka occasionally loses the
+    # race with ZooKeeper on a cold runner). Running it again only restarts what is not up,
+    # so a second and third attempt are cheap; the logs of a failed attempt are printed first.
     - name: Build and start the stack
       shell: bash
-      run: docker compose -p a1test -f docker-compose.yml -f docker-compose.test.yml up -d --build
+      run: |
+        compose=(docker compose -p a1test -f docker-compose.yml -f docker-compose.test.yml)
+        for attempt in 1 2 3; do
+          if "${compose[@]}" up -d --build; then
+            exit 0
+          fi
+          echo "::warning::Test stack did not start on attempt $attempt"
+          "${compose[@]}" ps -a
+          "${compose[@]}" logs --tail 40 kafka zookeeper || true
+          sleep 10
+        done
+        echo "::error::Test stack did not start after 3 attempts"
+        exit 1
 
     - name: Wait for every service
       shell: bash
