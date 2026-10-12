@@ -41,9 +41,8 @@ namespace A1Academy.Tests.E2E
     /// endpoint instead of an inbox. That endpoint 404s outside those environments.
     ///
     /// Scope note: Teacher signups start unapproved and cannot log in until an admin approves
-    /// them, so only the Student path is covered here. The app also has no dashboard route yet
-    /// (see App.jsx) - success is the existing post-login "success-login-modal" plus the
-    /// correct role recorded in localStorage.
+    /// them, so only the Student path is covered here. Success is the token and the correct
+    /// role recorded in localStorage, plus the navbar offering Logout.
     /// </summary>
     [Trait("Category", "E2E")]
     public class AuthenticationFlowE2ETests : IDisposable
@@ -166,9 +165,11 @@ namespace A1Academy.Tests.E2E
             ClickWithinModal(wait, "login-modal", "button", "Log In");
 
             // --- Success criteria: authenticated session reached with the correct role ---
-            WaitForModalOpen(wait, "success-login-modal");
+            // Login closes the modal with no confirmation popup; the session shows up as a stored
+            // token and the navbar switching from Login to Logout.
             wait.Until(d => !string.IsNullOrEmpty(GetLocalStorageItem(d, "token")));
             Assert.Equal("Student", GetLocalStorageItem(_driver, "role"));
+            wait.Until(d => d.FindElements(By.XPath("//nav//button[normalize-space(.)='Logout']")).Any(b => b.Displayed));
         }
 
         private async Task<string?> FetchOtpAsync(string email)

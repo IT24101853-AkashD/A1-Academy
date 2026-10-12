@@ -6,6 +6,25 @@ registered Student account — login doesn't mutate anything, so one seeded acco
 across every run instead of having every JMeter thread register its own (that would measure
 signup/DB-write cost, not login/auth performance).
 
+## Quick run
+
+`run-load-test.sh` does every step below in one go against the Docker test stack: it finds or
+downloads JMeter, seeds the account, runs every `.jmx` plan in this folder, builds the HTML
+dashboards under `results/<profile>/` and fails if a plan breaks its error-rate or 95th
+percentile limit.
+
+```bash
+# from the repo root
+docker compose -p a1test -f docker-compose.yml -f docker-compose.test.yml up -d --build
+bash scripts/wait-for-stack.sh
+bash performance/jmeter/run-load-test.sh baseline   # smoke | baseline | stress | spike
+```
+
+A new plan dropped into this folder is picked up automatically, as long as it reads `host`,
+`port`, `users`, `rampUp` and `loops` from `-J` properties the way `login-load-test.jmx` does.
+
+The manual steps follow.
+
 ## Prerequisites
 
 - Apache JMeter 5.6+ ([download](https://jmeter.apache.org/download_jmeter.cgi))
@@ -73,9 +92,10 @@ pass/fail summary from the locally executed profiles.
 
 - This exercises the `/api/auth/login` path only (password verification + JWT issuance). It does
   not simulate the full UI flow — that's what the [Selenium E2E suite](../../backend/A1Academy.Tests/E2E/AuthenticationFlowE2ETests.cs) covers.
-- Not wired into CI — load tests share a runner's resources unpredictably and would produce
-  noisy, unreliable pass/fail results there. Run it locally (or against a real staging
-  environment) when performance needs checking.
+- In CI (the Test Pipeline workflow's "Load tests" job) only the light `smoke` profile runs by
+  default: a shared runner's resources are unpredictable, so it checks that the plans still
+  work and stay inside their limits, not how the system performs. Pick a heavier profile when
+  starting the workflow by hand, or run one locally, when performance itself needs checking.
 - Live execution was verified locally with Apache JMeter 5.6.3 and the running A1 Academy
   backend/database stack; repeat runs require the same prerequisites.
 - `BCrypt.Verify` (password hashing) is intentionally CPU-heavy and synchronous, so response

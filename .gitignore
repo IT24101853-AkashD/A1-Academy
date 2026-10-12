@@ -20,3 +20,10 @@ performance/jmeter/*.jtl
 performance/jmeter/*.log
 performance/jmeter/report/
 performance/jmeter/*-report/
+
+## Test run artifacts (generated per run by the test pipeline, not committed)
+frontend/coverage/
+frontend/reports/
+test-results/
+performance/jmeter/results/
+.tools/

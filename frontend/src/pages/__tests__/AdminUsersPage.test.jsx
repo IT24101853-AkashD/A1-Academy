@@ -9,6 +9,9 @@ const renderPage = () => render(
   </MemoryRouter>
 );
 
+// Each user is a card, not a table row; the card is the nearest ancestor carrying this class.
+const USER_CARD = '.group';
+
 const mockUsers = [
   { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Student', status: 'Active' },
   { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'Teacher', status: 'Active' },
@@ -62,7 +65,7 @@ describe('AdminUsersPage', () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it('fetches and renders the directory table for an Admin', async () => {
+  it('fetches and renders the directory for an Admin', async () => {
     localStorage.setItem('role', 'Admin');
     localStorage.setItem('token', 'admin-token');
     global.fetch = vi.fn(() =>
@@ -78,8 +81,10 @@ describe('AdminUsersPage', () => {
     expect(await screen.findByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('jane@example.com')).toBeInTheDocument();
     expect(screen.getByText('Admin One')).toBeInTheDocument();
-    // Scoped to the table: the role/status filter dropdowns also render an "Active" option.
-    expect(within(screen.getByRole('table')).getAllByText('Active')).toHaveLength(3);
+    // Scoped to each card: the status filter also renders an "Active" button.
+    for (const user of mockUsers) {
+      expect(within(screen.getByText(user.name).closest(USER_CARD)).getByText('Active')).toBeInTheDocument();
+    }
 
     // Called with an Authorization header carrying the admin's token.
     const [url, options] = global.fetch.mock.calls[0];
@@ -134,7 +139,7 @@ describe('AdminUsersPage', () => {
     renderPage();
     await screen.findByText('Mid Session');
 
-    fireEvent.click(screen.getByRole('button', { name: /^deactivate$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /deactivate$/i }));
 
     expect(await screen.findByText(/session ended/i)).toBeInTheDocument();
     expect(localStorage.getItem('token')).toBeNull();
@@ -215,7 +220,7 @@ describe('AdminUsersPage', () => {
     renderPage();
     await screen.findByText('John Doe');
 
-    fireEvent.click(screen.getByRole('button', { name: /pending teacher applications/i }));
+    fireEvent.click(screen.getByRole('button', { name: /pending teachers/i }));
 
     await waitFor(() => expect(screen.getByText('Pending Teacher')).toBeInTheDocument());
     expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
@@ -227,7 +232,7 @@ describe('AdminUsersPage', () => {
     expect(filteredCallUrl).toContain('page=1');
   });
 
-  it('selecting a role/status from the dropdowns refetches with those query params', async () => {
+  it('selecting a role/status filter refetches with those query params', async () => {
     localStorage.setItem('role', 'Admin');
     localStorage.setItem('token', 'admin-token');
     global.fetch = vi.fn(() =>
@@ -237,10 +242,10 @@ describe('AdminUsersPage', () => {
     renderPage();
     await screen.findByText('John Doe');
 
-    fireEvent.change(screen.getByLabelText(/filter by role/i), { target: { value: 'Teacher' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Teachers' }));
     await waitFor(() => expect(global.fetch.mock.calls[1][0]).toContain('role=Teacher'));
 
-    fireEvent.change(screen.getByLabelText(/filter by status/i), { target: { value: 'Active' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Active' }));
     await waitFor(() => {
       const lastCallUrl = global.fetch.mock.calls.at(-1)[0];
       expect(lastCallUrl).toContain('role=Teacher');
@@ -258,17 +263,17 @@ describe('AdminUsersPage', () => {
     renderPage();
     await screen.findByText('John Doe');
 
-    fireEvent.click(screen.getByRole('button', { name: /pending teacher applications/i }));
-    await waitFor(() => expect(screen.getByRole('button', { name: /clear filters/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /pending teachers/i }));
+    await waitFor(() => expect(screen.getByTitle(/clear filters/i)).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: /clear filters/i }));
+    fireEvent.click(screen.getByTitle(/clear filters/i));
 
     await waitFor(() => {
       const lastCallUrl = global.fetch.mock.calls.at(-1)[0];
       expect(lastCallUrl).not.toContain('role=');
       expect(lastCallUrl).not.toContain('status=');
     });
-    expect(screen.queryByRole('button', { name: /clear filters/i })).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/clear filters/i)).not.toBeInTheDocument();
   });
 
   it('shows an Approve button only for Pending rows', async () => {
@@ -283,7 +288,7 @@ describe('AdminUsersPage', () => {
     await screen.findByText('Pending Teacher');
 
     // Only one row is Pending, so there should be exactly one Approve button.
-    expect(screen.getAllByRole('button', { name: /^approve$/i })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /approve$/i })).toHaveLength(1);
   });
 
   it('clicking Approve calls the approve endpoint and flips the row to Active', async () => {
@@ -302,9 +307,9 @@ describe('AdminUsersPage', () => {
     renderPage();
     await screen.findByText('Pending Teacher');
 
-    fireEvent.click(screen.getByRole('button', { name: /^approve$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /approve$/i }));
 
-    await waitFor(() => expect(screen.queryByRole('button', { name: /^approve$/i })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('button', { name: /approve$/i })).not.toBeInTheDocument());
 
     // Hit the right endpoint with PATCH and the admin's auth header.
     const patchCall = global.fetch.mock.calls.find(([, options]) => options?.method === 'PATCH');
@@ -312,7 +317,7 @@ describe('AdminUsersPage', () => {
     expect(patchCall[1].headers.Authorization).toBe('Bearer admin-token');
 
     // Row now shows Active instead of Pending, still no Approve button on it.
-    const row = screen.getByText('Pending Teacher').closest('tr');
+    const row = screen.getByText('Pending Teacher').closest(USER_CARD);
     expect(within(row).getByText('Active')).toBeInTheDocument();
   });
 
@@ -331,11 +336,11 @@ describe('AdminUsersPage', () => {
     renderPage();
     await screen.findByText('Pending Teacher');
 
-    fireEvent.click(screen.getByRole('button', { name: /^approve$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /approve$/i }));
 
     expect(await screen.findByText(/could not approve/i)).toBeInTheDocument();
     // Still Pending, button back to normal so the admin can retry.
-    expect(screen.getByRole('button', { name: /^approve$/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /approve$/i })).not.toBeDisabled();
   });
 
   it('removes the row entirely when approving from the Pending-only filtered view', async () => {
@@ -360,10 +365,10 @@ describe('AdminUsersPage', () => {
     await screen.findByText('John Doe');
 
     // Switch to the Pending Teacher Applications view first.
-    fireEvent.click(screen.getByRole('button', { name: /pending teacher applications/i }));
+    fireEvent.click(screen.getByRole('button', { name: /pending teachers/i }));
     await screen.findByText('Pending Teacher');
 
-    fireEvent.click(screen.getByRole('button', { name: /^approve$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /approve$/i }));
 
     // Once approved it no longer belongs in a status=Pending view, so the row disappears
     // instead of just flipping its badge.
@@ -386,18 +391,18 @@ describe('AdminUsersPage', () => {
     renderPage();
     await screen.findByText('Pending Person');
 
-    expect(within(screen.getByText('Pending Person').closest('tr')).getByRole('button', { name: /^approve$/i })).toBeInTheDocument();
-    expect(within(screen.getByText('Pending Person').closest('tr')).getByRole('button', { name: /^reject$/i })).toBeInTheDocument();
+    expect(within(screen.getByText('Pending Person').closest(USER_CARD)).getByRole('button', { name: /approve$/i })).toBeInTheDocument();
+    expect(within(screen.getByText('Pending Person').closest(USER_CARD)).getByRole('button', { name: /^reject$/i })).toBeInTheDocument();
 
-    expect(within(screen.getByText('Active Person').closest('tr')).getByRole('button', { name: /^deactivate$/i })).toBeInTheDocument();
+    expect(within(screen.getByText('Active Person').closest(USER_CARD)).getByRole('button', { name: /deactivate$/i })).toBeInTheDocument();
 
-    expect(within(screen.getByText('Deactivated Person').closest('tr')).getByRole('button', { name: /^reactivate$/i })).toBeInTheDocument();
+    expect(within(screen.getByText('Deactivated Person').closest(USER_CARD)).getByRole('button', { name: /reactivate$/i })).toBeInTheDocument();
 
     // Rejected has no status-transition action of its own - Delete is the only thing left to do
     // with the row itself.
-    const rejectedRow = screen.getByText('Rejected Person').closest('tr');
-    expect(within(rejectedRow).queryByRole('button', { name: /^(approve|reject|deactivate|reactivate)$/i })).not.toBeInTheDocument();
-    expect(within(rejectedRow).getByRole('button', { name: /^delete$/i })).toBeInTheDocument();
+    const rejectedRow = screen.getByText('Rejected Person').closest(USER_CARD);
+    expect(within(rejectedRow).queryByRole('button', { name: /(approve|reject|deactivate|reactivate)$/i })).not.toBeInTheDocument();
+    expect(within(rejectedRow).getByRole('button', { name: /remove$/i })).toBeInTheDocument();
   });
 
   it('shows Delete on every Student/Teacher row regardless of status, but never on an Admin row', async () => {
@@ -410,11 +415,11 @@ describe('AdminUsersPage', () => {
     renderPage();
     await screen.findByText('Admin One');
 
-    expect(within(screen.getByText('John Doe').closest('tr')).getByRole('button', { name: /^delete$/i })).toBeInTheDocument();
-    expect(within(screen.getByText('Jane Smith').closest('tr')).getByRole('button', { name: /^delete$/i })).toBeInTheDocument();
+    expect(within(screen.getByText('John Doe').closest(USER_CARD)).getByRole('button', { name: /remove$/i })).toBeInTheDocument();
+    expect(within(screen.getByText('Jane Smith').closest(USER_CARD)).getByRole('button', { name: /remove$/i })).toBeInTheDocument();
     // mockUsers' Admin One is an Admin row - matches UsersController.DeleteUser's own
     // Student/Teacher-only rule, so no Delete button should ever appear here.
-    expect(within(screen.getByText('Admin One').closest('tr')).queryByRole('button', { name: /^delete$/i })).not.toBeInTheDocument();
+    expect(within(screen.getByText('Admin One').closest(USER_CARD)).queryByRole('button', { name: /remove$/i })).not.toBeInTheDocument();
   });
 
   it('clicking Delete asks for confirmation before sending the DELETE request', async () => {
@@ -427,10 +432,10 @@ describe('AdminUsersPage', () => {
     renderPage();
     await screen.findByText('John Doe');
 
-    const row = screen.getByText('John Doe').closest('tr');
-    fireEvent.click(within(row).getByRole('button', { name: /^delete$/i }));
+    const row = screen.getByText('John Doe').closest(USER_CARD);
+    fireEvent.click(within(row).getByRole('button', { name: /remove$/i }));
 
-    expect(within(row).getByText(/delete this account/i)).toBeInTheDocument();
+    expect(within(row).getByText(/delete account\?/i)).toBeInTheDocument();
     // No DELETE was ever sent - only the initial GET.
     expect(global.fetch.mock.calls.some(([, options]) => options?.method === 'DELETE')).toBe(false);
   });
@@ -445,12 +450,12 @@ describe('AdminUsersPage', () => {
     renderPage();
     await screen.findByText('John Doe');
 
-    const row = screen.getByText('John Doe').closest('tr');
-    fireEvent.click(within(row).getByRole('button', { name: /^delete$/i }));
+    const row = screen.getByText('John Doe').closest(USER_CARD);
+    fireEvent.click(within(row).getByRole('button', { name: /remove$/i }));
     fireEvent.click(within(row).getByRole('button', { name: /^cancel$/i }));
 
     expect(screen.getByText('John Doe')).toBeInTheDocument();
-    expect(within(row).getByRole('button', { name: /^delete$/i })).toBeInTheDocument();
+    expect(within(row).getByRole('button', { name: /remove$/i })).toBeInTheDocument();
     expect(global.fetch.mock.calls.some(([, options]) => options?.method === 'DELETE')).toBe(false);
   });
 
@@ -467,8 +472,8 @@ describe('AdminUsersPage', () => {
     renderPage();
     await screen.findByText('John Doe');
 
-    const row = screen.getByText('John Doe').closest('tr');
-    fireEvent.click(within(row).getByRole('button', { name: /^delete$/i }));
+    const row = screen.getByText('John Doe').closest(USER_CARD);
+    fireEvent.click(within(row).getByRole('button', { name: /remove$/i }));
     fireEvent.click(within(row).getByRole('button', { name: /^confirm$/i }));
 
     await waitFor(() => expect(screen.queryByText('John Doe')).not.toBeInTheDocument());
@@ -493,14 +498,14 @@ describe('AdminUsersPage', () => {
     renderPage();
     await screen.findByText('John Doe');
 
-    const row = screen.getByText('John Doe').closest('tr');
-    fireEvent.click(within(row).getByRole('button', { name: /^delete$/i }));
+    const row = screen.getByText('John Doe').closest(USER_CARD);
+    fireEvent.click(within(row).getByRole('button', { name: /remove$/i }));
     fireEvent.click(within(row).getByRole('button', { name: /^confirm$/i }));
 
     expect(await screen.findByText(/could not delete/i)).toBeInTheDocument();
     // Still there, confirmation closed back to the normal row so the admin can retry.
     expect(screen.getByText('John Doe')).toBeInTheDocument();
-    expect(within(row).getByRole('button', { name: /^delete$/i })).toBeInTheDocument();
+    expect(within(row).getByRole('button', { name: /remove$/i })).toBeInTheDocument();
   });
 
   it('shows Session Ended if the delete request comes back 401', async () => {
@@ -516,8 +521,8 @@ describe('AdminUsersPage', () => {
     renderPage();
     await screen.findByText('John Doe');
 
-    const row = screen.getByText('John Doe').closest('tr');
-    fireEvent.click(within(row).getByRole('button', { name: /^delete$/i }));
+    const row = screen.getByText('John Doe').closest(USER_CARD);
+    fireEvent.click(within(row).getByRole('button', { name: /remove$/i }));
     fireEvent.click(within(row).getByRole('button', { name: /^confirm$/i }));
 
     expect(await screen.findByText(/session ended/i)).toBeInTheDocument();
@@ -543,7 +548,7 @@ describe('AdminUsersPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /^reject$/i }));
 
     await waitFor(() => {
-      const row = screen.getByText('Turned Down').closest('tr');
+      const row = screen.getByText('Turned Down').closest(USER_CARD);
       expect(within(row).getByText('Rejected')).toBeInTheDocument();
     });
 
@@ -567,12 +572,12 @@ describe('AdminUsersPage', () => {
     renderPage();
     await screen.findByText('Switch Off');
 
-    fireEvent.click(screen.getByRole('button', { name: /^deactivate$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /deactivate$/i }));
 
     await waitFor(() => {
-      const row = screen.getByText('Switch Off').closest('tr');
+      const row = screen.getByText('Switch Off').closest(USER_CARD);
       expect(within(row).getByText('Deactivated')).toBeInTheDocument();
-      expect(within(row).getByRole('button', { name: /^reactivate$/i })).toBeInTheDocument();
+      expect(within(row).getByRole('button', { name: /reactivate$/i })).toBeInTheDocument();
     });
 
     const patchCall = global.fetch.mock.calls.find(([, options]) => options?.method === 'PATCH');
@@ -595,12 +600,12 @@ describe('AdminUsersPage', () => {
     renderPage();
     await screen.findByText('Switch Back On');
 
-    fireEvent.click(screen.getByRole('button', { name: /^reactivate$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /reactivate$/i }));
 
     await waitFor(() => {
-      const row = screen.getByText('Switch Back On').closest('tr');
+      const row = screen.getByText('Switch Back On').closest(USER_CARD);
       expect(within(row).getByText('Active')).toBeInTheDocument();
-      expect(within(row).getByRole('button', { name: /^deactivate$/i })).toBeInTheDocument();
+      expect(within(row).getByRole('button', { name: /deactivate$/i })).toBeInTheDocument();
     });
 
     const patchCall = global.fetch.mock.calls.find(([, options]) => options?.method === 'PATCH');
@@ -626,16 +631,16 @@ describe('AdminUsersPage', () => {
     await screen.findByText('Admin One');
 
     // mockUsers' Admin One is admin@example.com - the token's own email.
-    const ownRow = screen.getByText('Admin One').closest('tr');
-    expect(within(ownRow).queryByRole('button', { name: /^deactivate$/i })).not.toBeInTheDocument();
+    const ownRow = screen.getByText('Admin One').closest(USER_CARD);
+    expect(within(ownRow).queryByRole('button', { name: /deactivate$/i })).not.toBeInTheDocument();
     expect(within(ownRow).getByText('You')).toBeInTheDocument();
 
     // Everyone else's Active row still gets a real Deactivate button.
-    const otherRow = screen.getByText('John Doe').closest('tr');
-    expect(within(otherRow).getByRole('button', { name: /^deactivate$/i })).toBeInTheDocument();
+    const otherRow = screen.getByText('John Doe').closest(USER_CARD);
+    expect(within(otherRow).getByRole('button', { name: /deactivate$/i })).toBeInTheDocument();
   });
 
-  it('shows Deactivate on every row when the token cannot be decoded (not a real JWT)', async () => {
+  it('never shows Deactivate on an Admin row, even when the token cannot be decoded (not a real JWT)', async () => {
     localStorage.setItem('role', 'Admin');
     localStorage.setItem('token', 'admin-token');
     global.fetch = vi.fn(() =>
@@ -645,8 +650,12 @@ describe('AdminUsersPage', () => {
     renderPage();
     await screen.findByText('Admin One');
 
-    const adminRow = screen.getByText('Admin One').closest('tr');
-    expect(within(adminRow).getByRole('button', { name: /^deactivate$/i })).toBeInTheDocument();
+    // With no email to compare against, no row is recognised as the admin's own - but the
+    // page offers Deactivate on Student/Teacher rows only, so the Admin row still has none.
+    const adminRow = screen.getByText('Admin One').closest(USER_CARD);
+    expect(within(adminRow).queryByRole('button', { name: /deactivate$/i })).not.toBeInTheDocument();
+    expect(within(adminRow).queryByText('You')).not.toBeInTheDocument();
+    expect(within(screen.getByText('John Doe').closest(USER_CARD)).getByRole('button', { name: /deactivate$/i })).toBeInTheDocument();
   });
 
   it('shows a deactivate-specific error message if the deactivate request fails', async () => {
@@ -664,10 +673,10 @@ describe('AdminUsersPage', () => {
     renderPage();
     await screen.findByText('Wont Switch Off');
 
-    fireEvent.click(screen.getByRole('button', { name: /^deactivate$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /deactivate$/i }));
 
     expect(await screen.findByText(/could not deactivate/i)).toBeInTheDocument();
     // Still Active, button back to normal so the admin can retry.
-    expect(screen.getByRole('button', { name: /^deactivate$/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /deactivate$/i })).not.toBeDisabled();
   });
 });
