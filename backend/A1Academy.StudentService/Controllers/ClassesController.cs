@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using A1Academy.Shared.Data;
 using A1Academy.Shared.Data.Models;
+using A1Academy.Shared.Utilities;
 
 namespace A1Academy.StudentService.Controllers
 {
@@ -120,6 +121,80 @@ namespace A1Academy.StudentService.Controllers
                 .ToListAsync();
 
             return Ok(classes.Select(c => ToSummary(c, true)).ToList());
+        }
+
+        [HttpGet("export")]
+        public async Task<IActionResult> ExportMyClasses()
+        {
+            var studentId = CurrentStudentId();
+            if (studentId == null)
+            {
+                return Unauthorized();
+            }
+
+            var enrollments = await _context.Enrollments
+                .Where(e => e.StudentId == studentId.Value)
+                .Include(e => e.Class!).ThenInclude(c => c.Category)
+                .Include(e => e.Class!).ThenInclude(c => c.Teacher)
+                .OrderByDescending(e => e.Class!.ScheduledAt)
+                .ToListAsync();
+
+            var enrolledClassIds = enrollments.Select(e => e.ClassId).ToList();
+
+            var attendances = await _context.Attendances
+                .Where(a => a.StudentId == studentId.Value && enrolledClassIds.Contains(a.ClassId))
+                .ToListAsync();
+
+            var assignments = await _context.Assignments
+                .Where(a => enrolledClassIds.Contains(a.ClassId))
+                .ToListAsync();
+
+            var assignmentIds = assignments.Select(a => a.Id).ToList();
+
+            var submissions = await _context.AssignmentSubmissions
+                .Where(s => s.StudentId == studentId.Value && assignmentIds.Contains(s.AssignmentId))
+                .ToListAsync();
+
+            var csv = new CsvBuilder();
+            csv.AddRow(
+                "Class ID",
+                "Class Name",
+                "Subject",
+                "Teacher",
+                "Scheduled At (UTC)",
+                "Class Status",
+                "Attendance Status",
+                "Graded Submissions",
+                "Average Grade"
+            );
+
+            foreach (var e in enrollments)
+            {
+                var c = e.Class!;
+                var teacherName = c.Teacher != null ? $"{c.Teacher.FirstName} {c.Teacher.LastName}".Trim() : string.Empty;
+                var att = attendances.FirstOrDefault(a => a.ClassId == c.Id);
+                var attStatus = att?.Status ?? "Unmarked";
+
+                var classAsgIds = assignments.Where(a => a.ClassId == c.Id).Select(a => a.Id).ToList();
+                var classSubs = submissions.Where(s => classAsgIds.Contains(s.AssignmentId) && s.Grade.HasValue).ToList();
+                var avgGradeStr = classSubs.Count > 0
+                    ? $"{Math.Round(classSubs.Average(s => s.Grade!.Value), 1)}%"
+                    : "Not graded";
+
+                csv.AddRow(
+                    c.Id.ToString(),
+                    c.Name,
+                    c.Category?.Name ?? string.Empty,
+                    teacherName,
+                    c.ScheduledAt.ToString("u"),
+                    c.Status,
+                    attStatus,
+                    classSubs.Count.ToString(),
+                    avgGradeStr
+                );
+            }
+
+            return File(csv.ToByteArray(), "text/csv; charset=utf-8", "my-classes-report.csv");
         }
 
         [HttpGet("{id}")]

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using A1Academy.Shared.Data;
 using A1Academy.Shared.Services;
+using A1Academy.Shared.Utilities;
 using AccountStatus = A1Academy.Shared.Data.Models.AccountStatus;
 
 namespace A1Academy.AdminService.Controllers
@@ -118,6 +119,48 @@ namespace A1Academy.AdminService.Controllers
                 TotalCount = totalCount,
                 TotalPages = totalPages
             });
+        }
+
+        [HttpGet("export")]
+        public async Task<IActionResult> ExportUsers(
+            [FromQuery] string? role = null,
+            [FromQuery] string? status = null)
+        {
+            IQueryable<A1Academy.Shared.Data.Models.User> filtered = _context.Users;
+
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                filtered = filtered.Where(u => u.Role == role);
+            }
+
+            var matchedStatus = new[] { AccountStatus.Pending, AccountStatus.Active, AccountStatus.Rejected, AccountStatus.Deactivated }
+                .FirstOrDefault(known => string.Equals(known, status, StringComparison.OrdinalIgnoreCase));
+            if (matchedStatus != null)
+            {
+                filtered = filtered.Where(u => u.AccountStatus == matchedStatus);
+            }
+
+            var users = await filtered
+                .OrderBy(u => u.FirstName)
+                .ThenBy(u => u.LastName)
+                .Select(u => new
+                {
+                    u.Id,
+                    Name = (u.FirstName + " " + (u.LastName ?? string.Empty)).Trim(),
+                    u.Email,
+                    u.Role,
+                    Status = u.AccountStatus
+                })
+                .ToListAsync();
+
+            var csv = new CsvBuilder();
+            csv.AddRow("User ID", "Name", "Email", "Role", "Account Status");
+            foreach (var u in users)
+            {
+                csv.AddRow(u.Id.ToString(), u.Name, u.Email, u.Role, u.Status);
+            }
+
+            return File(csv.ToByteArray(), "text/csv; charset=utf-8", "users-report.csv");
         }
 
         // Approves a Pending Teacher application. This is the "Teacher Approval" story - an
