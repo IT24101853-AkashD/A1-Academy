@@ -1,0 +1,259 @@
+# The one pipeline that runs every automated test layer and reports them together. Each job
+# writes its own section to the run summary, so a single run page shows the result of every
+# layer side by side; the raw reports (TRX, JUnit, coverage) are kept as artifacts.
+#
+# Layers: backend unit/integration tests (xUnit), frontend unit tests (Vitest), browser E2E
+# tests (Selenium) and load tests (JMeter). The last two run against the whole system, started
+# from docker-compose.test.yml. Static analysis runs in sonarcloud.yml. Needs no secrets, so it
+# also works for Dependabot and fork PRs.
+#
+# Run it by hand from the Actions tab ("Run workflow", where the load profile can be chosen) or
+# locally with scripts/run-tests.ps1.
+
+name: Test Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      load_profile:
+        description: JMeter load profile (see performance/jmeter/run-load-test.sh)
+        type: choice
+        default: smoke
+        options: [ smoke, baseline, stress, spike ]
+
+# A newer push to the same branch makes the older run pointless.
+concurrency:
+  group: test-pipeline-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    name: Backend tests (xUnit)
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Build
+      run: dotnet build backend/A1Academy.sln --configuration Release
+
+    # Category=E2E is the Selenium suite, which needs a running environment and a browser.
+    # Generated EF migrations are left out of coverage, the same as in sonarcloud.yml.
+    - name: Run backend tests with coverage
+      run: >
+        dotnet test backend/A1Academy.Tests/A1Academy.Tests.csproj
+        --configuration Release --no-build
+        --filter "Category!=E2E"
+        --logger "trx;LogFileName=backend-tests.trx"
+        --collect:"XPlat Code Coverage"
+        --results-directory test-results/backend
+        -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/**"
+
+    - name: Write backend summary
+      if: always()
+      run: bash scripts/ci-summary.sh backend test-results/backend >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload backend reports
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: backend-test-reports
+        path: test-results/backend
+        if-no-files-found: warn
+
+  frontend-tests:
+    name: Frontend tests (Vitest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+    - name: Cache npm dependencies
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: ~/.npm
+        key: npm-${{ hashFiles('frontend/package-lock.json') }}
+        restore-keys: npm-
+
+    - name: Set up Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      with:
+        node-version: '22.x'
+
+    # "npm ci" installs exactly what package-lock.json pins, and "--ignore-scripts" stops any
+    # dependency from running its own install script on the runner.
+    - name: Install dependencies
+      run: npm ci --ignore-scripts
+
+    - name: Lint
+      run: npm run lint
+
+    - name: Run frontend tests with coverage
+      run: npm run test:ci
+
+    - name: Write frontend summary
+      if: always()
+      working-directory: .
+      run: bash scripts/ci-summary.sh frontend frontend >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload frontend reports
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: frontend-test-reports
+        path: |
+          frontend/reports
+          frontend/coverage
+        if-no-files-found: warn
+
+  e2e-tests:
+    name: Browser E2E tests (Selenium)
+    runs-on: ubuntu-latest
+    env:
+      E2E_API_URL: http://localhost:5100
+      E2E_FRONTEND_URL: http://localhost:5173
+      BASE_URL: http://localhost:5173
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+    - name: Start test stack
+      uses: ./.github/actions/start-test-stack
+
+    - name: Cache npm dependencies
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: ~/.npm
+        key: npm-${{ hashFiles('frontend/package-lock.json') }}
+        restore-keys: npm-
+
+    - name: Set up Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      with:
+        node-version: '22.x'
+
+    # Served on :5173 because that is the origin the services' CORS policy allows. A production
+    # build is used rather than the dev server so the first page load is not a slow compile.
+    - name: Build and serve the frontend
+      working-directory: frontend
+      env:
+        VITE_API_URL: http://localhost:5100
+      run: |
+        npm ci --ignore-scripts
+        npm run build
+        nohup npm run preview -- --port 5173 --strictPort > ../frontend-preview.log 2>&1 &
+        curl -fsS -o /dev/null --retry 15 --retry-connrefused --retry-delay 2 http://localhost:5173/
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Run Selenium journeys (xUnit, Category=E2E)
+      run: >
+        dotnet test backend/A1Academy.Tests/A1Academy.Tests.csproj
+        --configuration Release
+        --filter "Category=E2E"
+        --logger "trx;LogFileName=e2e-tests.trx"
+        --results-directory test-results/e2e
+
+    - name: Run WebdriverIO suite
+      working-directory: frontend
+      run: npm run e2e
+
+    - name: Write E2E summary
+      if: always()
+      run: bash scripts/ci-summary.sh e2e test-results/e2e >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Collect logs
+      if: always()
+      run: |
+        mkdir -p test-results/e2e
+        docker compose -p a1test -f docker-compose.yml -f docker-compose.test.yml logs --no-color > test-results/e2e/stack.log 2>&1 || true
+        cp frontend-preview.log test-results/e2e/ 2> /dev/null || true
+
+    - name: Upload E2E reports
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: e2e-test-reports
+        path: test-results/e2e
+        if-no-files-found: warn
+
+  load-tests:
+    name: Load tests (JMeter)
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+    - name: Start test stack
+      uses: ./.github/actions/start-test-stack
+
+    - name: Setup Java (required by JMeter)
+      uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      with:
+        distribution: temurin
+        java-version: '17'
+
+    - name: Cache JMeter
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: .tools
+        key: jmeter-${{ hashFiles('performance/jmeter/run-load-test.sh') }}
+
+    # A shared runner is small and noisy, so the default profile is a light one that checks the
+    # plans still work and stay inside their limits; heavier profiles are picked by hand.
+    - name: Run JMeter plans
+      env:
+        LOAD_PROFILE: ${{ inputs.load_profile || 'smoke' }}
+      run: bash performance/jmeter/run-load-test.sh "$LOAD_PROFILE"
+
+    - name: Write load test summary
+      if: always()
+      run: |
+        cat performance/jmeter/results/*/summary.md >> "$GITHUB_STEP_SUMMARY" \
+          || echo "### Load tests (JMeter) - no results found" >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload load test reports
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: load-test-reports
+        path: performance/jmeter/results
+        if-no-files-found: warn
+
+  # One check to require in branch protection, whatever layers are added above later.
+  pipeline-result:
+    name: Pipeline result
+    runs-on: ubuntu-latest
+    needs: [ backend-tests, frontend-tests, e2e-tests, load-tests ]
+    if: always()
+    steps:
+    - name: Fail if any test layer failed
+      env:
+        BACKEND: ${{ needs.backend-tests.result }}
+        FRONTEND: ${{ needs.frontend-tests.result }}
+        E2E: ${{ needs.e2e-tests.result }}
+        LOAD: ${{ needs.load-tests.result }}
+      run: |
+        echo "backend-tests:  $BACKEND"
+        echo "frontend-tests: $FRONTEND"
+        echo "e2e-tests:      $E2E"
+        echo "load-tests:     $LOAD"
+        [ "$BACKEND" = "success" ] && [ "$FRONTEND" = "success" ] && [ "$E2E" = "success" ] && [ "$LOAD" = "success" ]

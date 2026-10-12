@@ -120,7 +120,8 @@ describe('TeacherClassDetailPage', () => {
     fireEvent.click(viewBtn);
 
     expect(await screen.findByText('Student Submissions')).toBeInTheDocument();
-    expect(screen.getByText('solution.pdf')).toBeInTheDocument();
+    // The file name shares one line with the student's email and the submission time.
+    expect(screen.getByText(/solution.pdf/)).toBeInTheDocument();
     expect(screen.getByText('Late')).toBeInTheDocument();
   });
 });

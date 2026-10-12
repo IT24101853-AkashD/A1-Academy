@@ -197,6 +197,11 @@ export default function AdminUsersPage() {
                 method: isDelete ? 'DELETE' : 'PATCH',
                 headers: { Authorization: `Bearer ${token}` },
             });
+            if (res.status === 401) {
+                clearSession();
+                setViewState('sessionEnded');
+                return;
+            }
             if (!res.ok) throw new Error('Action failed');
 
             if (isDelete) {

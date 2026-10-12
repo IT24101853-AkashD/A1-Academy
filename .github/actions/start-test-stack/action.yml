@@ -1,0 +1,22 @@
+# Builds and starts the full backend (gateway, four services, Postgres, Kafka, Mailpit) in its
+# test configuration and waits until every service answers through the gateway on :5100.
+# Shared by the Test Pipeline jobs that need a running system (browser E2E, load tests).
+
+name: Start test stack
+description: Build and start the docker-compose test stack and wait for it to be ready
+
+runs:
+  using: composite
+  steps:
+    - name: Build and start the stack
+      shell: bash
+      run: docker compose -p a1test -f docker-compose.yml -f docker-compose.test.yml up -d --build
+
+    - name: Wait for every service
+      shell: bash
+      run: bash scripts/wait-for-stack.sh http://localhost:5100 240
+
+    - name: Show container logs if the stack did not come up
+      if: failure()
+      shell: bash
+      run: docker compose -p a1test -f docker-compose.yml -f docker-compose.test.yml logs --tail 80

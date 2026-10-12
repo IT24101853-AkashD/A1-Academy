@@ -67,21 +67,21 @@ describe('Navbar', () => {
     expect(screen.getByText(/my profile/i)).toBeInTheDocument();
   });
 
-  it('shows Login, not Log Out, when logged out', () => {
+  it('shows Login, not Logout, when logged out', () => {
     renderNavbar();
     expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /log out/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^logout$/i })).not.toBeInTheDocument();
   });
 
-  it('shows Log Out, not Login, once a token is stored', () => {
+  it('shows Logout, not Login, once a token is stored', () => {
     localStorage.setItem('role', 'Student');
     localStorage.setItem('token', 'student-token');
     renderNavbar();
-    expect(screen.getByRole('button', { name: /log out/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^logout$/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^login$/i })).not.toBeInTheDocument();
   });
 
-  it('clicking Log Out clears the stored session and navigates home', () => {
+  it('clicking Logout clears the stored session and navigates home', () => {
     localStorage.setItem('role', 'Admin');
     localStorage.setItem('token', 'admin-token');
 
@@ -91,7 +91,7 @@ describe('Navbar', () => {
     window.location = { href: '' };
 
     renderNavbar();
-    fireEvent.click(screen.getByRole('button', { name: /log out/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^logout$/i }));
 
     expect(localStorage.getItem('token')).toBeNull();
     expect(localStorage.getItem('role')).toBeNull();

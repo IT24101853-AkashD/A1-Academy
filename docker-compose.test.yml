@@ -1,0 +1,47 @@
+# Override for running the automated E2E and load tests against the full stack. Use it on top
+# of docker-compose.yml, under its own project name so it gets its own empty database volume
+# instead of the local development one:
+#
+#   docker compose -p a1test -f docker-compose.yml -f docker-compose.test.yml up -d --build
+#   docker compose -p a1test -f docker-compose.yml -f docker-compose.test.yml down -v
+#
+# Two changes from the development stack:
+#   - ASPNETCORE_ENVIRONMENT=Testing turns on GET /api/auth/debug-otp, so a test can complete
+#     sign-up without reading a real inbox.
+#   - Every email goes to Mailpit, a local capture server, instead of the real SMTP relay.
+#     Nothing leaves the machine; captured messages can be read at http://localhost:8025.
+#
+# The containers keep the names from docker-compose.yml, so the development stack has to be
+# down while this one is up.
+
+x-test-environment: &test-environment
+  - ASPNETCORE_ENVIRONMENT=Testing
+  - EmailSettings__SmtpServer=mailpit
+  - EmailSettings__SmtpPort=1025
+  - EmailSettings__UseStartTls=false
+  - EmailSettings__SmtpPassword=
+
+services:
+  mailpit:
+    image: axllent/mailpit:v1.21
+    container_name: local_mailpit
+    ports:
+      - "8025:8025"
+
+  auth:
+    environment: *test-environment
+    depends_on:
+      mailpit:
+        condition: service_started
+
+  admin:
+    environment: *test-environment
+    depends_on:
+      mailpit:
+        condition: service_started
+
+  teacher:
+    environment: *test-environment
+
+  student:
+    environment: *test-environment
