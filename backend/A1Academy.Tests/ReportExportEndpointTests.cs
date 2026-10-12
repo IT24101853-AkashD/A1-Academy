@@ -23,7 +23,7 @@ namespace A1Academy.Tests
             _factory = factory;
         }
 
-        private async Task<User> SeedUserAsync(AppDbContext context, string role, string email, string status = AccountStatus.Active)
+        private static async Task<User> SeedUserAsync(AppDbContext context, string role, string email, string status = AccountStatus.Active)
         {
             var user = new User
             {
@@ -41,12 +41,39 @@ namespace A1Academy.Tests
             return user;
         }
 
-        private async Task<string> LoginAsync(HttpClient client, string email)
+        private static async Task<string> LoginAsync(HttpClient client, string email)
         {
             var response = await client.PostAsJsonAsync("/api/auth/login", new { email, password = Password });
             response.EnsureSuccessStatusCode();
             var body = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
             return body.GetProperty("token").GetString()!;
+        }
+
+        private static HttpRequestMessage AuthorizedGet(string url, string token)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            return request;
+        }
+
+        private static async Task<Class> SeedClassAsync(AppDbContext context, int teacherId, string name, string subject, int capacity = 20)
+        {
+            var category = new Category { Name = subject, Description = "Test" };
+            context.Categories.Add(category);
+            await context.SaveChangesAsync();
+
+            var testClass = new Class
+            {
+                Name = name,
+                CategoryId = category.Id,
+                TeacherId = teacherId,
+                ScheduledAt = DateTime.UtcNow.AddDays(3),
+                Capacity = capacity,
+                Status = ClassStatus.Active
+            };
+            context.Classes.Add(testClass);
+            await context.SaveChangesAsync();
+            return testClass;
         }
 
         [Fact]
@@ -64,10 +91,7 @@ namespace A1Academy.Tests
             var client = _factory.CreateClient();
             var token = await LoginAsync(client, admin.Email);
 
-            var request = new HttpRequestMessage(HttpMethod.Get, "/api/users/export?role=Teacher&status=Pending");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var response = await client.SendAsync(request);
+            var response = await client.SendAsync(AuthorizedGet("/api/users/export?role=Teacher&status=Pending", token));
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal("text/csv", response.Content.Headers.ContentType?.MediaType);
 
@@ -95,10 +119,7 @@ namespace A1Academy.Tests
 
             // 2. Student caller -> 403 Forbidden
             var token = await LoginAsync(client, student.Email);
-            var forbiddenReq = new HttpRequestMessage(HttpMethod.Get, "/api/users/export");
-            forbiddenReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var forbiddenRes = await client.SendAsync(forbiddenReq);
+            var forbiddenRes = await client.SendAsync(AuthorizedGet("/api/users/export", token));
             Assert.Equal(HttpStatusCode.Forbidden, forbiddenRes.StatusCode);
         }
 
@@ -114,21 +135,7 @@ namespace A1Academy.Tests
             var student1 = await SeedUserAsync(context, "Student", $"student1.r.{suffix}@example.com");
             var student2 = await SeedUserAsync(context, "Student", $"student2.r.{suffix}@example.com");
 
-            var category = new Category { Name = $"Cat-{suffix}", Description = "Test" };
-            context.Categories.Add(category);
-            await context.SaveChangesAsync();
-
-            var testClass = new Class
-            {
-                Name = "Export Roster Class",
-                CategoryId = category.Id,
-                TeacherId = teacherOwner.Id,
-                ScheduledAt = DateTime.UtcNow.AddDays(3),
-                Capacity = 20,
-                Status = ClassStatus.Active
-            };
-            context.Classes.Add(testClass);
-            await context.SaveChangesAsync();
+            var testClass = await SeedClassAsync(context, teacherOwner.Id, "Export Roster Class", $"Cat-{suffix}");
 
             context.Enrollments.Add(new Enrollment { ClassId = testClass.Id, StudentId = student1.Id });
             context.Enrollments.Add(new Enrollment { ClassId = testClass.Id, StudentId = student2.Id });
@@ -140,10 +147,7 @@ namespace A1Academy.Tests
 
             // Owning teacher exports roster
             var tokenOwner = await LoginAsync(client, teacherOwner.Email);
-            var reqOwner = new HttpRequestMessage(HttpMethod.Get, $"/api/teacher/classes/{testClass.Id}/roster/export");
-            reqOwner.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenOwner);
-
-            var resOwner = await client.SendAsync(reqOwner);
+            var resOwner = await client.SendAsync(AuthorizedGet($"/api/teacher/classes/{testClass.Id}/roster/export", tokenOwner));
             Assert.Equal(HttpStatusCode.OK, resOwner.StatusCode);
             Assert.Equal("text/csv", resOwner.Content.Headers.ContentType?.MediaType);
 
@@ -156,10 +160,7 @@ namespace A1Academy.Tests
 
             // Other teacher cannot export someone else's class -> 404
             var tokenOther = await LoginAsync(client, teacherOther.Email);
-            var reqOther = new HttpRequestMessage(HttpMethod.Get, $"/api/teacher/classes/{testClass.Id}/roster/export");
-            reqOther.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenOther);
-
-            var resOther = await client.SendAsync(reqOther);
+            var resOther = await client.SendAsync(AuthorizedGet($"/api/teacher/classes/{testClass.Id}/roster/export", tokenOther));
             Assert.Equal(HttpStatusCode.NotFound, resOther.StatusCode);
         }
 
@@ -173,21 +174,7 @@ namespace A1Academy.Tests
             var teacher = await SeedUserAsync(context, "Teacher", $"teacher.asg.{suffix}@example.com");
             var student = await SeedUserAsync(context, "Student", $"student.asg.{suffix}@example.com");
 
-            var category = new Category { Name = $"Subject-{suffix}", Description = "Test" };
-            context.Categories.Add(category);
-            await context.SaveChangesAsync();
-
-            var testClass = new Class
-            {
-                Name = "Robotics Lab",
-                CategoryId = category.Id,
-                TeacherId = teacher.Id,
-                ScheduledAt = DateTime.UtcNow.AddDays(4),
-                Capacity = 15,
-                Status = ClassStatus.Active
-            };
-            context.Classes.Add(testClass);
-            await context.SaveChangesAsync();
+            var testClass = await SeedClassAsync(context, teacher.Id, "Robotics Lab", $"Subject-{suffix}", 15);
 
             context.Enrollments.Add(new Enrollment { ClassId = testClass.Id, StudentId = student.Id });
             await context.SaveChangesAsync();
@@ -219,9 +206,7 @@ namespace A1Academy.Tests
             var token = await LoginAsync(client, teacher.Email);
 
             // 1. Export class-wide submissions
-            var reqClass = new HttpRequestMessage(HttpMethod.Get, $"/api/teacher/classes/{testClass.Id}/submissions/export");
-            reqClass.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            var resClass = await client.SendAsync(reqClass);
+            var resClass = await client.SendAsync(AuthorizedGet($"/api/teacher/classes/{testClass.Id}/submissions/export", token));
             Assert.Equal(HttpStatusCode.OK, resClass.StatusCode);
 
             var csvClass = await resClass.Content.ReadAsStringAsync();
@@ -232,9 +217,7 @@ namespace A1Academy.Tests
             Assert.Contains("Excellent PID calculations.", csvClass);
 
             // 2. Export specific assignment submissions
-            var reqAsg = new HttpRequestMessage(HttpMethod.Get, $"/api/teacher/classes/{testClass.Id}/assignments/{asg.Id}/submissions/export");
-            reqAsg.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            var resAsg = await client.SendAsync(reqAsg);
+            var resAsg = await client.SendAsync(AuthorizedGet($"/api/teacher/classes/{testClass.Id}/assignments/{asg.Id}/submissions/export", token));
             Assert.Equal(HttpStatusCode.OK, resAsg.StatusCode);
 
             var csvAsg = await resAsg.Content.ReadAsStringAsync();
@@ -252,30 +235,8 @@ namespace A1Academy.Tests
             var teacher = await SeedUserAsync(context, "Teacher", $"teacher.std.{suffix}@example.com");
             var student = await SeedUserAsync(context, "Student", $"student.myclasses.{suffix}@example.com");
 
-            var category = new Category { Name = $"AI-{suffix}", Description = "Artificial Intelligence" };
-            context.Categories.Add(category);
-            await context.SaveChangesAsync();
-
-            var enrolledClass = new Class
-            {
-                Name = "Deep Learning Systems",
-                CategoryId = category.Id,
-                TeacherId = teacher.Id,
-                ScheduledAt = DateTime.UtcNow.AddDays(5),
-                Capacity = 20,
-                Status = ClassStatus.Active
-            };
-            var notEnrolledClass = new Class
-            {
-                Name = "Quantum Cryptography",
-                CategoryId = category.Id,
-                TeacherId = teacher.Id,
-                ScheduledAt = DateTime.UtcNow.AddDays(6),
-                Capacity = 20,
-                Status = ClassStatus.Active
-            };
-            context.Classes.AddRange(enrolledClass, notEnrolledClass);
-            await context.SaveChangesAsync();
+            var enrolledClass = await SeedClassAsync(context, teacher.Id, "Deep Learning Systems", $"AI-{suffix}");
+            var notEnrolledClass = await SeedClassAsync(context, teacher.Id, "Quantum Cryptography", $"QC-{suffix}");
 
             context.Enrollments.Add(new Enrollment { ClassId = enrolledClass.Id, StudentId = student.Id });
             context.Attendances.Add(new Attendance { ClassId = enrolledClass.Id, StudentId = student.Id, Status = AttendanceStatus.Present });
@@ -298,10 +259,7 @@ namespace A1Academy.Tests
             var client = _factory.CreateClient();
             var token = await LoginAsync(client, student.Email);
 
-            var request = new HttpRequestMessage(HttpMethod.Get, "/api/student/classes/export");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var response = await client.SendAsync(request);
+            var response = await client.SendAsync(AuthorizedGet("/api/student/classes/export", token));
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal("text/csv", response.Content.Headers.ContentType?.MediaType);
 

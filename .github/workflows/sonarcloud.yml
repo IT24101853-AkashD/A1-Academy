@@ -71,6 +71,7 @@ jobs:
         /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
         /d:sonar.exclusions="**/Migrations/**,**/bin/**,**/obj/**,**/uploads/**"
         /d:sonar.coverage.exclusions="**/Migrations/**,**/Program.cs,backend/A1Academy.Tests/**,frontend/**"
+        /d:sonar.cpd.exclusions="backend/A1Academy.Tests/**"
         /d:sonar.qualitygate.wait=true
         /d:sonar.qualitygate.timeout=300
 

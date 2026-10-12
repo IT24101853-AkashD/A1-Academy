@@ -214,53 +214,9 @@ namespace A1Academy.TeacherService.Controllers
         }
 
         [HttpGet("{assignmentId}/submissions/export")]
-        public async Task<IActionResult> ExportAssignmentSubmissions(int classId, int assignmentId)
+        public Task<IActionResult> ExportAssignmentSubmissions(int classId, int assignmentId)
         {
-            var teacherId = CurrentTeacherId();
-            if (teacherId == null)
-            {
-                return Unauthorized();
-            }
-
-            if (!await OwnsClassAsync(classId, teacherId.Value))
-            {
-                return NotFound(new { message = "Class not found." });
-            }
-
-            var assignment = await _context.Assignments.FirstOrDefaultAsync(a => a.Id == assignmentId && a.ClassId == classId);
-            if (assignment == null)
-            {
-                return NotFound(new { message = "Assignment not found." });
-            }
-
-            var submissions = await _context.AssignmentSubmissions
-                .Where(s => s.AssignmentId == assignmentId)
-                .Include(s => s.Student)
-                .OrderByDescending(s => s.SubmittedAt)
-                .ToListAsync();
-
-            var csv = new CsvBuilder();
-            csv.AddRow("Submission ID", "Assignment", "Student ID", "Student Name", "Student Email", "File Name", "Submitted At (UTC)", "Status", "Grade", "Feedback");
-            foreach (var s in submissions)
-            {
-                var studentName = s.Student == null ? string.Empty : $"{s.Student.FirstName} {s.Student.LastName}".Trim();
-                var studentEmail = s.Student?.Email ?? string.Empty;
-                var gradeStr = s.Grade.HasValue ? s.Grade.Value.ToString() : "Ungraded";
-                csv.AddRow(
-                    s.Id.ToString(),
-                    assignment.Title,
-                    s.StudentId.ToString(),
-                    studentName,
-                    studentEmail,
-                    s.FileName,
-                    s.SubmittedAt.ToString("u"),
-                    s.Status,
-                    gradeStr,
-                    s.Feedback ?? string.Empty
-                );
-            }
-
-            return File(csv.ToByteArray(), "text/csv; charset=utf-8", $"assignment-{assignmentId}-submissions.csv");
+            return ExportClassSubmissions(classId, assignmentId);
         }
 
         [HttpGet("/api/teacher/classes/{classId}/submissions/export")]
@@ -284,6 +240,11 @@ namespace A1Academy.TeacherService.Controllers
 
             if (assignmentId.HasValue)
             {
+                var exists = await _context.Assignments.AnyAsync(a => a.Id == assignmentId.Value && a.ClassId == classId);
+                if (!exists)
+                {
+                    return NotFound(new { message = "Assignment not found." });
+                }
                 query = query.Where(s => s.AssignmentId == assignmentId.Value);
             }
 

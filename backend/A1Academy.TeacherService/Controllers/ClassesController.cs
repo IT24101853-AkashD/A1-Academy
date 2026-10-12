@@ -238,22 +238,7 @@ namespace A1Academy.TeacherService.Controllers
                 return NotFound(new { message = "Class not found." });
             }
 
-            var roster = await _context.Enrollments
-                .Where(e => e.ClassId == id)
-                .Include(e => e.Student)
-                .Select(e => new StudentSummary
-                {
-                    Id = e.Student!.Id,
-                    FirstName = e.Student.FirstName,
-                    LastName = e.Student.LastName,
-                    Email = e.Student.Email,
-                    AttendanceStatus = _context.Attendances
-                        .Where(a => a.ClassId == id && a.StudentId == e.StudentId)
-                        .Select(a => a.Status)
-                        .FirstOrDefault(),
-                })
-                .ToListAsync();
-
+            var roster = await FetchClassRosterAsync(id);
             return Ok(roster);
         }
 
@@ -272,21 +257,7 @@ namespace A1Academy.TeacherService.Controllers
                 return NotFound(new { message = "Class not found." });
             }
 
-            var roster = await _context.Enrollments
-                .Where(e => e.ClassId == id)
-                .Include(e => e.Student)
-                .Select(e => new StudentSummary
-                {
-                    Id = e.Student!.Id,
-                    FirstName = e.Student.FirstName,
-                    LastName = e.Student.LastName,
-                    Email = e.Student.Email,
-                    AttendanceStatus = _context.Attendances
-                        .Where(a => a.ClassId == id && a.StudentId == e.StudentId)
-                        .Select(a => a.Status)
-                        .FirstOrDefault(),
-                })
-                .ToListAsync();
+            var roster = await FetchClassRosterAsync(id);
 
             var csv = new CsvBuilder();
             csv.AddRow("Student ID", "First Name", "Last Name", "Email", "Attendance Status");
@@ -296,6 +267,25 @@ namespace A1Academy.TeacherService.Controllers
             }
 
             return File(csv.ToByteArray(), "text/csv; charset=utf-8", $"class-{id}-roster.csv");
+        }
+
+        private async Task<List<StudentSummary>> FetchClassRosterAsync(int classId)
+        {
+            return await _context.Enrollments
+                .Where(e => e.ClassId == classId)
+                .Include(e => e.Student)
+                .Select(e => new StudentSummary
+                {
+                    Id = e.Student!.Id,
+                    FirstName = e.Student.FirstName,
+                    LastName = e.Student.LastName,
+                    Email = e.Student.Email,
+                    AttendanceStatus = _context.Attendances
+                        .Where(a => a.ClassId == classId && a.StudentId == e.StudentId)
+                        .Select(a => a.Status)
+                        .FirstOrDefault(),
+                })
+                .ToListAsync();
         }
 
         // Scenario 1 (AA-62) - every mark submitted together is saved in one batch rather than
