@@ -40,11 +40,11 @@ namespace A1Academy.Shared.Services
             var password = emailSettings["SmtpPassword"];
 
             using var smtp = new SmtpClient();
-            await smtp.ConnectAsync(emailSettings["SmtpServer"], int.Parse(emailSettings["SmtpPort"]!),
+            await smtp.ConnectAsync(emailSettings["SmtpServer"]!, int.Parse(emailSettings["SmtpPort"]!),
                 useStartTls ? SecureSocketOptions.StartTls : SecureSocketOptions.None);
             if (useStartTls || !string.IsNullOrEmpty(password))
             {
-                await smtp.AuthenticateAsync(emailSettings["SenderEmail"], password);
+                await smtp.AuthenticateAsync(emailSettings["SenderEmail"]!, password ?? string.Empty);
             }
             await smtp.SendAsync(email);
             await smtp.DisconnectAsync(true);

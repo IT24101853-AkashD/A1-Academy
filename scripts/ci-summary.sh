@@ -20,9 +20,9 @@ attr() {
 print_section() {
     local title="$1" total="$2" passed="$3" failed="$4" coverage="$5"
     local verdict="Passed"
-    if [ -z "$total" ]; then
+    if [[ -z "$total" ]]; then
         verdict="No results found"
-    elif [ "${failed:-0}" != "0" ]; then
+    elif [[ "${failed:-0}" != "0" ]]; then
         verdict="Failed"
     fi
 
@@ -41,15 +41,15 @@ trx_section() {
     trx="$(find "$results" -name '*.trx' 2>/dev/null | head -n 1)"
     cobertura="$(find "$results" -name 'coverage.cobertura.xml' 2>/dev/null | head -n 1)"
 
-    if [ -n "$trx" ]; then
+    if [[ -n "$trx" ]]; then
         counters="$(grep -o '<Counters[^>]*>' "$trx" | head -n 1)"
         total="$(attr total "$counters")"
         passed="$(attr passed "$counters")"
         failed="$(attr failed "$counters")"
     fi
-    if [ -n "$cobertura" ]; then
+    if [[ -n "$cobertura" ]]; then
         rate="$(attr line-rate "$(grep -o '<coverage[^>]*>' "$cobertura" | head -n 1)")"
-        [ -n "$rate" ] && coverage="$(awk -v r="$rate" 'BEGIN { printf "%.1f%%", r * 100 }')"
+        [[ -n "$rate" ]] && coverage="$(awk -v r="$rate" 'BEGIN { printf "%.1f%%", r * 100 }')"
     fi
 
     print_section "$title" "$total" "$passed" "$failed" "$coverage"
@@ -69,7 +69,7 @@ case "$layer" in
         summary="$dir/coverage/coverage-summary.json"
         total="" passed="" failed="" coverage=""
 
-        if [ -f "$junit" ]; then
+        if [[ -f "$junit" ]]; then
             suites="$(grep -o '<testsuites[^>]*>' "$junit" | head -n 1)"
             total="$(attr tests "$suites")"
             failures="$(attr failures "$suites")"
@@ -77,9 +77,9 @@ case "$layer" in
             failed=$(( ${failures:-0} + ${errors:-0} ))
             passed=$(( ${total:-0} - failed ))
         fi
-        if [ -f "$summary" ]; then
+        if [[ -f "$summary" ]]; then
             pct="$(tr -d '\n' < "$summary" | sed -n 's/.*"total"[^}]*"lines"[^}]*"pct":[[:space:]]*\([0-9.]*\).*/\1/p')"
-            [ -n "$pct" ] && coverage="$pct%"
+            [[ -n "$pct" ]] && coverage="$pct%"
         fi
 
         print_section "Frontend tests (Vitest)" "$total" "$passed" "$failed" "$coverage"

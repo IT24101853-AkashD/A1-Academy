@@ -43,31 +43,34 @@ JMETER_VERSION="5.6.3"
 
 # Prints the JMeter install directory, downloading JMeter first if there is none.
 find_jmeter_home() {
-    if [ -n "${JMETER_HOME:-}" ] && [ -f "$JMETER_HOME/bin/ApacheJMeter.jar" ]; then
+    if [[ -n "${JMETER_HOME:-}" ]] && [[ -f "$JMETER_HOME/bin/ApacheJMeter.jar" ]]; then
         echo "$JMETER_HOME"; return
     fi
     if command -v jmeter > /dev/null 2>&1; then
         local bin_dir
         bin_dir="$(cd "$(dirname "$(command -v jmeter)")" && pwd)"
-        if [ -f "$bin_dir/ApacheJMeter.jar" ]; then
+        if [[ -f "$bin_dir/ApacheJMeter.jar" ]]; then
             dirname "$bin_dir"; return
         fi
     fi
 
     local tools="$repo_root/.tools"
     local home="$tools/apache-jmeter-$JMETER_VERSION"
-    if [ ! -f "$home/bin/ApacheJMeter.jar" ]; then
+    if [[ ! -f "$home/bin/ApacheJMeter.jar" ]]; then
         local archive="apache-jmeter-$JMETER_VERSION.tgz"
         echo "JMeter not found - downloading $JMETER_VERSION into .tools/ ..." >&2
         mkdir -p "$tools"
         # The CDN is fast but only carries current releases; the archive has every release.
-        curl -fsSL --retry 3 -o "$tools/$archive" "https://dlcdn.apache.org/jmeter/binaries/$archive"             || curl -fsSL --retry 3 -o "$tools/$archive" "https://archive.apache.org/dist/jmeter/binaries/$archive"
+        local mirror="https://dlcdn.apache.org/jmeter/binaries"
+        local origin="https://archive.apache.org/dist/jmeter/binaries"
+        local fetch=(curl -fsSL --proto "=https" --tlsv1.2 --retry 3)
+        "${fetch[@]}" -o "$tools/$archive" "$mirror/$archive" || "${fetch[@]}" -o "$tools/$archive" "$origin/$archive"
         # The checksum always comes from apache.org itself, never from the mirror.
-        curl -fsSL --retry 3 -o "$tools/$archive.sha512" "https://archive.apache.org/dist/jmeter/binaries/$archive.sha512"
+        "${fetch[@]}" -o "$tools/$archive.sha512" "$origin/$archive.sha512"
         local expected actual
         expected="$(awk '{ print $1 }' "$tools/$archive.sha512")"
         actual="$(sha512sum "$tools/$archive" | awk '{ print $1 }')"
-        if [ "$expected" != "$actual" ]; then
+        if [[ "$expected" != "$actual" ]]; then
             echo "Checksum mismatch for $archive - refusing to use it." >&2
             rm -f "$tools/$archive"
             exit 1
@@ -127,9 +130,9 @@ for plan in "$here"/*.jmx; do
 
     error_pct="$(awk -v e="$errors" -v n="$samples" 'BEGIN { printf "%.2f", (n ? e * 100 / n : 100) }')"
     verdict="Passed"
-    if [ "$samples" -eq 0 ] \
+    if [[ "$samples" -eq 0 ]] \
         || awk -v a="$error_pct" -v b="$max_error_pct" 'BEGIN { exit !(a > b) }' \
-        || [ "$p95" -gt "$max_p95_ms" ]; then
+        || [[ "$p95" -gt "$max_p95_ms" ]]; then
         verdict="FAILED"
         overall=1
     fi

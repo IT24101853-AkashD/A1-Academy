@@ -27,11 +27,11 @@ for entry in "${routes[@]}"; do
     path="${entry#*:}"
     while true; do
         status="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$gateway$path" || true)"
-        if [ "${status:-000}" != "000" ] && [ "$status" -lt 500 ]; then
+        if [[ "${status:-000}" != "000" ]] && [[ "$status" -lt 500 ]]; then
             echo "$service is up (HTTP $status)"
             break
         fi
-        if [ "$(date +%s)" -ge "$deadline" ]; then
+        if [[ "$(date +%s)" -ge "$deadline" ]]; then
             echo "Timed out after ${timeout}s waiting for $service at $gateway$path (last status: ${status:-none})" >&2
             exit 1
         fi

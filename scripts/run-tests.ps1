@@ -118,7 +118,7 @@ if (Test-Selected 'frontend') {
     Push-Location (Join-Path $repoRoot 'frontend')
     try {
         if (-not (Test-Path 'node_modules')) { npm install }
-        npx vitest run --coverage --reporter=default --reporter=junit --outputFile.junit=reports/junit.xml
+        npm run test:ci
         $exitCode = $LASTEXITCODE
 
         $total = $failed = $coverage = '-'

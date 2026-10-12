@@ -12,6 +12,7 @@
     "test:unit": "vitest run",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
+    "test:ci": "vitest run --coverage --reporter=default --reporter=junit --outputFile.junit=reports/junit.xml",
     "e2e": "wdio run wdio.conf.cjs",
     "e2e:teacher": "wdio run wdio.conf.cjs --grep 'E2E: Teacher'",
     "e2e:login": "wdio run wdio.conf.cjs --grep 'Login Flow'",

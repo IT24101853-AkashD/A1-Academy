@@ -95,17 +95,16 @@ jobs:
       with:
         node-version: '22.x'
 
+    # "npm ci" installs exactly what package-lock.json pins, and "--ignore-scripts" stops any
+    # dependency from running its own install script on the runner.
     - name: Install dependencies
-      run: npm install
+      run: npm ci --ignore-scripts
 
     - name: Lint
       run: npm run lint
 
     - name: Run frontend tests with coverage
-      run: >
-        npx vitest run --coverage
-        --reporter=default
-        --reporter=junit --outputFile.junit=reports/junit.xml
+      run: npm run test:ci
 
     - name: Write frontend summary
       if: always()
@@ -155,9 +154,9 @@ jobs:
       env:
         VITE_API_URL: http://localhost:5100
       run: |
-        npm install
+        npm ci --ignore-scripts
         npm run build
-        nohup npx vite preview --port 5173 --strictPort > ../frontend-preview.log 2>&1 &
+        nohup npm run preview -- --port 5173 --strictPort > ../frontend-preview.log 2>&1 &
         curl -fsS -o /dev/null --retry 15 --retry-connrefused --retry-delay 2 http://localhost:5173/
 
     - name: Setup .NET SDK
