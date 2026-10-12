@@ -3,6 +3,7 @@ import Layout from '../components/Layout';
 import Pagination from '../components/Pagination';
 import UserFilters from '../components/UserFilters';
 import { clearSession } from '../utils/session';
+import { triggerFileDownload } from '../utils/download';
 
 const STATUS_STYLES = {
     Active: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200',
@@ -77,6 +78,41 @@ export default function AdminUsersPage() {
     // at least nominally reversible), so it gets its own explicit confirm step before the
     // request goes out at all.
     const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
+    const [isExporting, setIsExporting] = useState(false);
+    const [exportError, setExportError] = useState('');
+
+    const handleDownloadReport = async () => {
+        setIsExporting(true);
+        setExportError('');
+        try {
+            const token = localStorage.getItem('token');
+            const params = new URLSearchParams();
+            if (roleFilter) params.set('role', roleFilter);
+            if (statusFilter) params.set('status', statusFilter);
+
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/export?${params.toString()}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (res.status === 401) {
+                clearSession();
+                setViewState('sessionEnded');
+                return;
+            }
+
+            if (!res.ok) {
+                throw new Error('Failed to export user directory report.');
+            }
+
+            const blob = await res.blob();
+            const filename = `users-report${roleFilter ? `-${roleFilter.toLowerCase()}` : ''}${statusFilter ? `-${statusFilter.toLowerCase()}` : ''}.csv`;
+            triggerFileDownload(blob, filename);
+        } catch (err) {
+            setExportError(err.message || 'Error exporting user directory.');
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     useEffect(() => {
         if (role !== 'Admin') {
@@ -272,6 +308,27 @@ export default function AdminUsersPage() {
 
                 {(viewState === 'loading' || viewState === 'error' || viewState === 'success') && (
                     <div data-aos="fade-up" data-aos-delay="100">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                            <div className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                Filter &amp; Export Directory
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {exportError && (
+                                    <span className="text-xs font-bold text-red-600 dark:text-red-400">{exportError}</span>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={handleDownloadReport}
+                                    disabled={isExporting}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-60"
+                                >
+                                    <span className={`material-symbols-outlined text-[18px] ${isExporting ? 'animate-spin' : ''}`}>
+                                        {isExporting ? 'progress_activity' : 'download'}
+                                    </span>
+                                    {isExporting ? 'Generating Report…' : 'Download Report (CSV)'}
+                                </button>
+                            </div>
+                        </div>
                         <UserFilters
                             role={roleFilter}
                             status={statusFilter}

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import StudentProgressCard from '../components/student/StudentProgressCard';
 import { clearSession } from '../utils/session';
+import { triggerFileDownload } from '../utils/download';
 
 // Student's "My Classes" dashboard (AA-46/AA-13) - every class the Student is enrolled in,
 // including ones the Teacher has since cancelled (AA-44 Scenario 2), so that status stays
@@ -11,6 +12,31 @@ export default function StudentMyClassesPage() {
     const [viewState, setViewState] = useState('idle'); // idle | loading | success | sessionEnded | error
     const [classes, setClasses] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
+    const [isExporting, setIsExporting] = useState(false);
+    const [exportError, setExportError] = useState('');
+
+    const handleExportMyClasses = async () => {
+        setIsExporting(true);
+        setExportError('');
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/student/classes/export`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.status === 401) {
+                clearSession();
+                setViewState('sessionEnded');
+                return;
+            }
+            if (!res.ok) throw new Error('Could not export your classes report.');
+            const blob = await res.blob();
+            triggerFileDownload(blob, 'my-classes-report.csv');
+        } catch (err) {
+            setExportError(err.message || 'Error exporting report.');
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -68,12 +94,32 @@ export default function StudentMyClassesPage() {
                     <>
                         <StudentProgressCard />
 
-                        <div className="mb-8">
-                            <div className="flex items-center gap-2 text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1 font-jakarta">
-                                <span className="material-symbols-outlined text-[16px]">school</span>
-                                My Classes
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                            <div>
+                                <div className="flex items-center gap-2 text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1 font-jakarta">
+                                    <span className="material-symbols-outlined text-[16px]">school</span>
+                                    My Classes
+                                </div>
+                                <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white font-jakarta">Your Enrolled Classes</h1>
                             </div>
-                            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white font-jakarta">Your Enrolled Classes</h1>
+                            <div className="flex items-center gap-3">
+                                {exportError && (
+                                    <span className="text-xs font-bold text-red-600 dark:text-red-400">{exportError}</span>
+                                )}
+                                {classes.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={handleExportMyClasses}
+                                        disabled={isExporting}
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-60 self-start sm:self-auto"
+                                    >
+                                        <span className={`material-symbols-outlined text-[16px] ${isExporting ? 'animate-spin' : ''}`}>
+                                            {isExporting ? 'progress_activity' : 'download'}
+                                        </span>
+                                        {isExporting ? 'Generating Report…' : 'Download Report (CSV)'}
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {classes.length === 0 ? (
