@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using A1Academy.Shared.Data;
 using A1Academy.Shared.Data.Models;
+using A1Academy.Shared.Utilities;
 
 namespace A1Academy.TeacherService.Controllers
 {
@@ -237,8 +238,41 @@ namespace A1Academy.TeacherService.Controllers
                 return NotFound(new { message = "Class not found." });
             }
 
-            var roster = await _context.Enrollments
-                .Where(e => e.ClassId == id)
+            var roster = await FetchClassRosterAsync(id);
+            return Ok(roster);
+        }
+
+        [HttpGet("{id}/roster/export")]
+        public async Task<IActionResult> ExportRoster(int id)
+        {
+            var teacherId = CurrentTeacherId();
+            if (teacherId == null)
+            {
+                return Unauthorized();
+            }
+
+            var owns = await _context.Classes.AnyAsync(c => c.Id == id && c.TeacherId == teacherId);
+            if (!owns)
+            {
+                return NotFound(new { message = "Class not found." });
+            }
+
+            var roster = await FetchClassRosterAsync(id);
+
+            var csv = new CsvBuilder();
+            csv.AddRow("Student ID", "First Name", "Last Name", "Email", "Attendance Status");
+            foreach (var s in roster)
+            {
+                csv.AddRow(s.Id.ToString(), s.FirstName, s.LastName, s.Email, s.AttendanceStatus ?? "Unmarked");
+            }
+
+            return File(csv.ToByteArray(), "text/csv; charset=utf-8", $"class-{id}-roster.csv");
+        }
+
+        private async Task<List<StudentSummary>> FetchClassRosterAsync(int classId)
+        {
+            return await _context.Enrollments
+                .Where(e => e.ClassId == classId)
                 .Include(e => e.Student)
                 .Select(e => new StudentSummary
                 {
@@ -247,13 +281,11 @@ namespace A1Academy.TeacherService.Controllers
                     LastName = e.Student.LastName,
                     Email = e.Student.Email,
                     AttendanceStatus = _context.Attendances
-                        .Where(a => a.ClassId == id && a.StudentId == e.StudentId)
+                        .Where(a => a.ClassId == classId && a.StudentId == e.StudentId)
                         .Select(a => a.Status)
                         .FirstOrDefault(),
                 })
                 .ToListAsync();
-
-            return Ok(roster);
         }
 
         // Scenario 1 (AA-62) - every mark submitted together is saved in one batch rather than

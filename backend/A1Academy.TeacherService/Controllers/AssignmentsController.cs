@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using A1Academy.Shared.Data;
 using A1Academy.Shared.Data.Models;
+using A1Academy.Shared.Utilities;
 
 namespace A1Academy.TeacherService.Controllers
 {
@@ -210,6 +211,75 @@ namespace A1Academy.TeacherService.Controllers
                 .ToListAsync();
 
             return Ok(submissions);
+        }
+
+        [HttpGet("{assignmentId}/submissions/export")]
+        public Task<IActionResult> ExportAssignmentSubmissions(int classId, int assignmentId)
+        {
+            return ExportClassSubmissions(classId, assignmentId);
+        }
+
+        [HttpGet("/api/teacher/classes/{classId}/submissions/export")]
+        public async Task<IActionResult> ExportClassSubmissions(int classId, [FromQuery] int? assignmentId = null)
+        {
+            var teacherId = CurrentTeacherId();
+            if (teacherId == null)
+            {
+                return Unauthorized();
+            }
+
+            if (!await OwnsClassAsync(classId, teacherId.Value))
+            {
+                return NotFound(new { message = "Class not found." });
+            }
+
+            var query = _context.AssignmentSubmissions
+                .Include(s => s.Assignment)
+                .Include(s => s.Student)
+                .Where(s => s.Assignment!.ClassId == classId);
+
+            if (assignmentId.HasValue)
+            {
+                var exists = await _context.Assignments.AnyAsync(a => a.Id == assignmentId.Value && a.ClassId == classId);
+                if (!exists)
+                {
+                    return NotFound(new { message = "Assignment not found." });
+                }
+                query = query.Where(s => s.AssignmentId == assignmentId.Value);
+            }
+
+            var submissions = await query
+                .OrderBy(s => s.Assignment!.Title)
+                .ThenByDescending(s => s.SubmittedAt)
+                .ToListAsync();
+
+            var csv = new CsvBuilder();
+            csv.AddRow("Submission ID", "Assignment", "Student ID", "Student Name", "Student Email", "File Name", "Submitted At (UTC)", "Status", "Grade", "Feedback");
+            foreach (var s in submissions)
+            {
+                var studentName = s.Student == null ? string.Empty : $"{s.Student.FirstName} {s.Student.LastName}".Trim();
+                var studentEmail = s.Student?.Email ?? string.Empty;
+                var assignmentTitle = s.Assignment?.Title ?? string.Empty;
+                var gradeStr = s.Grade.HasValue ? s.Grade.Value.ToString() : "Ungraded";
+                csv.AddRow(
+                    s.Id.ToString(),
+                    assignmentTitle,
+                    s.StudentId.ToString(),
+                    studentName,
+                    studentEmail,
+                    s.FileName,
+                    s.SubmittedAt.ToString("u"),
+                    s.Status,
+                    gradeStr,
+                    s.Feedback ?? string.Empty
+                );
+            }
+
+            var filename = assignmentId.HasValue
+                ? $"assignment-{assignmentId.Value}-submissions.csv"
+                : $"class-{classId}-submissions.csv";
+
+            return File(csv.ToByteArray(), "text/csv; charset=utf-8", filename);
         }
 
         [HttpGet("{assignmentId}/submissions/{submissionId}/download")]

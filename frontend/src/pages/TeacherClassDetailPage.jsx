@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { clearSession } from '../utils/session';
+import { triggerFileDownload } from '../utils/download';
 import AwardBadgeModal from '../components/modals/AwardBadgeModal';
 
 const authHeader = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
@@ -45,6 +46,56 @@ export default function TeacherClassDetailPage() {
     
     // Badges
     const [awardingStudent, setAwardingStudent] = useState(null);
+
+    // Export states
+    const [isExportingRoster, setIsExportingRoster] = useState(false);
+    const [isExportingSubmissions, setIsExportingSubmissions] = useState(false);
+    const [exportingAsgId, setExportingAsgId] = useState(null);
+
+    const handleExportRoster = async () => {
+        setIsExportingRoster(true);
+        try {
+            const res = await fetch(`${apiBase}/roster/export`, { headers: authHeader() });
+            if (res.status === 401) return onUnauthorized();
+            if (!res.ok) throw new Error('Could not export class roster.');
+            const blob = await res.blob();
+            triggerFileDownload(blob, `class-${id}-roster.csv`);
+        } catch {
+            alert('Error exporting roster.');
+        } finally {
+            setIsExportingRoster(false);
+        }
+    };
+
+    const handleExportClassSubmissions = async () => {
+        setIsExportingSubmissions(true);
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/teacher/classes/${id}/submissions/export`, { headers: authHeader() });
+            if (res.status === 401) return onUnauthorized();
+            if (!res.ok) throw new Error('Could not export class submissions.');
+            const blob = await res.blob();
+            triggerFileDownload(blob, `class-${id}-submissions.csv`);
+        } catch {
+            alert('Error exporting submissions.');
+        } finally {
+            setIsExportingSubmissions(false);
+        }
+    };
+
+    const handleExportAssignmentSubmissions = async (asgId) => {
+        setExportingAsgId(asgId);
+        try {
+            const res = await fetch(`${apiBase}/assignments/${asgId}/submissions/export`, { headers: authHeader() });
+            if (res.status === 401) return onUnauthorized();
+            if (!res.ok) throw new Error('Could not export assignment submissions.');
+            const blob = await res.blob();
+            triggerFileDownload(blob, `assignment-${asgId}-submissions.csv`);
+        } catch {
+            alert('Error exporting assignment submissions.');
+        } finally {
+            setExportingAsgId(null);
+        }
+    };
 
     const onUnauthorized = () => {
         clearSession();
@@ -313,7 +364,22 @@ export default function TeacherClassDetailPage() {
 
                 {/* Assignments */}
                 <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 shadow-level-1 p-8">
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white font-jakarta mb-4">Assignments</h2>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white font-jakarta">Assignments</h2>
+                        {assignments.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={handleExportClassSubmissions}
+                                disabled={isExportingSubmissions}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900 text-xs font-semibold transition-all shadow-sm cursor-pointer disabled:opacity-60"
+                            >
+                                <span className={`material-symbols-outlined text-[16px] ${isExportingSubmissions ? 'animate-spin' : ''}`}>
+                                    {isExportingSubmissions ? 'progress_activity' : 'download'}
+                                </span>
+                                {isExportingSubmissions ? 'Exporting...' : 'Export Submissions (CSV)'}
+                            </button>
+                        )}
+                    </div>
 
                     <form onSubmit={handleCreateAssignment} className="space-y-3 mb-6">
                         {asgError && <p className="text-sm font-semibold text-red-600 dark:text-red-400">{asgError}</p>}
@@ -348,8 +414,20 @@ export default function TeacherClassDetailPage() {
                                             <span className="text-xs text-slate-500 dark:text-slate-400">{a.submissionCount} submission(s)</span>
                                             <button
                                                 type="button"
+                                                onClick={() => handleExportAssignmentSubmissions(a.id)}
+                                                disabled={exportingAsgId === a.id}
+                                                className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors flex items-center gap-1 cursor-pointer"
+                                                title="Export submissions for this assignment as CSV"
+                                            >
+                                                <span className={`material-symbols-outlined text-[14px] ${exportingAsgId === a.id ? 'animate-spin' : ''}`}>
+                                                    {exportingAsgId === a.id ? 'progress_activity' : 'download'}
+                                                </span>
+                                                {exportingAsgId === a.id ? 'Exporting...' : 'CSV'}
+                                            </button>
+                                            <button
+                                                type="button"
                                                 onClick={() => toggleSubmissions(a.id)}
-                                                className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+                                                className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors cursor-pointer"
                                             >
                                                 {expandedAsgId === a.id ? 'Hide Submissions' : 'View Submissions'}
                                             </button>
@@ -476,7 +554,22 @@ export default function TeacherClassDetailPage() {
 
                 {/* Attendance */}
                 <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 shadow-level-1 p-8">
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white font-jakarta mb-4">Attendance</h2>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white font-jakarta">Attendance &amp; Roster</h2>
+                        {roster.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={handleExportRoster}
+                                disabled={isExportingRoster}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900 text-xs font-semibold transition-all shadow-sm cursor-pointer disabled:opacity-60"
+                            >
+                                <span className={`material-symbols-outlined text-[16px] ${isExportingRoster ? 'animate-spin' : ''}`}>
+                                    {isExportingRoster ? 'progress_activity' : 'download'}
+                                </span>
+                                {isExportingRoster ? 'Exporting...' : 'Export Roster (CSV)'}
+                            </button>
+                        )}
+                    </div>
 
                     {roster.length === 0 ? (
                         <p className="text-sm text-slate-500 dark:text-slate-400">No students enrolled yet.</p>
