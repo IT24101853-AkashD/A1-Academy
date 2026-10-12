@@ -64,11 +64,28 @@ function Get-GitBash {
     throw "Could not find Git Bash next to $git - it is needed to run the stack and load test scripts."
 }
 
+# Returns $true only when the stack is up. Command output goes through Out-Host so it is shown
+# rather than becoming part of this function's return value.
 function Start-TestStack {
     Write-Host "`n=== Starting the test stack (docker compose) ===" -ForegroundColor Cyan
-    docker @compose up -d --build
+
+    # Both stacks use the same container names and ports, so they cannot run side by side.
+    $running = @(docker ps --filter 'name=^local_' --format '{{.Names}}')
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host 'Docker is not running - start Docker Desktop and try again.' -ForegroundColor Red
+        return $false
+    }
+    $testStack = @(docker ps --filter 'name=^local_' --filter 'label=com.docker.compose.project=a1test' --format '{{.Names}}')
+    $devContainers = @($running | Where-Object { $_ -and ($testStack -notcontains $_) })
+    if ($devContainers.Count -gt 0) {
+        Write-Host 'The development stack is running and uses the same container names and ports.' -ForegroundColor Red
+        Write-Host 'Stop it first (your database volume is kept):  docker compose down' -ForegroundColor Red
+        return $false
+    }
+
+    docker @compose up -d --build | Out-Host
     if ($LASTEXITCODE -ne 0) { return $false }
-    & (Get-GitBash) (Join-Path $repoRoot 'scripts/wait-for-stack.sh') $gateway 240
+    & (Get-GitBash) (Join-Path $repoRoot 'scripts/wait-for-stack.sh') $gateway 240 | Out-Host
     return ($LASTEXITCODE -eq 0)
 }
 
@@ -124,9 +141,6 @@ $needsStack = (Test-Selected 'e2e') -or (Test-Selected 'load')
 $stackReady = $false
 if ($needsStack) {
     $stackReady = Start-TestStack
-    if (-not $stackReady) {
-        Write-Host 'The test stack did not start - is Docker running, and is the development stack stopped?' -ForegroundColor Red
-    }
 }
 
 if (Test-Selected 'e2e') {
@@ -189,7 +203,7 @@ if (Test-Selected 'load') {
     }
 }
 
-if ($needsStack -and -not $KeepStack) {
+if ($stackReady -and -not $KeepStack) {
     Write-Host "`n=== Removing the test stack ===" -ForegroundColor Cyan
     docker @compose down -v
 }

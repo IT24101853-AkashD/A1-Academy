@@ -82,10 +82,12 @@ jmeter_home="$(find_jmeter_home)"
 echo "Using JMeter: $jmeter_home"
 echo "Profile '$profile': $users users, ${ramp_up}s ramp-up, $loops loops each, against $protocol://$host:$port"
 
-bash "$here/seed-load-test-user.sh" "$protocol://$host:$port"
-
+# Cleared before anything can fail, so a failed run never leaves an older run's results behind.
 rm -rf "$results_dir"
 mkdir -p "$results_dir"
+
+bash "$here/seed-load-test-user.sh" "$protocol://$host:$port"
+
 
 summary="$results_dir/summary.md"
 {
