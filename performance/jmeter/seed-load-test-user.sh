@@ -26,7 +26,7 @@ login_check() {
 }
 
 status=$(login_check)
-if [ "$status" = "200" ]; then
+if [[ "$status" = "200" ]]; then
   echo "Account already exists and logs in successfully - nothing to do."
   exit 0
 fi
@@ -40,7 +40,7 @@ curl -sS -X POST "$API/api/auth/send-otp" \
 otp_json=$(curl -sS "$API/api/auth/debug-otp?email=$EMAIL")
 otp=$(echo "$otp_json" | sed -n 's/.*"otp":"\{0,1\}\([0-9]*\)"\{0,1\}.*/\1/p')
 
-if [ -z "$otp" ]; then
+if [[ -z "$otp" ]]; then
   echo "Could not read a pending OTP from $API/api/auth/debug-otp." >&2
   echo "That endpoint only responds in Development/Testing - is the API running with ASPNETCORE_ENVIRONMENT=Development?" >&2
   echo "Raw response: $otp_json" >&2
@@ -58,7 +58,7 @@ curl -sS -X POST "$API/api/auth/register" \
   -F "role=Student" > /dev/null
 
 status=$(login_check)
-if [ "$status" = "200" ]; then
+if [[ "$status" = "200" ]]; then
   echo "Seed account ready: $EMAIL"
 else
   echo "Registered the account but login still returned $status - check the API logs." >&2

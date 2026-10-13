@@ -217,8 +217,8 @@ export default function CategoryManagementPage() {
             setViewState('denied');
             return;
         }
-        loadCategories();
-        loadSubjectRequests();
+        void loadCategories();
+        void loadSubjectRequests();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [role]);
 

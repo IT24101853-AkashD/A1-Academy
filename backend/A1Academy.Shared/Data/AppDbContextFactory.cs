@@ -14,7 +14,7 @@ namespace A1Academy.Shared.Data
         public AppDbContext CreateDbContext(string[] args)
         {
             var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-            optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=design_time_only;Username=design_time_only;Password=design_time_only");
+            optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=design_time_only;Username=design_time_only");
             return new AppDbContext(optionsBuilder.Options);
         }
     }

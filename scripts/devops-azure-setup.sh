@@ -86,7 +86,7 @@ cmd_status() {
       while IFS=$'\t' read -r name ref; do
         case "$name" in
           *Key*|*Password*|*Connection*|*Secret*)
-            if [ -n "$ref" ]; then echo "  $name -> secret '$ref'"
+            if [[ -n "$ref" ]]; then echo "  $name -> secret '$ref'"
             else echo "  WARNING: $name is stored as PLAIN TEXT"; fi ;;
         esac
       done
@@ -147,11 +147,11 @@ cmd_secrets() {
   for entry in "${SECRET_SETTINGS[@]}"; do
     IFS='|' read -r secret setting var <<< "$entry"
     local value="${!var:-}"
-    if [ -z "$value" ] && [ -t 0 ]; then
+    if [[ -z "$value" ]] && [[ -t 0 ]]; then
       read -rsp "$var (leave empty to keep current): " value; echo
     fi
-    [ -z "$value" ] && { echo "  $var: unchanged"; continue; }
-    if [ "$var" = "JWT_KEY" ] && [ "$value" = "generate" ]; then
+    [[ -z "$value" ]] && { echo "  $var: unchanged"; continue; }
+    if [[ "$var" = "JWT_KEY" ]] && [[ "$value" = "generate" ]]; then
       value=$(openssl rand -hex 48)
       echo "  JWT_KEY: generated a new random key"
     fi
@@ -167,10 +167,10 @@ cmd_secrets() {
   # The sender address isn't secret, so it's a plain setting (visible input). It is the SMTP
   # login too, so it should change together with SMTP_PASSWORD.
   local sender="${SENDER_EMAIL:-}"
-  if [ -z "$sender" ] && [ -t 0 ]; then
+  if [[ -z "$sender" ]] && [[ -t 0 ]]; then
     read -rp "SENDER_EMAIL (leave empty to keep current): " sender
   fi
-  if [ -n "$sender" ]; then
+  if [[ -n "$sender" ]]; then
     for app in "${BACKEND_APPS[@]}"; do
       az containerapp update -n "$app" -g "$RESOURCE_GROUP" --set-env-vars "EmailSettings__SenderEmail=$sender" -o none
     done
@@ -179,7 +179,7 @@ cmd_secrets() {
   else
     echo "  SENDER_EMAIL: unchanged"
   fi
-  [ "$changed" = 1 ] && { echo; echo "Next: bash $0 restart   (secrets only take effect after a restart)"; } || true
+  [[ "$changed" = 1 ]] && { echo; echo "Next: bash $0 restart   (secrets only take effect after a restart)"; } || true
 }
 
 restart_app() {
@@ -189,7 +189,7 @@ restart_app() {
   log "$app: restarting"
   az rest --method post --url "$url/stop?api-version=$API_VERSION" -o none
   for _ in $(seq 1 12); do
-    [ "$(az containerapp show -n "$app" -g "$RESOURCE_GROUP" --query properties.runningStatus -o tsv)" = "Stopped" ] && break
+    [[ "$(az containerapp show -n "$app" -g "$RESOURCE_GROUP" --query properties.runningStatus -o tsv)" = "Stopped" ]] && break
     sleep 5
   done
   az rest --method post --url "$url/start?api-version=$API_VERSION" -o none
@@ -202,7 +202,7 @@ restart_app() {
          --query "[].[properties.createdTime, properties.runningState]" -o tsv |
        awk -v start="$start" '$2 == "Running" && $1 > start { found = 1 } END { exit !found }'; then
       code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "https://$fqdn/health/ready" || true)
-      if [ "$code" = "200" ]; then echo "  OK: new container running and /health/ready -> 200"; return 0; fi
+      if [[ "$code" = "200" ]]; then echo "  OK: new container running and /health/ready -> 200"; return 0; fi
     fi
     sleep 10
   done
@@ -212,7 +212,7 @@ restart_app() {
 
 cmd_restart() {
   local apps=("$@") failed=0
-  [ ${#apps[@]} -eq 0 ] && apps=("${BACKEND_APPS[@]}")
+  [[ ${#apps[@]} -eq 0 ]] && apps=("${BACKEND_APPS[@]}")
   for app in "${apps[@]}"; do
     [[ "$app" == a1academy-* ]] || app="a1academy-$app"
     restart_app "$app" || failed=1

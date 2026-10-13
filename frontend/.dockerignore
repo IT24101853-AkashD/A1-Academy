@@ -1,0 +1,6 @@
+# Keep the host's node_modules out of the image: "COPY . ." would overwrite the packages
+# installed inside the container with ones built for the host's operating system.
+node_modules
+dist
+coverage
+reports

@@ -103,19 +103,19 @@ export default function TeacherClassDetailPage() {
     };
 
     const loadMaterials = () => {
-        fetch(`${apiBase}/materials`, { headers: authHeader() })
+        void fetch(`${apiBase}/materials`, { headers: authHeader() })
             .then((res) => (res.status === 401 ? (onUnauthorized(), null) : res.ok ? res.json() : []))
             .then((data) => data && setMaterials(data));
     };
 
     const loadAssignments = () => {
-        fetch(`${apiBase}/assignments`, { headers: authHeader() })
+        void fetch(`${apiBase}/assignments`, { headers: authHeader() })
             .then((res) => (res.status === 401 ? (onUnauthorized(), null) : res.ok ? res.json() : []))
             .then((data) => data && setAssignments(data));
     };
 
     const loadRoster = () => {
-        fetch(`${apiBase}/roster`, { headers: authHeader() })
+        void fetch(`${apiBase}/roster`, { headers: authHeader() })
             .then((res) => (res.status === 401 ? (onUnauthorized(), null) : res.ok ? res.json() : []))
             .then((data) => {
                 if (!data) return;
@@ -253,8 +253,8 @@ export default function TeacherClassDetailPage() {
 
     const saveGrade = async (asgId, subId) => {
         setGradeError('');
-        const numGrade = parseInt(gradeInput, 10);
-        if (isNaN(numGrade) || numGrade < 0 || numGrade > 100) {
+        const numGrade = Number.parseInt(gradeInput, 10);
+        if (Number.isNaN(numGrade) || numGrade < 0 || numGrade > 100) {
             setGradeError('Grade must be between 0 and 100.');
             return;
         }

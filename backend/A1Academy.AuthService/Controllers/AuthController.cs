@@ -26,6 +26,9 @@ namespace A1Academy.AuthService.Controllers
         private readonly IEmailService _emailService;
         private readonly IWebHostEnvironment _environment;
 
+        // One client for the whole service: creating one per request exhausts sockets under load.
+        private static readonly HttpClient GoogleHttpClient = new();
+
         public AuthController(AppDbContext context, IConfiguration configuration, IMemoryCache cache, IEmailService emailService, IWebHostEnvironment environment)
         {
             _context = context;
@@ -247,9 +250,10 @@ namespace A1Academy.AuthService.Controllers
         {
             try
             {
-                using var httpClient = new HttpClient();
-                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", request.Credential);
-                var response = await httpClient.GetAsync("https://www.googleapis.com/oauth2/v3/userinfo");
+                // The caller's Google token goes on this one request, never on the shared client.
+                using var userInfoRequest = new HttpRequestMessage(HttpMethod.Get, "https://www.googleapis.com/oauth2/v3/userinfo");
+                userInfoRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", request.Credential);
+                var response = await GoogleHttpClient.SendAsync(userInfoRequest);
                 if (!response.IsSuccessStatusCode) return Unauthorized("Invalid Google token.");
                 
                 var userInfoString = await response.Content.ReadAsStringAsync();

@@ -107,8 +107,8 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var dbContext = services.GetRequiredService<A1Academy.Shared.Data.AppDbContext>();
-        dbContext.Database.Migrate();
-        if (dbContext.Database.CanConnect())
+        await dbContext.Database.MigrateAsync();
+        if (await dbContext.Database.CanConnectAsync())
         {
             Console.WriteLine("==================================================");
             Console.WriteLine(" SUCCESS: Backend connected to PostgreSQL (v15)!");
@@ -184,7 +184,7 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapA1AcademyHealthChecks();
 
-app.Run();
+await app.RunAsync();
 
 
 
