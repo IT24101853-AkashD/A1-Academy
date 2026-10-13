@@ -60,9 +60,9 @@ export default function AdminControlModal({ isOpen, onClose }) {
                                 
                                 {/* Current Email (with Verify Button) */}
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">Current Email Address</label>
+                                    <label htmlFor="admin-control-current-email" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">Current Email Address</label>
                                     <div className="flex gap-2">
-                                        <input className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all" type="email" placeholder="current@a1academy.com" required />
+                                        <input id="admin-control-current-email" className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all" type="email" placeholder="current@a1academy.com" required />
                                         <button type="button" onClick={() => setCurrentEmailVerified(true)} className="shrink-0 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold px-4 py-3 rounded-xl hover:bg-slate-200 transition-all border border-slate-200 dark:border-slate-700 cursor-pointer">
                                             Verify
                                         </button>
@@ -78,9 +78,9 @@ export default function AdminControlModal({ isOpen, onClose }) {
 
                                 {/* New Email (with Verify Button) */}
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">New Email Address</label>
+                                    <label htmlFor="admin-control-new-email" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">New Email Address</label>
                                     <div className="flex gap-2">
-                                        <input className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all" type="email" placeholder="new@a1academy.com" />
+                                        <input id="admin-control-new-email" className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all" type="email" placeholder="new@a1academy.com" />
                                         <button type="button" onClick={() => setNewEmailVerified(true)} className="shrink-0 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold px-4 py-3 rounded-xl hover:bg-slate-200 transition-all border border-slate-200 dark:border-slate-700 cursor-pointer">
                                             Verify
                                         </button>
@@ -100,12 +100,12 @@ export default function AdminControlModal({ isOpen, onClose }) {
                                 {/* Passwords */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                                     <div>
-                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">New Password</label>
-                                        <input className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all" type="password" placeholder="••••••••" />
+                                        <label htmlFor="admin-control-new-password" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">New Password</label>
+                                        <input id="admin-control-new-password" className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all" type="password" placeholder="••••••••" />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">Confirm Password</label>
-                                        <input className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all" type="password" placeholder="••••••••" />
+                                        <label htmlFor="admin-control-confirm-password" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">Confirm Password</label>
+                                        <input id="admin-control-confirm-password" className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all" type="password" placeholder="••••••••" />
                                     </div>
                                 </div>
 
