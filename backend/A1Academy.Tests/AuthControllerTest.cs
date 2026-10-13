@@ -68,7 +68,8 @@ public AuthControllerTests()
         _configurationMock.Object,
         _cache,
         _emailServiceMock.Object,
-        _environmentMock.Object);
+        _environmentMock.Object,
+        Mock.Of<IHttpClientFactory>());
 }
 
 [Fact]
@@ -602,7 +603,8 @@ public void DebugOtp_OutsideDevelopmentOrTesting_ReturnsNotFound()
         _configurationMock.Object,
         _cache,
         _emailServiceMock.Object,
-        environmentMock.Object);
+        environmentMock.Object,
+        Mock.Of<IHttpClientFactory>());
 
     // Act
     var result = controller.DebugOtp("student@example.com");

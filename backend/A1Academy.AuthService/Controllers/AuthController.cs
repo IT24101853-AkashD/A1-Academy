@@ -25,12 +25,13 @@ namespace A1Academy.AuthService.Controllers
         private readonly IMemoryCache _cache;
         private readonly IEmailService _emailService;
         private readonly IWebHostEnvironment _environment;
+        // Hands out clients over pooled connections; creating an HttpClient per request
+        // exhausts sockets under load.
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        // One client for the whole service: creating one per request exhausts sockets under load.
-        private static readonly HttpClient GoogleHttpClient = new();
-
-        public AuthController(AppDbContext context, IConfiguration configuration, IMemoryCache cache, IEmailService emailService, IWebHostEnvironment environment)
+        public AuthController(AppDbContext context, IConfiguration configuration, IMemoryCache cache, IEmailService emailService, IWebHostEnvironment environment, IHttpClientFactory httpClientFactory)
         {
+            _httpClientFactory = httpClientFactory;
             _context = context;
             _configuration = configuration;
             _cache = cache;
@@ -250,10 +251,10 @@ namespace A1Academy.AuthService.Controllers
         {
             try
             {
-                // The caller's Google token goes on this one request, never on the shared client.
+                // The caller's Google token goes on this one request, never on a shared client.
                 using var userInfoRequest = new HttpRequestMessage(HttpMethod.Get, "https://www.googleapis.com/oauth2/v3/userinfo");
                 userInfoRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", request.Credential);
-                var response = await GoogleHttpClient.SendAsync(userInfoRequest);
+                var response = await _httpClientFactory.CreateClient().SendAsync(userInfoRequest);
                 if (!response.IsSuccessStatusCode) return Unauthorized("Invalid Google token.");
                 
                 var userInfoString = await response.Content.ReadAsStringAsync();

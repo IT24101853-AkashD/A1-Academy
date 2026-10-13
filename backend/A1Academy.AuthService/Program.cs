@@ -24,6 +24,8 @@ builder.Services.AddHostedService<KafkaConsumerService>();
 
 // Register Email & OTP Services
 builder.Services.AddMemoryCache();
+// Used by Google sign-in to call Google's userinfo endpoint.
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
