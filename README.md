@@ -50,8 +50,11 @@ Every service also exposes `/health/live` (process up) and `/health/ready` (data
 | `backend/A1Academy.{Auth,Admin,Teacher,Student}Service/` | The four microservices |
 | `backend/A1Academy.Shared/` | Data model, EF Core migrations, Kafka, email, health checks |
 | `backend/A1Academy.Tests/` | xUnit unit + integration tests (and Selenium E2E, excluded by default) |
-| `performance/jmeter/` | Login load test |
+| `performance/jmeter/` | JMeter load test plans and the script that runs them |
+| `scripts/run-tests.ps1` | Runs every test layer locally and prints one result table |
 | `scripts/devops-azure-setup.sh` | Production operations script (status, secrets, restart) |
+| `docker-compose.yml` | Local development stack |
+| `docker-compose.test.yml` | Override that turns the stack into the isolated test stack used by the E2E and load tests |
 | `.github/workflows/` | CI/CD pipelines |
 | `docs/evidence/` | Sprint evidence and reports |
 
@@ -129,20 +132,39 @@ Local ports: Auth `5185`, Admin `5219`, Teacher `5194`, Student `5208`, Gateway 
 
 ## Testing
 
-| Suite | Command | Notes |
-|---|---|---|
-| **Backend** (unit + integration, 195 tests) | `dotnet test backend/A1Academy.Tests/A1Academy.Tests.csproj --filter "Category!=E2E"` | No database or Kafka needed (in-memory DB, mocked email/Kafka). Runs on every backend PR. |
-| **Frontend unit** (Vitest) | `cd frontend && npm run test:unit` | 31 tests still target the pre-redesign UI and fail; see the [Sprint 4 report](docs/evidence/Sprint4-DevOps-QA-Report.md). |
-| **Backend E2E** (Selenium) | `dotnet test backend/A1Academy.Tests --filter Category=E2E` | Needs the full stack running. Set `E2E_API_URL=http://localhost:5100`; the auth service must run with `ASPNETCORE_ENVIRONMENT=Development` (it reads the signup code from `/api/auth/debug-otp`). |
-| **Frontend E2E** (WebdriverIO) | `cd frontend && npm run e2e` | Needs the full stack and the dev server running. |
-| **Load** (JMeter) | see [performance/jmeter/README.md](performance/jmeter/README.md) | Point it at the gateway with `-Jport=5100`. |
+Every layer runs with one command, and the same layers run in CI (see the Test Pipeline below):
+
+```powershell
+./scripts/run-tests.ps1                          # all four layers
+./scripts/run-tests.ps1 -Layer backend,frontend  # the two that need no Docker
+./scripts/run-tests.ps1 -Layer load -LoadProfile stress
+```
+
+The E2E and load layers build and start their own copy of the stack from
+`docker-compose.yml` + `docker-compose.test.yml` (empty database, emails captured locally by
+Mailpit) and remove it afterwards. It uses the same container names and ports as the development
+stack, so run `docker compose down` first; the script stops with a message if you forget.
+
+| Layer | Tool | Run it on its own | Needs |
+|---|---|---|---|
+| **Backend** unit + integration | xUnit, WebApplicationFactory, Moq | `dotnet test backend/A1Academy.Tests/A1Academy.Tests.csproj --filter "Category!=E2E"` | Nothing (in-memory database, mocked email) |
+| **Frontend** unit | Vitest, Testing Library | `cd frontend && npm run test:ci` | Nothing; writes coverage to `frontend/coverage/` |
+| **Browser E2E** | Selenium (xUnit, `Category=E2E`) | `./scripts/run-tests.ps1 -Layer e2e` | Docker |
+| **Browser E2E** | WebdriverIO | `cd frontend && npm run e2e` | The test stack and the frontend on `http://localhost:5173` |
+| **Load** | JMeter | `./scripts/run-tests.ps1 -Layer load` | Docker, Java; see [performance/jmeter/README.md](performance/jmeter/README.md) |
+
+Reports land in `test-results/`, `frontend/reports/`, `frontend/coverage/` and
+`performance/jmeter/results/` (HTML dashboards). None of these are committed.
 
 ---
 
 ## CI/CD
 
+Build, test and deploy are separate jobs, so a red check names the stage that failed.
+
 | Workflow | Runs on | What it does |
 |---|---|---|
+| `test-pipeline.yml` (**Test Pipeline**) | Every PR, every merge to `main`, and by hand | Four parallel jobs - backend tests, frontend tests, browser E2E, load tests - each writing its results to the run summary, plus a final **Pipeline result** check |
 | `ci-backend-tests.yml` | Every PR touching `backend/` | Builds the solution and runs the backend tests |
 | `ci-{auth,admin,teacher,student}.yml` | PRs and merges touching that service or `Shared` | Tests, builds the Docker image; on `main` pushes it and deploys |
 | `ci-gateway.yml` | PRs and merges touching the gateway | Builds; on `main` pushes and deploys |
@@ -150,12 +172,28 @@ Local ports: Auth `5185`, Admin `5219`, Teacher `5194`, Student `5208`, Gateway 
 | `sonarcloud.yml` | PRs and merges touching `backend/` | Static analysis + coverage; **fails if the Quality Gate fails** |
 | `main_a1-academy-frontend.yml` | Every merge to `main`; PRs touching `frontend/` | Lint + build; on `main` deploys to Azure Web App |
 
+- **Test Pipeline:** the E2E and load jobs start the whole system with
+  `.github/actions/start-test-stack`. Started by hand (Actions tab, **Run workflow**), it lets you
+  pick the JMeter load profile; pull requests use the light `smoke` profile because shared runners
+  give noisy timings.
 - **Merging to `main` deploys automatically.** Every service pipeline also has a **Run workflow**
   button (Actions tab) to redeploy `main` manually.
 - Azure login uses **GitHub OIDC** (no password stored in GitHub). Pull request builds never push images.
 - All GitHub Actions are **pinned to commit SHAs**; **Dependabot** opens weekly update PRs for NuGet,
   npm and Actions. Coupled major upgrades (EF Core, Npgsql, ASP.NET Core auth, App Insights) are
   excluded and should be done together.
+
+---
+
+## Branching
+
+- `main` is always deployable: every merge to it deploys to Azure. Nothing is committed to it
+  directly; work happens on a branch and reaches `main` through a pull request.
+- Branches are named `<type>/<short-description>`, with the type saying what the change is:
+  `feature/`, `fix/`, `test/`, `ci/` or `devops/`, `docs/`, `chore/`, `deps/`.
+- A pull request is merged once its checks are green: **Test Pipeline / Pipeline result**,
+  **SonarCloud Quality Gate**, and the build of every service it touches.
+- If a check goes red on `main`, fixing it comes before new work.
 
 ---
 
