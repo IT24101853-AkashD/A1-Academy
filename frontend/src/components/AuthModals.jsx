@@ -52,7 +52,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
         if (activeModal !== 'register-teacher-modal') return;
         let cancelled = false;
         setCategoriesLoading(true);
-        (async () => {
+        void (async () => {
             try {
                 const res = await fetch(import.meta.env.VITE_API_URL + '/api/categories/public');
                 if (!res.ok) throw new Error('Failed to load subjects.');
@@ -719,9 +719,9 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
                 ) : (
                     <a href="#" onClick={(e) => { 
                         e.preventDefault(); 
-                        if (otpContext === 'Reset') sendForgotOtp();
-                        else if (otpContext.startsWith('AdminControls')) sendOtp(otpContext === 'AdminControls' ? 'admin-current-email' : 'admin-new-email', otpContext);
-                        else sendOtp(otpContext === 'Student' ? 'student-email' : 'teacher-email', otpContext);
+                        if (otpContext === 'Reset') void sendForgotOtp();
+                        else if (otpContext.startsWith('AdminControls')) void sendOtp(otpContext === 'AdminControls' ? 'admin-current-email' : 'admin-new-email', otpContext);
+                        else void sendOtp(otpContext === 'Student' ? 'student-email' : 'teacher-email', otpContext);
                     }} className="text-slate-900 dark:text-white font-bold hover:underline ml-1">Resend Code</a>
                 )}
             </p>
@@ -955,7 +955,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
         
         <div className="flex justify-center gap-3 mb-4">
             {[0, 1, 2, 3, 4].map(index => (
-                <input key={index} type="text" maxLength={1} onKeyUp={(e) => handleOtpKeyUp(e, index, 'Student')} className="w-12 h-14 text-center font-headline-md text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all" />
+                <input key={index} type="text" maxLength={1} onKeyUp={(e) => handleOtpKeyUp(e, index)} className="w-12 h-14 text-center font-headline-md text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all" />
             ))}
         </div>
         <p id="otp-student-error" className="text-sm font-bold text-red-500 dark:text-red-400 hidden mb-4">Error text here</p>
@@ -969,7 +969,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
         </button>
         <div className="mt-6 text-center">
             <p id="otp-student-resend-text" className="text-sm font-medium text-slate-500 dark:text-slate-400">Didn't receive it? Resend in <span id="otp-student-timer" className="font-bold">60</span>s</p>
-            <a href="#" id="otp-student-resend-link" onClick={(e) => { e.preventDefault(); sendOtp('email', 'Student'); }} className="hidden text-sm font-medium text-slate-900 dark:text-white font-bold hover:underline">Resend Code</a>
+            <a href="#" id="otp-student-resend-link" onClick={(e) => { e.preventDefault(); void sendOtp('email', 'Student'); }} className="hidden text-sm font-medium text-slate-900 dark:text-white font-bold hover:underline">Resend Code</a>
         </div>
     </div>
 </div>
@@ -990,7 +990,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
         
         <div className="flex justify-center gap-3 mb-4">
             {[0, 1, 2, 3, 4].map(index => (
-                <input key={index} type="text" maxLength={1} onKeyUp={(e) => handleOtpKeyUp(e, index, 'Teacher')} className="w-12 h-14 text-center font-headline-md text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all" />
+                <input key={index} type="text" maxLength={1} onKeyUp={(e) => handleOtpKeyUp(e, index)} className="w-12 h-14 text-center font-headline-md text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all" />
             ))}
         </div>
         <p id="otp-teacher-error" className="text-sm font-bold text-red-500 dark:text-red-400 hidden mb-4">Error text here</p>
@@ -1004,7 +1004,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
         </button>
         <div className="mt-6 text-center">
             <p id="otp-teacher-resend-text" className="text-sm font-medium text-slate-500 dark:text-slate-400">Didn't receive it? Resend in <span id="otp-teacher-timer" className="font-bold">60</span>s</p>
-            <a href="#" id="otp-teacher-resend-link" onClick={(e) => { e.preventDefault(); sendOtp('teacher-email', 'Teacher'); }} className="hidden text-sm font-medium text-slate-900 dark:text-white font-bold hover:underline">Resend Code</a>
+            <a href="#" id="otp-teacher-resend-link" onClick={(e) => { e.preventDefault(); void sendOtp('teacher-email', 'Teacher'); }} className="hidden text-sm font-medium text-slate-900 dark:text-white font-bold hover:underline">Resend Code</a>
         </div>
     </div>
 </div>
@@ -1341,7 +1341,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
                                                 setFormErrors({...formErrors, 'admin-current-email': 'This is not your registered email.'});
                                                 return;
                                             }
-                                            sendOtp('admin-current-email', 'AdminControls');
+                                            void sendOtp('admin-current-email', 'AdminControls');
                                         } else {
                                             setFormErrors({...formErrors, 'admin-current-email': 'Failed to verify account identity.'});
                                         }
@@ -1377,7 +1377,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
                                             setFormErrors({...formErrors, 'admin-new-email': 'Please enter a new email to verify.'});
                                             return;
                                         }
-                                        sendOtp('admin-new-email', 'AdminControlsNewEmail');
+                                        void sendOtp('admin-new-email', 'AdminControlsNewEmail');
                                     }} className="shrink-0 bg-amber-300 text-slate-900 dark:text-white font-bold px-4 py-2.5 rounded-lg hover:bg-amber-400 transition-all shadow-sm cursor-pointer w-[116px] flex items-center justify-center gap-1 disabled:opacity-70 ">
                                         {isSendingOtp ? (
                                             <><span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> Sending...</>

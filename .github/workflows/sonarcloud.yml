@@ -61,6 +61,10 @@ jobs:
     # of how well its backend is tested. Remove it once frontend coverage (lcov) is reported.
     # scripts/** (PowerShell and shell tooling) is excluded for the same reason: it is counted
     # as coverable code but no test run here can ever cover it.
+    # Duplication: each service is deployed on its own and needs its own Program.cs, and the four
+    # host set-ups are deliberately kept parallel, so they are left out of duplication detection
+    # (they are already left out of coverage). Moving the shared set-up into A1Academy.Shared
+    # would remove the duplication itself and this exclusion with it.
     - name: Begin analysis
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -73,7 +77,7 @@ jobs:
         /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
         /d:sonar.exclusions="**/Migrations/**,**/bin/**,**/obj/**,**/uploads/**"
         /d:sonar.coverage.exclusions="**/Migrations/**,**/Program.cs,backend/A1Academy.Tests/**,frontend/**,scripts/**"
-        /d:sonar.cpd.exclusions="backend/A1Academy.Tests/**"
+        /d:sonar.cpd.exclusions="backend/A1Academy.Tests/**,**/Program.cs"
         /d:sonar.qualitygate.wait=true
         /d:sonar.qualitygate.timeout=300
 

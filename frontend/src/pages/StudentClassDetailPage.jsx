@@ -28,7 +28,7 @@ export default function StudentClassDetailPage() {
     };
 
     const loadMaterials = () => {
-        fetch(`${apiBase}/materials`, { headers: authHeader() }).then((res) => {
+        void fetch(`${apiBase}/materials`, { headers: authHeader() }).then((res) => {
             if (res.status === 401) return onUnauthorized();
             if (res.status === 403) return setAccessDenied(true);
             if (res.ok) return res.json().then(setMaterials);
@@ -36,7 +36,7 @@ export default function StudentClassDetailPage() {
     };
 
     const loadAssignments = () => {
-        fetch(`${apiBase}/assignments`, { headers: authHeader() }).then((res) => {
+        void fetch(`${apiBase}/assignments`, { headers: authHeader() }).then((res) => {
             if (res.status === 401) return onUnauthorized();
             if (res.status === 403) return setAccessDenied(true);
             if (res.ok) return res.json().then(setAssignments);
@@ -177,7 +177,7 @@ export default function StudentClassDetailPage() {
                                         <form
                                             onSubmit={(e) => {
                                                 e.preventDefault();
-                                                submit(a.id, e.target.elements.file.files[0]);
+                                                void submit(a.id, e.target.elements.file.files[0]);
                                             }}
                                             className="flex items-center gap-3"
                                         >

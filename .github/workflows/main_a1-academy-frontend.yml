@@ -41,7 +41,7 @@ jobs:
       - name: npm install, build, and test
         working-directory: ./frontend
         run: |
-          npm install
+          npm ci --ignore-scripts
           npm run lint
           npm run build --if-present
 
