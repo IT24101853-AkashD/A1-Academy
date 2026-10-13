@@ -533,20 +533,20 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
             <p className=" text-lg font-medium text-slate-500 dark:text-slate-400">Select your role to begin the registration process.</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div onClick={() => openModal('register-student-modal')} className="bg-white dark:bg-slate-800 rounded-[16px] p-8 shadow-level-1 hover:shadow-level-2 transition-all duration-300 border-2 border-transparent hover:border-amber-500 group flex flex-col items-center text-center cursor-pointer">
+            <button type="button" onClick={() => openModal('register-student-modal')} className="bg-white dark:bg-slate-800 rounded-[16px] p-8 shadow-level-1 hover:shadow-level-2 transition-all duration-300 border-2 border-transparent hover:border-amber-500 group flex flex-col items-center text-center cursor-pointer w-full">
                 <div className="w-28 h-28 mb-6 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     <img src="https://cdn-icons-png.flaticon.com/512/3135/3135810.png" alt="Cartoon Student Avatar" className="w-20 h-20 object-contain drop-shadow-md"/>
                 </div>
                 <h3 className="font-headline-sm text-[24px] text-slate-900 dark:text-white mb-3">Register as a Student</h3>
                 <p className=" text-base font-medium text-slate-500 dark:text-slate-400">Browse courses, track your progress, and earn digital badges.</p>
-            </div>
-            <div onClick={() => openModal('register-teacher-modal')} className="bg-white dark:bg-slate-800 rounded-[16px] p-8 shadow-level-1 hover:shadow-level-2 transition-all duration-300 border-2 border-transparent hover:border-amber-500 group flex flex-col items-center text-center cursor-pointer">
+            </button>
+            <button type="button" onClick={() => openModal('register-teacher-modal')} className="bg-white dark:bg-slate-800 rounded-[16px] p-8 shadow-level-1 hover:shadow-level-2 transition-all duration-300 border-2 border-transparent hover:border-amber-500 group flex flex-col items-center text-center cursor-pointer w-full">
                 <div className="w-28 h-28 mb-6 rounded-full overflow-hidden bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     <img src="https://cdn-icons-png.flaticon.com/512/3429/3429433.png" alt="Cartoon Teacher Avatar" className="w-20 h-20 object-contain drop-shadow-md"/>
                 </div>
                 <h3 className="font-headline-sm text-[24px] text-slate-900 dark:text-white mb-3">Register as a Teacher</h3>
                 <p className=" text-base font-medium text-slate-500 dark:text-slate-400">Submit your qualifications, manage classes, and guide the next generation.</p>
-            </div>
+            </button>
         </div>
     </div>
 </div>
@@ -1316,7 +1316,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
                     
                     {/* Current Email (with Verify Button) */}
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">Current Email Address</label>
+                        <label htmlFor="admin-current-email" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">Current Email Address</label>
                         <div className="flex gap-2">
                             <input id="admin-current-email" className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all" type="email" placeholder="current@a1academy.com" required onChange={() => setFormErrors({...formErrors, 'admin-current-email': null})} />
                             {(() => {
@@ -1360,7 +1360,7 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
 
                     {/* New Email */}
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">New Email Address <span className="text-slate-400 dark:text-slate-500 font-normal">(Optional)</span></label>
+                        <label htmlFor="admin-new-email" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">New Email Address <span className="text-slate-400 dark:text-slate-500 font-normal">(Optional)</span></label>
                         <div className="flex gap-2">
                             <input id="admin-new-email" className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all" type="email" placeholder="new@a1academy.com" onChange={() => setFormErrors({...formErrors, 'admin-new-email': null})} />
                             {(() => {
@@ -1394,11 +1394,11 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
                     {/* Passwords */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">New Password</label>
+                            <label htmlFor="admin-new-password" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">New Password</label>
                             <input id="admin-new-password" className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all" type="password" placeholder="••••••••" />
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">Confirm Password</label>
+                            <label htmlFor="admin-confirm-password" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">Confirm Password</label>
                             <input id="admin-confirm-password" className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all" type="password" placeholder="••••••••" onChange={() => { if(formErrors['admin-confirm-password']) setFormErrors({...formErrors, 'admin-confirm-password': null}); }}/>
                             {formErrors['admin-confirm-password'] && <p className="text-sm font-bold text-red-500 dark:text-red-400 mt-1">{formErrors['admin-confirm-password']}</p>}
                         </div>

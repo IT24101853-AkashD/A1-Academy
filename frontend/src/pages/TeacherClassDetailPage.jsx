@@ -496,8 +496,8 @@ export default function TeacherClassDetailPage() {
                                                                 <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/50">
                                                                     <div className="flex gap-4 items-start">
                                                                         <div className="w-24">
-                                                                            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Score (0-100)</label>
-                                                                            <input
+                                                                            <label htmlFor="grade-score" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Score (0-100)</label>
+                                                                            <input id="grade-score"
                                                                                 type="number"
                                                                                 min="0"
                                                                                 max="100"
@@ -507,8 +507,8 @@ export default function TeacherClassDetailPage() {
                                                                             />
                                                                         </div>
                                                                         <div className="flex-1">
-                                                                            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Feedback (Optional)</label>
-                                                                            <input
+                                                                            <label htmlFor="grade-feedback" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Feedback (Optional)</label>
+                                                                            <input id="grade-feedback"
                                                                                 type="text"
                                                                                 value={feedbackInput}
                                                                                 onChange={(e) => setFeedbackInput(e.target.value)}

@@ -123,8 +123,8 @@ export default function ScheduleClassPage() {
                     )}
 
                     <div>
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">Class name</label>
-                        <input
+                        <label htmlFor="schedule-class-name" className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">Class name</label>
+                        <input id="schedule-class-name"
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
@@ -134,8 +134,8 @@ export default function ScheduleClassPage() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">Subject</label>
-                        <select
+                        <label htmlFor="schedule-class-subject" className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">Subject</label>
+                        <select id="schedule-class-subject"
                             value={categoryId}
                             onChange={(e) => setCategoryId(e.target.value)}
                             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50 text-slate-900 dark:text-white bg-white dark:bg-slate-800"
@@ -153,8 +153,8 @@ export default function ScheduleClassPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">Date</label>
-                            <input
+                            <label htmlFor="schedule-class-date" className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">Date</label>
+                            <input id="schedule-class-date"
                                 type="date"
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
@@ -162,8 +162,8 @@ export default function ScheduleClassPage() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">Time</label>
-                            <input
+                            <label htmlFor="schedule-class-time" className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">Time</label>
+                            <input id="schedule-class-time"
                                 type="time"
                                 value={time}
                                 onChange={(e) => setTime(e.target.value)}
@@ -173,8 +173,8 @@ export default function ScheduleClassPage() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">Seat capacity</label>
-                        <input
+                        <label htmlFor="schedule-class-capacity" className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">Seat capacity</label>
+                        <input id="schedule-class-capacity"
                             type="number"
                             min="1"
                             value={capacity}

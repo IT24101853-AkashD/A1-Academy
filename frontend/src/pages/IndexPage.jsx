@@ -69,13 +69,14 @@ export default function IndexPage() {
                         <p className="text-slate-500 dark:text-slate-400 text-lg mb-8 leading-relaxed">{body}</p>
                         <div className="flex gap-4">
                             {[0, 1, 2, 3].map((idx) => (
-                                <div
+                                <button
+                                    type="button"
                                     key={idx}
                                     onClick={() => handleCardClick(idx)}
                                     className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-colors cursor-pointer ${activeIndex === idx ? 'bg-amber-300 text-slate-900' : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-amber-200'}`}
                                 >
                                     {idx + 1}
-                                </div>
+                                </button>
                             ))}
                         </div>
                     </div>

@@ -207,8 +207,8 @@ export default function AdminBadgeManagementPage() {
                     <form onSubmit={handleCreate} className="space-y-6 max-w-2xl">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-label-md text-on-surface mb-2">Badge Name *</label>
-                                <input
+                                <label htmlFor="badge-name" className="block text-label-md text-on-surface mb-2">Badge Name *</label>
+                                <input id="badge-name"
                                     type="text"
                                     required
                                     value={name}
@@ -218,8 +218,8 @@ export default function AdminBadgeManagementPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-label-md text-on-surface mb-2">Icon Name / URL</label>
-                                <input
+                                <label htmlFor="badge-icon-name" className="block text-label-md text-on-surface mb-2">Icon Name / URL</label>
+                                <input id="badge-icon-name"
                                     type="text"
                                     value={iconName}
                                     onChange={e => setIconName(e.target.value)}
@@ -229,8 +229,8 @@ export default function AdminBadgeManagementPage() {
                             </div>
                         </div>
                         <div>
-                            <label className="block text-label-md text-on-surface mb-2">Criteria *</label>
-                            <textarea
+                            <label htmlFor="badge-criteria" className="block text-label-md text-on-surface mb-2">Criteria *</label>
+                            <textarea id="badge-criteria"
                                 required
                                 value={criteria}
                                 onChange={e => setCriteria(e.target.value)}
