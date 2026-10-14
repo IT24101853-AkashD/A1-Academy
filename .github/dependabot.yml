@@ -43,6 +43,11 @@ updates:
     groups:
       frontend-minor-and-patch:
         update-types: [minor, patch]
+      # WebdriverIO packages must share a major version (the CLI can't drive an older runner), so
+      # their major bumps arrive as one PR instead of one broken PR per package.
+      wdio:
+        patterns: ["@wdio/*", "webdriverio"]
+        update-types: [major]
     commit-message:
       prefix: "deps(frontend)"
 

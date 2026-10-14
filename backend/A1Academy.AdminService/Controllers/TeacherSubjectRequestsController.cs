@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -67,6 +68,7 @@ namespace A1Academy.AdminService.Controllers
 
         public class ApproveRequest
         {
+            [JsonRequired]
             public int CategoryId { get; set; }
         }
 
