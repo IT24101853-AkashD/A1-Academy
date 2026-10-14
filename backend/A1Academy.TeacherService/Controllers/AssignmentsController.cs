@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -38,6 +39,7 @@ namespace A1Academy.TeacherService.Controllers
         {
             public string Title { get; set; } = string.Empty;
             public string Description { get; set; } = string.Empty;
+            [JsonRequired]
             public DateTime DueAt { get; set; }
         }
 

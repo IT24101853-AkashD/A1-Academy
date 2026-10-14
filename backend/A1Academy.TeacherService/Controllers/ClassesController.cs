@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -42,8 +43,11 @@ namespace A1Academy.TeacherService.Controllers
         public class ScheduleClassRequest
         {
             public string Name { get; set; } = string.Empty;
+            [JsonRequired]
             public int CategoryId { get; set; }
+            [JsonRequired]
             public DateTime ScheduledAt { get; set; }
+            [JsonRequired]
             public int Capacity { get; set; }
         }
 
