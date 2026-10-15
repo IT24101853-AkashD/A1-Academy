@@ -29,16 +29,16 @@ export default function AdminControlModal({ isOpen, onClose }) {
 
     return (
         <div 
-            className={`fixed inset-0 z-[110] flex items-center justify-center p-4 transition-all duration-300 ${isOpen ? 'opacity-100 pointer-events-auto backdrop-blur-md bg-slate-900/40' : 'opacity-0 pointer-events-none bg-transparent backdrop-blur-none'}`}
+            className={`fixed inset-0 overflow-y-auto overscroll-contain z-[110] flex p-3 sm:p-4 transition-all duration-300 ${isOpen ? 'opacity-100 pointer-events-auto backdrop-blur-md bg-slate-900/40' : 'opacity-0 pointer-events-none bg-transparent backdrop-blur-none'}`}
         >
             
             {/* Admin Control Container */}
             <div 
-                className={`relative w-full max-w-5xl bg-white dark:bg-slate-800 rounded-[24px] shadow-2xl p-8 md:p-12 border border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-400 ease-out ${isOpen ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}
+                className={`relative m-auto w-full max-w-5xl bg-white dark:bg-slate-800 rounded-[24px] shadow-2xl px-5 pb-5 pt-12 sm:p-8 md:p-12 border border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-400 ease-out ${isOpen ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}
             >
                 
                 {/* Close Button */}
-                <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
+                <button onClick={onClose} className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
                     <span className="material-symbols-outlined text-[32px]">close</span>
                 </button>
 

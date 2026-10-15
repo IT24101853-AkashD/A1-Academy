@@ -29,7 +29,7 @@ export default function ContactPage() {
             { icon: 'call', title: 'Phone', desc: '+94 77 123 4567' },
             { icon: 'schedule', title: 'Working Hours', desc: 'Monday – Saturday, 8:00 AM to 6:00 PM (LKT)' }
           ].map((card, i) => (
-            <div key={i} className="bg-white dark:bg-slate-800 rounded-[24px] p-8 shadow-xl border border-slate-100 dark:border-slate-700 hover:-translate-y-2 transition-all duration-300 group flex flex-col items-center text-center" data-aos="fade-up" data-aos-delay={i * 100}>
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-[24px] p-5 sm:p-8 shadow-xl border border-slate-100 dark:border-slate-700 hover:-translate-y-2 transition-all duration-300 group flex flex-col items-center text-center" data-aos="fade-up" data-aos-delay={i * 100}>
               <div className="w-16 h-16 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center mb-6 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/30 transition-colors shadow-sm">
                 <span className="material-symbols-outlined text-slate-400 dark:text-slate-500 text-3xl group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                   {card.icon}
@@ -55,7 +55,7 @@ export default function ContactPage() {
             { q: 'How do I apply to become a teacher?', a: 'Click the "Register" button and select the Teacher role. Your account will be placed in a "Pending" status while our Administrators review your professional qualifications. Once approved, you can begin scheduling classes.' },
             { q: 'How does the digital badge system work?', a: 'Our gamified learning system allows teachers to award digital badges for excellent academic performance, perfect attendance, and class participation. These badges are permanently displayed on your student progress card.' }
           ].map((faq, i) => (
-            <div key={i} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow" data-aos="fade-up" data-aos-delay={i * 100}>
+            <div key={i} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 sm:p-8 shadow-sm hover:shadow-md transition-shadow" data-aos="fade-up" data-aos-delay={i * 100}>
               <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-3">
                 <span className="text-amber-500 dark:text-amber-400">Q.</span> {faq.q}
               </h3>

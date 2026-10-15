@@ -25,10 +25,10 @@ export default function PublicRecognitionBoard() {
 
     return (
         <Layout>
-            <div className="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-6xl mx-auto pt-28 pb-12 px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
-                    <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white mb-4 font-jakarta">Public Recognition Board</h1>
-                    <p className="text-xl text-slate-600 dark:text-slate-400">Celebrating the outstanding achievements of our students.</p>
+                    <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white mb-4 font-jakarta">Public Recognition Board</h1>
+                    <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-400">Celebrating the outstanding achievements of our students.</p>
                 </div>
 
                 {loading ? (

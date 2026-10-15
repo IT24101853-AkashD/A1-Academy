@@ -156,7 +156,7 @@ export default function ProfilePage() {
                 </div>
 
                 {viewState === 'denied' && (
-                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 text-center">
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
                             <span className="material-symbols-outlined text-[32px] text-red-500 dark:text-red-400">block</span>
                         </div>
@@ -168,7 +168,7 @@ export default function ProfilePage() {
                 )}
 
                 {viewState === 'sessionEnded' && (
-                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 text-center">
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
                             <span className="material-symbols-outlined text-[32px] text-amber-500 dark:text-amber-400">lock_clock</span>
                         </div>
@@ -192,13 +192,13 @@ export default function ProfilePage() {
                 )}
 
                 {viewState === 'error' && (
-                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 text-center">
                         <p className="text-base font-bold text-red-500 dark:text-red-400">{errorMessage}</p>
                     </div>
                 )}
 
                 {viewState === 'success' && profile && !isEditing && (
-                    <div data-aos="fade-up" data-aos-delay="100" className="bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10">
+                    <div data-aos="fade-up" data-aos-delay="100" className="bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10">
                         <div className="flex items-start justify-between mb-8">
                             <div className="flex items-center gap-5">
                                 <div className="w-16 h-16 rounded-full bg-slate-900 text-white flex items-center justify-center text-2xl font-black flex-none">
@@ -239,19 +239,19 @@ export default function ProfilePage() {
                         )}
 
                         <dl className="divide-y divide-slate-100 dark:divide-slate-700 border-t border-slate-100 dark:border-slate-700">
-                            <div className="py-4 flex justify-between items-center">
+                            <div className="py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-4">
                                 <dt className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Name</dt>
                                 <dd className="text-base font-medium text-slate-900 dark:text-white">{profile.name}</dd>
                             </div>
-                            <div className="py-4 flex justify-between items-center">
+                            <div className="py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-4">
                                 <dt className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Email</dt>
-                                <dd className="text-base font-medium text-slate-900 dark:text-white">{profile.email}</dd>
+                                <dd className="text-base font-medium text-slate-900 dark:text-white min-w-0 break-all sm:text-right">{profile.email}</dd>
                             </div>
-                            <div className="py-4 flex justify-between items-center">
+                            <div className="py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-4">
                                 <dt className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Phone Number</dt>
                                 <dd className="text-base font-medium text-slate-900 dark:text-white">{profile.phoneNumber || '—'}</dd>
                             </div>
-                            <div className="py-4 flex justify-between items-center">
+                            <div className="py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-4">
                                 <dt className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Role</dt>
                                 <dd className="text-base font-medium text-slate-900 dark:text-white">{profile.role}</dd>
                             </div>
@@ -260,7 +260,7 @@ export default function ProfilePage() {
                 )}
 
                 {viewState === 'success' && profile && isEditing && (
-                    <form onSubmit={saveProfile} className="bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10">
+                    <form onSubmit={saveProfile} className="bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10">
                         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Edit Profile</h2>
 
                         {saveError && (
@@ -312,10 +312,10 @@ export default function ProfilePage() {
                             {/* Email and Role are shown but never editable here - Email is the
                                 login identifier and Role is Admin-controlled (see UsersController) -
                                 so the form doesn't even offer inputs for them. */}
-                            <div className="pt-2 grid grid-cols-2 gap-4 text-sm">
+                            <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                                 <div>
                                     <span className="block font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide text-xs mb-1">Email</span>
-                                    <span className="font-medium text-slate-500 dark:text-slate-400">{profile.email}</span>
+                                    <span className="font-medium text-slate-500 dark:text-slate-400 break-all">{profile.email}</span>
                                 </div>
                                 <div>
                                     <span className="block font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide text-xs mb-1">Role</span>

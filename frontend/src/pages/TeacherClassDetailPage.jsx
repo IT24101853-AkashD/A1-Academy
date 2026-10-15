@@ -319,8 +319,8 @@ export default function TeacherClassDetailPage() {
 
     return (
         <Layout>
-            <section className="py-24 px-6 max-w-5xl mx-auto w-full min-h-[60vh] space-y-10">
-                <div className="flex items-center justify-between">
+            <section className="py-24 px-4 sm:px-6 max-w-5xl mx-auto w-full min-h-[60vh] space-y-10">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <Link to="/teacher/classes" className="text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center gap-1">
                         <span className="material-symbols-outlined text-[16px]">arrow_back</span> Back to Classes
                     </Link>
@@ -334,7 +334,7 @@ export default function TeacherClassDetailPage() {
                 </div>
 
                 {/* Study Materials */}
-                <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 shadow-level-1 p-8">
+                <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 shadow-level-1 p-5 sm:p-8">
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white font-jakarta mb-4">Study Materials</h2>
 
                     <form onSubmit={handleUpload} className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -363,8 +363,8 @@ export default function TeacherClassDetailPage() {
                 </div>
 
                 {/* Assignments */}
-                <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 shadow-level-1 p-8">
-                    <div className="flex items-center justify-between mb-4">
+                <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 shadow-level-1 p-5 sm:p-8">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white font-jakarta">Assignments</h2>
                         {assignments.length > 0 && (
                             <button
@@ -408,9 +408,9 @@ export default function TeacherClassDetailPage() {
                         <ul className="space-y-3">
                             {assignments.map((a) => (
                                 <li key={a.id} className="px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 text-sm">
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-semibold text-slate-800 dark:text-slate-100">{a.title}</span>
-                                        <div className="flex items-center gap-3">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+                                        <span className="font-semibold text-slate-800 dark:text-slate-100 min-w-0">{a.title}</span>
+                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 shrink-0">
                                             <span className="text-xs text-slate-500 dark:text-slate-400">{a.submissionCount} submission(s)</span>
                                             <button
                                                 type="button"
@@ -446,9 +446,9 @@ export default function TeacherClassDetailPage() {
                                                 <ul className="space-y-2">
                                                     {submissions[a.id].map((sub) => (
                                                         <li key={sub.id} className="flex flex-col p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
-                                                            <div className="flex items-center justify-between">
-                                                                <div>
-                                                                    <div className="flex items-center gap-2">
+                                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                                <div className="min-w-0">
+                                                                    <div className="flex flex-wrap items-center gap-2">
                                                                         <span className="font-semibold text-slate-900 dark:text-white">{sub.studentName}</span>
                                                                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                                                                             sub.status === 'Late'
@@ -472,7 +472,7 @@ export default function TeacherClassDetailPage() {
                                                                         </p>
                                                                     )}
                                                                 </div>
-                                                                <div className="flex gap-2">
+                                                                <div className="flex flex-wrap gap-2 shrink-0">
                                                                     {gradingSubId !== sub.id && (
                                                                         <button
                                                                             type="button"
@@ -494,7 +494,7 @@ export default function TeacherClassDetailPage() {
                                                             
                                                             {gradingSubId === sub.id && (
                                                                 <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/50">
-                                                                    <div className="flex gap-4 items-start">
+                                                                    <div className="flex flex-wrap gap-4 items-start">
                                                                         <div className="w-24">
                                                                             <label htmlFor="grade-score" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Score (0-100)</label>
                                                                             <input id="grade-score"
@@ -506,7 +506,7 @@ export default function TeacherClassDetailPage() {
                                                                                 className="w-full px-2 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                                                             />
                                                                         </div>
-                                                                        <div className="flex-1">
+                                                                        <div className="flex-1 min-w-[160px]">
                                                                             <label htmlFor="grade-feedback" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Feedback (Optional)</label>
                                                                             <input id="grade-feedback"
                                                                                 type="text"
@@ -553,8 +553,8 @@ export default function TeacherClassDetailPage() {
                 </div>
 
                 {/* Attendance */}
-                <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 shadow-level-1 p-8">
-                    <div className="flex items-center justify-between mb-4">
+                <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 shadow-level-1 p-5 sm:p-8">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white font-jakarta">Attendance &amp; Roster</h2>
                         {roster.length > 0 && (
                             <button
@@ -577,9 +577,9 @@ export default function TeacherClassDetailPage() {
                         <>
                             <ul className="space-y-2 mb-6">
                                 {roster.map((s) => (
-                                    <li key={s.id} className="flex items-center justify-between px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 text-sm">
+                                    <li key={s.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 text-sm">
                                         <span className="font-medium text-slate-700 dark:text-slate-200">{s.firstName} {s.lastName}</span>
-                                        <div className="flex gap-2">
+                                        <div className="flex flex-wrap gap-2">
                                             <button
                                                 type="button"
                                                 onClick={() => setAwardingStudent(s)}

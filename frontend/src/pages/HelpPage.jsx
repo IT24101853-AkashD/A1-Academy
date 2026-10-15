@@ -5,10 +5,10 @@ import { Link } from 'react-router-dom';
 export default function HelpPage() {
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto px-6 py-24 grid grid-cols-1 md:grid-cols-4 gap-12 w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24 grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-12 w-full">
         
         {/* Left Sidebar Navigation */}
-        <aside className="col-span-1 md:block hidden">
+        <aside className="col-span-1 lg:block hidden">
           <div className="sticky top-32 space-y-2" data-aos="fade-right">
             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 px-4">Legal & Support</h3>
             <nav className="flex flex-col space-y-1">
@@ -26,8 +26,8 @@ export default function HelpPage() {
         </aside>
 
         {/* Right Content Area */}
-        <div className="col-span-1 md:col-span-3" data-aos="fade-left">
-          <div className="bg-white dark:bg-slate-800 rounded-[32px] p-8 md:p-16 shadow-xl border border-slate-100 dark:border-slate-700">
+        <div className="col-span-1 lg:col-span-3" data-aos="fade-left">
+          <div className="bg-white dark:bg-slate-800 rounded-[32px] p-5 sm:p-8 md:p-16 shadow-xl border border-slate-100 dark:border-slate-700">
             <header className="mb-12 border-b border-slate-100 dark:border-slate-700 pb-12">
               <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-4">Help Center & Support</h1>
               <p className="text-lg text-slate-500 dark:text-slate-400 font-medium">Select your role below to find quick guides on how to navigate the A1 Academy platform.</p>
@@ -75,7 +75,7 @@ export default function HelpPage() {
               </section>
 
               {/* Section 4: Contact Support */}
-              <section className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 p-8 rounded-[24px] flex flex-col md:flex-row items-start gap-6">
+              <section className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 p-5 sm:p-8 rounded-[24px] flex flex-col md:flex-row items-start gap-6">
                 <div className="bg-white dark:bg-slate-800 p-4 rounded-full shadow-sm">
                     <span className="material-symbols-outlined text-slate-400 dark:text-slate-500 text-3xl">support_agent</span>
                 </div>

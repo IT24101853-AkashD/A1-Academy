@@ -122,7 +122,7 @@ export default function ClassesPage() {
         <Layout>
             <section className="py-24 px-6 max-w-7xl mx-auto w-full min-h-[60vh]">
                 {viewState === 'sessionEnded' && (
-                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 text-center">
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
                             <span className="material-symbols-outlined text-[32px] text-amber-500 dark:text-amber-400">lock_clock</span>
                         </div>
@@ -143,7 +143,7 @@ export default function ClassesPage() {
                 )}
 
                 {viewState === 'error' && (
-                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 text-center">
                         <p className="text-base font-bold text-red-500 dark:text-red-400">{errorMessage}</p>
                         <Link to="/student/categories" className="inline-block mt-6 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                             &larr; Back to Categories
@@ -212,7 +212,7 @@ export default function ClassesPage() {
                         </div>
 
                         {filteredClasses.length === 0 ? (
-                            <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 p-12 text-center shadow-level-1 max-w-md mx-auto my-8">
+                            <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 p-6 sm:p-12 text-center shadow-level-1 max-w-md mx-auto my-8">
                                 <div className="w-16 h-16 rounded-3xl bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto mb-4">
                                     <span className="material-symbols-outlined text-[28px]">inbox</span>
                                 </div>

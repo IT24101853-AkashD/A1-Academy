@@ -1,6 +1,22 @@
 /* Default Vite CSS removed because it conflicts with Tailwind */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
 
+/* Slide-in (AOS) animations and wide decorative blobs must never create a sideways scroll.
+   `clip` (unlike `hidden`) does not create a scroll container, so the fixed navbar keeps working. */
+html, body {
+    overflow-x: clip;
+}
+
+/* Long unbroken strings (emails, URLs, IDs) wrap instead of pushing their container wider. */
+body {
+    overflow-wrap: break-word;
+}
+
+/* Offset in-page anchors so the fixed navbar does not cover the target heading. */
+html {
+    scroll-padding-top: 6rem;
+}
+
 .font-jakarta {
     font-family: 'Plus Jakarta Sans', sans-serif;
 }
@@ -8,7 +24,13 @@
 .gradient-text {
     background: linear-gradient(135deg, #0f172a, #334155);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
+}
+.dark .gradient-text {
+    background: linear-gradient(135deg, #ffffff, #cbd5e1);
+    -webkit-background-clip: text;
+    background-clip: text;
 }
 .glass-card {
     background: rgba(255, 255, 255, 0.8);
@@ -17,10 +39,17 @@
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
+.dark .glass-card {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(51, 65, 85, 0.6);
+}
 .glass-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
 .gradient-bg {
     background: linear-gradient(135deg, #eff6ff, #f8fafc, #fef3c7);
+}
+.dark .gradient-bg {
+    background: linear-gradient(135deg, #0f172a, #111827, #1c1917);
 }

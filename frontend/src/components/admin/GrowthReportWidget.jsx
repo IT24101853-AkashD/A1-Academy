@@ -38,23 +38,23 @@ export default function GrowthReportWidget() {
     };
 
     return (
-        <div className="glass-card rounded-3xl p-8 mb-12">
+        <div className="glass-card rounded-3xl p-5 sm:p-8 mb-12">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <span className="material-symbols-outlined text-indigo-500">monitoring</span>
                     Platform Growth Report
                 </h2>
             </div>
-            <div className="flex flex-wrap gap-4 items-end mb-8 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl">
+            <div className="flex flex-wrap gap-4 items-end mb-8 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl [&>div]:flex-1 [&>div]:min-w-[140px] sm:[&>div]:flex-none">
                 <div>
                     <label htmlFor="startDate" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Start Date</label>
-                    <input id="startDate" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800" />
+                    <input id="startDate" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800" />
                 </div>
                 <div>
                     <label htmlFor="endDate" className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">End Date</label>
-                    <input id="endDate" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800" />
+                    <input id="endDate" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800" />
                 </div>
-                <button onClick={fetchReport} disabled={loading} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50">
+                <button onClick={fetchReport} disabled={loading} className="w-full sm:w-auto px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50">
                     {loading ? 'Loading...' : 'Generate Report'}
                 </button>
             </div>

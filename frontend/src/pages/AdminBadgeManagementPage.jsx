@@ -162,7 +162,7 @@ export default function AdminBadgeManagementPage() {
     if (viewState === 'denied') {
         return (
             <Layout>
-                <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-center">
+                <div className="max-w-4xl mx-auto pt-28 pb-12 px-4 sm:px-6 lg:px-8 text-center">
                     <span className="material-symbols-outlined text-6xl text-error mb-4">block</span>
                     <h1 className="text-display-lg text-on-surface mb-4">Access Denied</h1>
                     <p className="text-body-lg text-on-surface-variant">You do not have permission to manage badge templates.</p>
@@ -174,7 +174,7 @@ export default function AdminBadgeManagementPage() {
     if (viewState === 'sessionEnded') {
         return (
             <Layout>
-                <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-center">
+                <div className="max-w-4xl mx-auto pt-28 pb-12 px-4 sm:px-6 lg:px-8 text-center">
                     <span className="material-symbols-outlined text-6xl text-error mb-4">logout</span>
                     <h1 className="text-display-lg text-on-surface mb-4">Session Ended</h1>
                     <p className="text-body-lg text-on-surface-variant mb-6">Your session has expired. Please log in again.</p>
@@ -188,11 +188,11 @@ export default function AdminBadgeManagementPage() {
 
     return (
         <Layout>
-            <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto pt-28 pb-12 px-4 sm:px-6 lg:px-8">
                 <div className="mb-8 flex items-center justify-between">
                     <div>
-                        <h1 className="text-display-lg-mobile sm:text-display-lg text-on-surface mb-2">Master Badge Templates</h1>
-                        <p className="text-body-lg text-on-surface-variant">Manage standardized achievements across the platform.</p>
+                        <h1 className="text-display-lg-mobile sm:text-display-lg text-on-surface dark:text-white mb-2">Master Badge Templates</h1>
+                        <p className="text-body-lg text-on-surface-variant dark:text-slate-400">Manage standardized achievements across the platform.</p>
                     </div>
                 </div>
 
@@ -242,7 +242,7 @@ export default function AdminBadgeManagementPage() {
                         <button
                             type="submit"
                             disabled={isSaving}
-                            className="bg-primary text-on-primary px-8 py-3 rounded-full font-label-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            className="bg-primary text-on-primary px-5 sm:px-8 py-3 rounded-full font-label-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
                             {isSaving ? <span className="material-symbols-outlined animate-spin">progress_activity</span> : <span className="material-symbols-outlined">add</span>}
                             Create Badge

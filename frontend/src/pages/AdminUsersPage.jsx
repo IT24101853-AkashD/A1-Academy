@@ -282,7 +282,7 @@ export default function AdminUsersPage() {
                 </div>
 
                 {viewState === 'denied' && (
-                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800/80 backdrop-blur-md rounded-[32px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800/80 backdrop-blur-md rounded-[32px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 text-center">
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
                             <span className="material-symbols-outlined text-[32px] text-red-500 dark:text-red-400">block</span>
                         </div>
@@ -294,7 +294,7 @@ export default function AdminUsersPage() {
                 )}
 
                 {viewState === 'sessionEnded' && (
-                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800/80 backdrop-blur-md rounded-[32px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800/80 backdrop-blur-md rounded-[32px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 text-center">
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
                             <span className="material-symbols-outlined text-[32px] text-amber-500 dark:text-amber-400">lock_clock</span>
                         </div>
@@ -352,7 +352,7 @@ export default function AdminUsersPage() {
                 )}
 
                 {viewState === 'error' && (
-                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800/80 backdrop-blur-md rounded-[32px] shadow-level-2 border border-red-100 p-10 text-center mt-8">
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800/80 backdrop-blur-md rounded-[32px] shadow-level-2 border border-red-100 p-6 sm:p-10 text-center mt-8">
                         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
                             <span className="material-symbols-outlined text-[28px] text-red-500 dark:text-red-400">error</span>
                         </div>

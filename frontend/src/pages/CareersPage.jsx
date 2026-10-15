@@ -18,7 +18,7 @@ export default function CareersPage() {
             <p className="text-lg md:text-xl text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed">
                 While we do not have any open positions right now, A1 Academy is constantly expanding. We are always looking for passionate educators and technical innovators. Please check back soon—your next big opportunity might be just around the corner.
             </p>
-            <Link to="/" className="mt-8 inline-flex justify-center items-center px-8 py-4 bg-slate-900 text-white font-bold rounded-full hover:bg-slate-800 hover:-translate-y-1 transition-all shadow-xl hover:shadow-2xl">
+            <Link to="/" className="mt-8 inline-flex justify-center items-center px-5 sm:px-8 py-4 bg-slate-900 text-white font-bold rounded-full hover:bg-slate-800 hover:-translate-y-1 transition-all shadow-xl hover:shadow-2xl">
                 Return to Homepage
             </Link>
         </div>

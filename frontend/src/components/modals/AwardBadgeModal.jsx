@@ -69,8 +69,8 @@ export default function AwardBadgeModal({ isOpen, onClose, student, classId }) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+        <div className="fixed inset-0 overflow-y-auto overscroll-contain z-[100] flex p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm">
+            <div className="m-auto bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative">
                 <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                     <span className="material-symbols-outlined">close</span>
                 </button>

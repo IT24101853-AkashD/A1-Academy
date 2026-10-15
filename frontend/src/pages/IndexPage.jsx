@@ -84,7 +84,7 @@ export default function IndexPage() {
                     <div className="relative" data-aos="fade-left">
                         <div className="absolute inset-0 bg-amber-100 dark:bg-amber-900/30 rounded-[40px] rotate-3 scale-105 transition-transform duration-500 hover:rotate-6"></div>
                         <div
-                            className={`relative bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-10 rounded-[40px] shadow-2xl group cursor-pointer border border-slate-100 dark:border-slate-700 transition-all duration-200 ${isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
+                            className={`relative bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-6 sm:p-10 rounded-[40px] shadow-2xl group cursor-pointer border border-slate-100 dark:border-slate-700 transition-all duration-200 ${isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
                         >
                             <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/40 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 text-amber-600 dark:text-amber-300">
                                 <span className="material-symbols-outlined text-5xl">{activeCard.icon}</span>
@@ -121,7 +121,7 @@ export default function IndexPage() {
                         <p className="text-lg md:text-xl text-slate-500 dark:text-slate-400 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
                             Browse more courses, keep an eye on the categories you're enrolled in, and pick up right where you left off.
                         </p>
-                        <Link to="/student/categories" className="inline-block bg-slate-900 dark:bg-amber-400 text-white dark:text-slate-900 px-8 py-4 rounded-full font-bold text-lg hover:-translate-y-1 transition-all shadow-xl hover:shadow-2xl hover:bg-slate-800 dark:hover:bg-amber-300">
+                        <Link to="/student/categories" className="inline-block bg-slate-900 dark:bg-amber-400 text-white dark:text-slate-900 px-5 sm:px-8 py-4 rounded-full font-bold text-lg hover:-translate-y-1 transition-all shadow-xl hover:shadow-2xl hover:bg-slate-800 dark:hover:bg-amber-300">
                             Browse Courses
                         </Link>
                     </div>
@@ -143,7 +143,7 @@ export default function IndexPage() {
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                         {facilities.map((card, i) => (
-                            <div key={i} className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-[24px] p-8 shadow-xl border border-slate-100 dark:border-slate-700 hover:-translate-y-2 transition-all duration-300 group" data-aos="fade-up" data-aos-delay={i * 100}>
+                            <div key={i} className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-[24px] p-5 sm:p-8 shadow-xl border border-slate-100 dark:border-slate-700 hover:-translate-y-2 transition-all duration-300 group" data-aos="fade-up" data-aos-delay={i * 100}>
                                 <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-6 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/40 transition-colors">
                                     <span className="material-symbols-outlined text-slate-600 dark:text-slate-300 group-hover:text-amber-600 dark:group-hover:text-amber-300 text-3xl transition-colors">
                                         {card.icon}
@@ -177,7 +177,7 @@ export default function IndexPage() {
                         <p className="text-lg md:text-xl text-slate-500 dark:text-slate-400 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
                             You're part of a rigorously vetted community of educators helping students reach their goals.
                         </p>
-                        <Link to="/profile" className="inline-block bg-slate-900 dark:bg-amber-400 text-white dark:text-slate-900 px-8 py-4 rounded-full font-bold text-lg hover:-translate-y-1 transition-all shadow-xl hover:shadow-2xl hover:bg-slate-800 dark:hover:bg-amber-300">
+                        <Link to="/profile" className="inline-block bg-slate-900 dark:bg-amber-400 text-white dark:text-slate-900 px-5 sm:px-8 py-4 rounded-full font-bold text-lg hover:-translate-y-1 transition-all shadow-xl hover:shadow-2xl hover:bg-slate-800 dark:hover:bg-amber-300">
                             View Your Profile
                         </Link>
                     </div>
@@ -208,10 +208,10 @@ export default function IndexPage() {
                         Create your active account today to start browsing courses, earning digital badges, and shaping your future.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-5 justify-center items-center">
-                        <button onClick={() => window.openReactModal && window.openReactModal('register-student-modal')} className="bg-slate-900 dark:bg-amber-400 text-white dark:text-slate-900 px-8 py-4 rounded-full font-bold text-lg hover:-translate-y-1 transition-all shadow-xl hover:shadow-2xl hover:bg-slate-800 dark:hover:bg-amber-300">
+                        <button onClick={() => window.openReactModal && window.openReactModal('register-student-modal')} className="bg-slate-900 dark:bg-amber-400 text-white dark:text-slate-900 px-5 sm:px-8 py-4 rounded-full font-bold text-lg hover:-translate-y-1 transition-all shadow-xl hover:shadow-2xl hover:bg-slate-800 dark:hover:bg-amber-300">
                             Join as a Student
                         </button>
-                        <button onClick={() => window.openReactModal && window.openReactModal('register-teacher-modal')} className="bg-amber-300 hover:bg-amber-400 text-slate-900 px-8 py-4 rounded-full font-bold text-lg hover:-translate-y-1 transition-all shadow-lg hover:shadow-xl">
+                        <button onClick={() => window.openReactModal && window.openReactModal('register-teacher-modal')} className="bg-amber-300 hover:bg-amber-400 text-slate-900 px-5 sm:px-8 py-4 rounded-full font-bold text-lg hover:-translate-y-1 transition-all shadow-lg hover:shadow-xl">
                             Teach with Us
                         </button>
                     </div>
