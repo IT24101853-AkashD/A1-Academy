@@ -255,33 +255,31 @@ namespace A1Academy.TeacherService.Controllers
                 .ThenByDescending(s => s.SubmittedAt)
                 .ToListAsync();
 
-            var csv = new CsvBuilder();
-            csv.AddRow("Submission ID", "Assignment", "Student ID", "Student Name", "Student Email", "File Name", "Submitted At (UTC)", "Status", "Grade", "Feedback");
+            var sheet = new XlsxBuilder("Submissions", "Submission ID", "Assignment", "Student ID", "Student Name", "Student Email", "File Name", "Submitted At (UTC)", "Status", "Grade", "Feedback");
             foreach (var s in submissions)
             {
                 var studentName = s.Student == null ? string.Empty : $"{s.Student.FirstName} {s.Student.LastName}".Trim();
                 var studentEmail = s.Student?.Email ?? string.Empty;
                 var assignmentTitle = s.Assignment?.Title ?? string.Empty;
-                var gradeStr = s.Grade.HasValue ? s.Grade.Value.ToString() : "Ungraded";
-                csv.AddRow(
-                    s.Id.ToString(),
+                sheet.AddRow(
+                    s.Id,
                     assignmentTitle,
-                    s.StudentId.ToString(),
+                    s.StudentId,
                     studentName,
                     studentEmail,
                     s.FileName,
-                    CsvBuilder.FormatTimestamp(s.SubmittedAt),
+                    s.SubmittedAt,
                     s.Status,
-                    gradeStr,
-                    s.Feedback ?? string.Empty
+                    s.Grade.HasValue ? s.Grade.Value : "Ungraded",
+                    s.Feedback
                 );
             }
 
             var filename = assignmentId.HasValue
-                ? $"assignment-{assignmentId.Value}-submissions.csv"
-                : $"class-{classId}-submissions.csv";
+                ? $"assignment-{assignmentId.Value}-submissions.xlsx"
+                : $"class-{classId}-submissions.xlsx";
 
-            return File(csv.ToByteArray(), "text/csv; charset=utf-8", filename);
+            return File(sheet.ToByteArray(), XlsxBuilder.ContentType, filename);
         }
 
         [HttpGet("{assignmentId}/submissions/{submissionId}/download")]

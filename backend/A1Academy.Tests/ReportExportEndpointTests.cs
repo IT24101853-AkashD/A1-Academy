@@ -7,6 +7,8 @@ using System.Net.Http.Json;
 using System.Threading.Tasks;
 using A1Academy.Shared.Data;
 using A1Academy.Shared.Data.Models;
+using A1Academy.Shared.Utilities;
+using ClosedXML.Excel;
 using A1Academy.Tests.Fixtures;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -47,6 +49,17 @@ namespace A1Academy.Tests
             response.EnsureSuccessStatusCode();
             var body = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
             return body.GetProperty("token").GetString()!;
+        }
+
+        // Opens the exported workbook and flattens its first sheet to "a,b,c" lines, so assertions can
+        // check headers and values the same way regardless of the file format.
+        private static async Task<string> ReadSheetAsTextAsync(HttpResponseMessage response)
+        {
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var workbook = new XLWorkbook(stream);
+            var sheet = workbook.Worksheet(1);
+            return string.Join("\n", sheet.RowsUsed().Select(row =>
+                string.Join(",", row.Cells(1, sheet.LastColumnUsed()!.ColumnNumber()).Select(c => c.GetFormattedString()))));
         }
 
         private static HttpRequestMessage AuthorizedGet(string url, string token)
@@ -93,9 +106,9 @@ namespace A1Academy.Tests
 
             var response = await client.SendAsync(AuthorizedGet("/api/users/export?role=Teacher&status=Pending", token));
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            Assert.Equal("text/csv", response.Content.Headers.ContentType?.MediaType);
+            Assert.Equal(XlsxBuilder.ContentType, response.Content.Headers.ContentType?.MediaType);
 
-            var csvContent = await response.Content.ReadAsStringAsync();
+            var csvContent = await ReadSheetAsTextAsync(response);
             Assert.Contains("User ID,Name,Email,Role,Account Status", csvContent);
             Assert.Contains(pendingTeacher.Email, csvContent);
             Assert.DoesNotContain(activeTeacher.Email, csvContent);
@@ -149,9 +162,9 @@ namespace A1Academy.Tests
             var tokenOwner = await LoginAsync(client, teacherOwner.Email);
             var resOwner = await client.SendAsync(AuthorizedGet($"/api/teacher/classes/{testClass.Id}/roster/export", tokenOwner));
             Assert.Equal(HttpStatusCode.OK, resOwner.StatusCode);
-            Assert.Equal("text/csv", resOwner.Content.Headers.ContentType?.MediaType);
+            Assert.Equal(XlsxBuilder.ContentType, resOwner.Content.Headers.ContentType?.MediaType);
 
-            var csvContent = await resOwner.Content.ReadAsStringAsync();
+            var csvContent = await ReadSheetAsTextAsync(resOwner);
             Assert.Contains("Student ID,First Name,Last Name,Email,Attendance Status", csvContent);
             Assert.Contains(student1.Email, csvContent);
             Assert.Contains("Present", csvContent);
@@ -209,7 +222,7 @@ namespace A1Academy.Tests
             var resClass = await client.SendAsync(AuthorizedGet($"/api/teacher/classes/{testClass.Id}/submissions/export", token));
             Assert.Equal(HttpStatusCode.OK, resClass.StatusCode);
 
-            var csvClass = await resClass.Content.ReadAsStringAsync();
+            var csvClass = await ReadSheetAsTextAsync(resClass);
             Assert.Contains("Submission ID,Assignment,Student ID,Student Name,Student Email,File Name,Submitted At (UTC),Status,Grade,Feedback", csvClass);
             Assert.Contains("PID Controller Design", csvClass);
             Assert.Contains(student.Email, csvClass);
@@ -220,7 +233,7 @@ namespace A1Academy.Tests
             var resAsg = await client.SendAsync(AuthorizedGet($"/api/teacher/classes/{testClass.Id}/assignments/{asg.Id}/submissions/export", token));
             Assert.Equal(HttpStatusCode.OK, resAsg.StatusCode);
 
-            var csvAsg = await resAsg.Content.ReadAsStringAsync();
+            var csvAsg = await ReadSheetAsTextAsync(resAsg);
             Assert.Contains("pid_report.pdf", csvAsg);
             Assert.Contains(student.Email, csvAsg);
         }
@@ -261,13 +274,13 @@ namespace A1Academy.Tests
 
             var response = await client.SendAsync(AuthorizedGet("/api/student/classes/export", token));
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            Assert.Equal("text/csv", response.Content.Headers.ContentType?.MediaType);
+            Assert.Equal(XlsxBuilder.ContentType, response.Content.Headers.ContentType?.MediaType);
 
-            var csvContent = await response.Content.ReadAsStringAsync();
-            Assert.Contains("Class ID,Class Name,Subject,Teacher,Scheduled At (UTC),Class Status,Attendance Status,Graded Submissions,Average Grade", csvContent);
+            var csvContent = await ReadSheetAsTextAsync(response);
+            Assert.Contains("Class ID,Class Name,Subject,Teacher,Scheduled At (UTC),Class Status,Attendance Status,Graded Submissions,Average Grade (%)", csvContent);
             Assert.Contains("Deep Learning Systems", csvContent);
             Assert.Contains("Present", csvContent);
-            Assert.Contains("92%", csvContent);
+            Assert.Contains(",92", csvContent); // average grade is now a number, not "92%"
             Assert.DoesNotContain("Quantum Cryptography", csvContent); // Enforces data isolation
         }
     }

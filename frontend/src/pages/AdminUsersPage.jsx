@@ -105,7 +105,7 @@ export default function AdminUsersPage() {
             }
 
             const blob = await res.blob();
-            const filename = `users-report${roleFilter ? `-${roleFilter.toLowerCase()}` : ''}${statusFilter ? `-${statusFilter.toLowerCase()}` : ''}.csv`;
+            const filename = `users-report${roleFilter ? `-${roleFilter.toLowerCase()}` : ''}${statusFilter ? `-${statusFilter.toLowerCase()}` : ''}.xlsx`;
             triggerFileDownload(blob, filename);
         } catch (err) {
             setExportError(err.message || 'Error exporting user directory.');
@@ -330,7 +330,7 @@ export default function AdminUsersPage() {
                                     <span className={`material-symbols-outlined text-[18px] ${isExporting ? 'animate-spin' : ''}`}>
                                         {isExporting ? 'progress_activity' : 'download'}
                                     </span>
-                                    {isExporting ? 'Generating Report…' : 'Download Report (CSV)'}
+                                    {isExporting ? 'Generating Report…' : 'Download Report (Excel)'}
                                 </button>
                             </div>
                         </div>

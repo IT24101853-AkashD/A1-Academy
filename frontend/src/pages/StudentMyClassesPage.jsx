@@ -30,7 +30,7 @@ export default function StudentMyClassesPage() {
             }
             if (!res.ok) throw new Error('Could not export your classes report.');
             const blob = await res.blob();
-            triggerFileDownload(blob, 'my-classes-report.csv');
+            triggerFileDownload(blob, 'my-classes-report.xlsx');
         } catch (err) {
             setExportError(err.message || 'Error exporting report.');
         } finally {
@@ -116,7 +116,7 @@ export default function StudentMyClassesPage() {
                                         <span className={`material-symbols-outlined text-[16px] ${isExporting ? 'animate-spin' : ''}`}>
                                             {isExporting ? 'progress_activity' : 'download'}
                                         </span>
-                                        {isExporting ? 'Generating Report…' : 'Download Report (CSV)'}
+                                        {isExporting ? 'Generating Report…' : 'Download Report (Excel)'}
                                     </button>
                                 )}
                             </div>

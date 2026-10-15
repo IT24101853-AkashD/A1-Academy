@@ -155,8 +155,8 @@ namespace A1Academy.StudentService.Controllers
                 .Where(s => s.StudentId == studentId.Value && assignmentIds.Contains(s.AssignmentId))
                 .ToListAsync();
 
-            var csv = new CsvBuilder();
-            csv.AddRow(
+            var sheet = new XlsxBuilder(
+                "My Classes",
                 "Class ID",
                 "Class Name",
                 "Subject",
@@ -165,7 +165,7 @@ namespace A1Academy.StudentService.Controllers
                 "Class Status",
                 "Attendance Status",
                 "Graded Submissions",
-                "Average Grade"
+                "Average Grade (%)"
             );
 
             foreach (var e in enrollments)
@@ -177,24 +177,24 @@ namespace A1Academy.StudentService.Controllers
 
                 var classAsgIds = assignments.Where(a => a.ClassId == c.Id).Select(a => a.Id).ToList();
                 var classSubs = submissions.Where(s => classAsgIds.Contains(s.AssignmentId) && s.Grade.HasValue).ToList();
-                var avgGradeStr = classSubs.Count > 0
-                    ? $"{Math.Round(classSubs.Average(s => s.Grade!.Value), 1)}%"
+                object avgGrade = classSubs.Count > 0
+                    ? Math.Round(classSubs.Average(s => s.Grade!.Value), 1)
                     : "Not graded";
 
-                csv.AddRow(
-                    c.Id.ToString(),
+                sheet.AddRow(
+                    c.Id,
                     c.Name,
                     c.Category?.Name ?? string.Empty,
                     teacherName,
-                    CsvBuilder.FormatTimestamp(c.ScheduledAt),
+                    c.ScheduledAt,
                     c.Status,
                     attStatus,
-                    classSubs.Count.ToString(),
-                    avgGradeStr
+                    classSubs.Count,
+                    avgGrade
                 );
             }
 
-            return File(csv.ToByteArray(), "text/csv; charset=utf-8", "my-classes-report.csv");
+            return File(sheet.ToByteArray(), XlsxBuilder.ContentType, "my-classes-report.xlsx");
         }
 
         [HttpGet("{id}")]

@@ -55,7 +55,7 @@ export default function TeacherClassDetailPage() {
             if (res.status === 401) return onUnauthorized();
             if (!res.ok) throw new Error('Could not export class roster.');
             const blob = await res.blob();
-            triggerFileDownload(blob, `class-${id}-roster.csv`);
+            triggerFileDownload(blob, `class-${id}-roster.xlsx`);
         } catch {
             alert('Error exporting roster.');
         } finally {
@@ -70,7 +70,7 @@ export default function TeacherClassDetailPage() {
             if (res.status === 401) return onUnauthorized();
             if (!res.ok) throw new Error('Could not export class submissions.');
             const blob = await res.blob();
-            triggerFileDownload(blob, `class-${id}-submissions.csv`);
+            triggerFileDownload(blob, `class-${id}-submissions.xlsx`);
         } catch {
             alert('Error exporting submissions.');
         } finally {
@@ -85,7 +85,7 @@ export default function TeacherClassDetailPage() {
             if (res.status === 401) return onUnauthorized();
             if (!res.ok) throw new Error('Could not export assignment submissions.');
             const blob = await res.blob();
-            triggerFileDownload(blob, `assignment-${asgId}-submissions.csv`);
+            triggerFileDownload(blob, `assignment-${asgId}-submissions.xlsx`);
         } catch {
             alert('Error exporting assignment submissions.');
         } finally {
@@ -353,7 +353,7 @@ export default function TeacherClassDetailPage() {
                                 <span className={`material-symbols-outlined text-[16px] ${isExportingSubmissions ? 'animate-spin' : ''}`}>
                                     {isExportingSubmissions ? 'progress_activity' : 'download'}
                                 </span>
-                                {isExportingSubmissions ? 'Exporting...' : 'Export Submissions (CSV)'}
+                                {isExportingSubmissions ? 'Exporting...' : 'Export Submissions (Excel)'}
                             </button>
                         )}
                     </div>
@@ -394,12 +394,12 @@ export default function TeacherClassDetailPage() {
                                                 onClick={() => handleExportAssignmentSubmissions(a.id)}
                                                 disabled={exportingAsgId === a.id}
                                                 className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors flex items-center gap-1 cursor-pointer"
-                                                title="Export submissions for this assignment as CSV"
+                                                title="Export submissions for this assignment as an Excel file"
                                             >
                                                 <span className={`material-symbols-outlined text-[14px] ${exportingAsgId === a.id ? 'animate-spin' : ''}`}>
                                                     {exportingAsgId === a.id ? 'progress_activity' : 'download'}
                                                 </span>
-                                                {exportingAsgId === a.id ? 'Exporting...' : 'CSV'}
+                                                {exportingAsgId === a.id ? 'Exporting...' : 'Excel'}
                                             </button>
                                             <button
                                                 type="button"
@@ -446,7 +446,7 @@ export default function TeacherClassDetailPage() {
                                 <span className={`material-symbols-outlined text-[16px] ${isExportingRoster ? 'animate-spin' : ''}`}>
                                     {isExportingRoster ? 'progress_activity' : 'download'}
                                 </span>
-                                {isExportingRoster ? 'Exporting...' : 'Export Roster (CSV)'}
+                                {isExportingRoster ? 'Exporting...' : 'Export Roster (Excel)'}
                             </button>
                         )}
                     </div>
