@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import { clearSession } from '../utils/session';
 import { triggerFileDownload } from '../utils/download';
 import AwardBadgeModal from '../components/modals/AwardBadgeModal';
+import SubmissionsPanel from '../components/teacher/SubmissionsPanel';
 
 const authHeader = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
 
@@ -32,11 +33,6 @@ export default function TeacherClassDetailPage() {
     const [expandedAsgId, setExpandedAsgId] = useState(null);
     const [submissions, setSubmissions] = useState({});
     const [loadingSubmissions, setLoadingSubmissions] = useState(false);
-    const [gradingSubId, setGradingSubId] = useState(null);
-    const [gradeInput, setGradeInput] = useState('');
-    const [feedbackInput, setFeedbackInput] = useState('');
-    const [gradeError, setGradeError] = useState('');
-    const [isSavingGrade, setIsSavingGrade] = useState(false);
 
     // Roster / attendance
     const [roster, setRoster] = useState([]);
@@ -59,7 +55,7 @@ export default function TeacherClassDetailPage() {
             if (res.status === 401) return onUnauthorized();
             if (!res.ok) throw new Error('Could not export class roster.');
             const blob = await res.blob();
-            triggerFileDownload(blob, `class-${id}-roster.csv`);
+            triggerFileDownload(blob, `class-${id}-roster.xlsx`);
         } catch {
             alert('Error exporting roster.');
         } finally {
@@ -74,7 +70,7 @@ export default function TeacherClassDetailPage() {
             if (res.status === 401) return onUnauthorized();
             if (!res.ok) throw new Error('Could not export class submissions.');
             const blob = await res.blob();
-            triggerFileDownload(blob, `class-${id}-submissions.csv`);
+            triggerFileDownload(blob, `class-${id}-submissions.xlsx`);
         } catch {
             alert('Error exporting submissions.');
         } finally {
@@ -89,7 +85,7 @@ export default function TeacherClassDetailPage() {
             if (res.status === 401) return onUnauthorized();
             if (!res.ok) throw new Error('Could not export assignment submissions.');
             const blob = await res.blob();
-            triggerFileDownload(blob, `assignment-${asgId}-submissions.csv`);
+            triggerFileDownload(blob, `assignment-${asgId}-submissions.xlsx`);
         } catch {
             alert('Error exporting assignment submissions.');
         } finally {
@@ -244,45 +240,26 @@ export default function TeacherClassDetailPage() {
         }
     };
 
-    const startGrading = (sub) => {
-        setGradingSubId(sub.id);
-        setGradeInput(sub.grade !== null && sub.grade !== undefined ? String(sub.grade) : '');
-        setFeedbackInput(sub.feedback || '');
-        setGradeError('');
-    };
-
-    const saveGrade = async (asgId, subId) => {
-        setGradeError('');
-        const numGrade = Number.parseInt(gradeInput, 10);
-        if (Number.isNaN(numGrade) || numGrade < 0 || numGrade > 100) {
-            setGradeError('Grade must be between 0 and 100.');
-            return;
-        }
-
-        setIsSavingGrade(true);
+    // Returns an error message for the panel to show, or null once the grade is saved.
+    const saveGrade = async (asgId, subId, grade, feedback) => {
         try {
             const res = await fetch(`${apiBase}/assignments/${asgId}/submissions/${subId}/grade`, {
                 method: 'PATCH',
                 headers: { ...authHeader(), 'Content-Type': 'application/json' },
-                body: JSON.stringify({ grade: numGrade, feedback: feedbackInput || null }),
+                body: JSON.stringify({ grade, feedback: feedback || null }),
             });
-            if (res.status === 401) return onUnauthorized();
-            if (res.ok) {
-                setSubmissions((prev) => {
-                    const asgSubs = prev[asgId] || [];
-                    return {
-                        ...prev,
-                        [asgId]: asgSubs.map((s) => (s.id === subId ? { ...s, grade: numGrade, feedback: feedbackInput } : s)),
-                    };
-                });
-                setGradingSubId(null);
-            } else {
-                setGradeError('Failed to save grade.');
+            if (res.status === 401) {
+                onUnauthorized();
+                return 'Your session has ended.';
             }
+            if (!res.ok) return 'Failed to save grade.';
+            setSubmissions((prev) => ({
+                ...prev,
+                [asgId]: (prev[asgId] || []).map((s) => (s.id === subId ? { ...s, grade, feedback } : s)),
+            }));
+            return null;
         } catch {
-            setGradeError('Network error. Failed to save grade.');
-        } finally {
-            setIsSavingGrade(false);
+            return 'Network error. Failed to save grade.';
         }
     };
 
@@ -376,7 +353,7 @@ export default function TeacherClassDetailPage() {
                                 <span className={`material-symbols-outlined text-[16px] ${isExportingSubmissions ? 'animate-spin' : ''}`}>
                                     {isExportingSubmissions ? 'progress_activity' : 'download'}
                                 </span>
-                                {isExportingSubmissions ? 'Exporting...' : 'Export Submissions (CSV)'}
+                                {isExportingSubmissions ? 'Exporting...' : 'Export Submissions (Excel)'}
                             </button>
                         )}
                     </div>
@@ -417,12 +394,12 @@ export default function TeacherClassDetailPage() {
                                                 onClick={() => handleExportAssignmentSubmissions(a.id)}
                                                 disabled={exportingAsgId === a.id}
                                                 className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors flex items-center gap-1 cursor-pointer"
-                                                title="Export submissions for this assignment as CSV"
+                                                title="Export submissions for this assignment as an Excel file"
                                             >
                                                 <span className={`material-symbols-outlined text-[14px] ${exportingAsgId === a.id ? 'animate-spin' : ''}`}>
                                                     {exportingAsgId === a.id ? 'progress_activity' : 'download'}
                                                 </span>
-                                                {exportingAsgId === a.id ? 'Exporting...' : 'CSV'}
+                                                {exportingAsgId === a.id ? 'Exporting...' : 'Excel'}
                                             </button>
                                             <button
                                                 type="button"
@@ -437,112 +414,15 @@ export default function TeacherClassDetailPage() {
 
                                     {expandedAsgId === a.id && (
                                         <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700/80">
-                                            <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2 font-jakarta">Student Submissions</h4>
                                             {loadingSubmissions && !submissions[a.id] ? (
                                                 <p className="text-xs text-slate-400">Loading submissions...</p>
-                                            ) : !submissions[a.id] || submissions[a.id].length === 0 ? (
-                                                <p className="text-xs text-slate-400">No submissions received yet.</p>
                                             ) : (
-                                                <ul className="space-y-2">
-                                                    {submissions[a.id].map((sub) => (
-                                                        <li key={sub.id} className="flex flex-col p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
-                                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                                                <div className="min-w-0">
-                                                                    <div className="flex flex-wrap items-center gap-2">
-                                                                        <span className="font-semibold text-slate-900 dark:text-white">{sub.studentName}</span>
-                                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                                                                            sub.status === 'Late'
-                                                                                ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
-                                                                                : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-                                                                        }`}>
-                                                                            {sub.status}
-                                                                        </span>
-                                                                        {sub.grade !== null && sub.grade !== undefined && (
-                                                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
-                                                                                Grade: {sub.grade}/100
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                                        {sub.fileName} &bull; {sub.studentEmail} &bull; Submitted {new Date(sub.submittedAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
-                                                                    </p>
-                                                                    {sub.feedback && gradingSubId !== sub.id && (
-                                                                        <p className="mt-2 text-slate-600 dark:text-slate-300 italic border-l-2 border-indigo-200 dark:border-indigo-800 pl-2">
-                                                                            "{sub.feedback}"
-                                                                        </p>
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex flex-wrap gap-2 shrink-0">
-                                                                    {gradingSubId !== sub.id && (
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => startGrading(sub)}
-                                                                            className="px-3 py-1.5 rounded-full bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40 font-semibold text-indigo-600 dark:text-indigo-400 transition-colors"
-                                                                        >
-                                                                            {sub.grade !== null && sub.grade !== undefined ? 'Edit Grade' : 'Grade'}
-                                                                        </button>
-                                                                    )}
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => downloadSubmission(a.id, sub.id, sub.fileName)}
-                                                                        className="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 font-semibold text-slate-700 dark:text-slate-200 transition-colors"
-                                                                    >
-                                                                        Download
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                            
-                                                            {gradingSubId === sub.id && (
-                                                                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/50">
-                                                                    <div className="flex flex-wrap gap-4 items-start">
-                                                                        <div className="w-24">
-                                                                            <label htmlFor="grade-score" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Score (0-100)</label>
-                                                                            <input id="grade-score"
-                                                                                type="number"
-                                                                                min="0"
-                                                                                max="100"
-                                                                                value={gradeInput}
-                                                                                onChange={(e) => setGradeInput(e.target.value)}
-                                                                                className="w-full px-2 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                                            />
-                                                                        </div>
-                                                                        <div className="flex-1 min-w-[160px]">
-                                                                            <label htmlFor="grade-feedback" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Feedback (Optional)</label>
-                                                                            <input id="grade-feedback"
-                                                                                type="text"
-                                                                                value={feedbackInput}
-                                                                                onChange={(e) => setFeedbackInput(e.target.value)}
-                                                                                className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                                                placeholder="Great job..."
-                                                                            />
-                                                                        </div>
-                                                                        <div className="flex items-end gap-2 mt-5">
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => setGradingSubId(null)}
-                                                                                disabled={isSavingGrade}
-                                                                                className="px-3 py-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold"
-                                                                            >
-                                                                                Cancel
-                                                                            </button>
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => saveGrade(a.id, sub.id)}
-                                                                                disabled={isSavingGrade}
-                                                                                className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold disabled:opacity-50"
-                                                                            >
-                                                                                {isSavingGrade ? 'Saving...' : 'Save'}
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                    {gradeError && (
-                                                                        <p className="mt-2 text-rose-600 dark:text-rose-400 text-xs">{gradeError}</p>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                        </li>
-                                                    ))}
-                                                </ul>
+                                                <SubmissionsPanel
+                                                    submissions={submissions[a.id] || []}
+                                                    roster={roster}
+                                                    onDownload={(sub) => downloadSubmission(a.id, sub.id, sub.fileName)}
+                                                    onSaveGrade={(sub, grade, feedback) => saveGrade(a.id, sub.id, grade, feedback)}
+                                                />
                                             )}
                                         </div>
                                     )}
@@ -566,7 +446,7 @@ export default function TeacherClassDetailPage() {
                                 <span className={`material-symbols-outlined text-[16px] ${isExportingRoster ? 'animate-spin' : ''}`}>
                                     {isExportingRoster ? 'progress_activity' : 'download'}
                                 </span>
-                                {isExportingRoster ? 'Exporting...' : 'Export Roster (CSV)'}
+                                {isExportingRoster ? 'Exporting...' : 'Export Roster (Excel)'}
                             </button>
                         )}
                     </div>

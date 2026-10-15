@@ -263,14 +263,13 @@ namespace A1Academy.TeacherService.Controllers
 
             var roster = await FetchClassRosterAsync(id);
 
-            var csv = new CsvBuilder();
-            csv.AddRow("Student ID", "First Name", "Last Name", "Email", "Attendance Status");
+            var sheet = new XlsxBuilder("Roster", "Student ID", "First Name", "Last Name", "Email", "Attendance Status");
             foreach (var s in roster)
             {
-                csv.AddRow(s.Id.ToString(), s.FirstName, s.LastName, s.Email, s.AttendanceStatus ?? "Unmarked");
+                sheet.AddRow(s.Id, s.FirstName, s.LastName, s.Email, s.AttendanceStatus ?? "Unmarked");
             }
 
-            return File(csv.ToByteArray(), "text/csv; charset=utf-8", $"class-{id}-roster.csv");
+            return File(sheet.ToByteArray(), XlsxBuilder.ContentType, $"class-{id}-roster.xlsx");
         }
 
         private async Task<List<StudentSummary>> FetchClassRosterAsync(int classId)

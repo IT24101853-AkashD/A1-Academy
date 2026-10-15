@@ -153,14 +153,13 @@ namespace A1Academy.AdminService.Controllers
                 })
                 .ToListAsync();
 
-            var csv = new CsvBuilder();
-            csv.AddRow("User ID", "Name", "Email", "Role", "Account Status");
+            var sheet = new XlsxBuilder("Users", "User ID", "Name", "Email", "Role", "Account Status");
             foreach (var u in users)
             {
-                csv.AddRow(u.Id.ToString(), u.Name, u.Email, u.Role, u.Status);
+                sheet.AddRow(u.Id, u.Name, u.Email, u.Role, u.Status);
             }
 
-            return File(csv.ToByteArray(), "text/csv; charset=utf-8", "users-report.csv");
+            return File(sheet.ToByteArray(), XlsxBuilder.ContentType, "users-report.xlsx");
         }
 
         // Approves a Pending Teacher application. This is the "Teacher Approval" story - an
