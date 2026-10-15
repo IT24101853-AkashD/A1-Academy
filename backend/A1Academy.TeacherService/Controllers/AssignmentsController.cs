@@ -270,7 +270,7 @@ namespace A1Academy.TeacherService.Controllers
                     studentName,
                     studentEmail,
                     s.FileName,
-                    s.SubmittedAt.ToString("u"),
+                    CsvBuilder.FormatTimestamp(s.SubmittedAt),
                     s.Status,
                     gradeStr,
                     s.Feedback ?? string.Empty

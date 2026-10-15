@@ -38,9 +38,17 @@ namespace A1Academy.Shared.Utilities
 
         public byte[] ToByteArray()
         {
+            // GetBytes never writes the BOM itself, even on a BOM-enabled encoding - it has to be
+            // prepended from GetPreamble(). Without it Excel opens the file as ANSI and garbles any
+            // non-ASCII text (names, dashes, accents).
             var encoding = new UTF8Encoding(true);
-            return encoding.GetBytes(_sb.ToString());
+            return encoding.GetPreamble().Concat(encoding.GetBytes(_sb.ToString())).ToArray();
         }
+
+        // A plain "yyyy-MM-dd HH:mm" timestamp that Excel recognises as a date/time cell (the "u"
+        // format's trailing "Z" makes Excel treat it as text).
+        public static string FormatTimestamp(System.DateTime value) =>
+            value.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture);
 
         public override string ToString() => _sb.ToString();
     }

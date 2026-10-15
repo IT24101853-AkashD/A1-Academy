@@ -186,7 +186,7 @@ namespace A1Academy.StudentService.Controllers
                     c.Name,
                     c.Category?.Name ?? string.Empty,
                     teacherName,
-                    c.ScheduledAt.ToString("u"),
+                    CsvBuilder.FormatTimestamp(c.ScheduledAt),
                     c.Status,
                     attStatus,
                     classSubs.Count.ToString(),
