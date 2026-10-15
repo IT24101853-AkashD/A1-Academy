@@ -72,7 +72,7 @@ export default function StudentMyClassesPage() {
         <Layout>
             <section className="py-24 px-6 max-w-7xl mx-auto w-full min-h-[60vh]">
                 {viewState === 'sessionEnded' && (
-                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 text-center">
                         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Session Ended</h2>
                         <a href="/" className="inline-block px-6 py-3 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 transition-colors">Back to Home</a>
                     </div>
@@ -85,7 +85,7 @@ export default function StudentMyClassesPage() {
                 )}
 
                 {viewState === 'error' && (
-                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 text-center">
                         <p className="text-base font-bold text-red-500 dark:text-red-400">{errorMessage}</p>
                     </div>
                 )}
@@ -123,7 +123,7 @@ export default function StudentMyClassesPage() {
                         </div>
 
                         {classes.length === 0 ? (
-                            <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 p-12 text-center shadow-level-1 max-w-md mx-auto my-8">
+                            <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 p-6 sm:p-12 text-center shadow-level-1 max-w-md mx-auto my-8">
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">No classes yet</h3>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">Browse classes and enrol to see them here.</p>
                                 <Link to="/classes" className="px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all">

@@ -118,7 +118,7 @@ export default function StudentClassDetailPage() {
     return (
         <Layout>
             <section className="py-24 px-6 max-w-5xl mx-auto w-full min-h-[60vh] space-y-10">
-                <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 shadow-level-1 p-8">
+                <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 shadow-level-1 p-5 sm:p-8">
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white font-jakarta mb-4">Study Materials</h2>
                     {materials.length === 0 ? (
                         <p className="text-sm text-slate-500 dark:text-slate-400">No materials available yet.</p>
@@ -137,7 +137,7 @@ export default function StudentClassDetailPage() {
                     )}
                 </div>
 
-                <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 shadow-level-1 p-8">
+                <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 shadow-level-1 p-5 sm:p-8">
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white font-jakarta mb-4">Assignments</h2>
                     {submitError && <p className="text-sm font-semibold text-red-600 dark:text-red-400 mb-4">{submitError}</p>}
                     {assignments.length === 0 ? (
@@ -179,13 +179,13 @@ export default function StudentClassDetailPage() {
                                                 e.preventDefault();
                                                 void submit(a.id, e.target.elements.file.files[0]);
                                             }}
-                                            className="flex items-center gap-3"
+                                            className="flex flex-wrap items-center gap-3"
                                         >
-                                            <input type="file" name="file" className="flex-1 text-xs text-slate-600 dark:text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-100 dark:file:bg-slate-700 file:text-slate-700 dark:file:text-slate-200" />
+                                            <input type="file" name="file" className="flex-1 min-w-0 basis-48 text-xs text-slate-600 dark:text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-100 dark:file:bg-slate-700 file:text-slate-700 dark:file:text-slate-200" />
                                             <button
                                                 type="submit"
                                                 disabled={submittingId === a.id}
-                                                className="px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all disabled:opacity-60"
+                                                className="px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 dark:bg-amber-400 dark:hover:bg-amber-300 text-white dark:text-slate-900 text-xs font-semibold transition-all disabled:opacity-60"
                                             >
                                                 {submittingId === a.id ? 'Submitting...' : 'Submit'}
                                             </button>

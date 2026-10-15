@@ -79,16 +79,16 @@ export default function AdminDashboard() {
 
             <main className="flex-grow pt-20">
                 {/* Dashboard Header */}
-                <section className="pt-8 pb-12 px-6 max-w-7xl mx-auto">
+                <section className="w-full pt-8 pb-12 px-4 sm:px-6 max-w-7xl mx-auto">
                     <div data-aos="fade-up" className="mb-8">
-                        <h1 className="text-5xl md:text-6xl font-black tracking-tight mb-4 gradient-text pt-4 pb-2">Welcome back, {firstName || 'Admin'}.</h1>
-                        <p className="text-xl text-slate-500 dark:text-slate-400 font-medium max-w-2xl">
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight mb-4 gradient-text pt-4 pb-2">Welcome back, {firstName || 'Admin'}.</h1>
+                        <p className="text-lg sm:text-xl text-slate-500 dark:text-slate-400 font-medium max-w-2xl">
                             Here's what's happening across A1 Academy today. Manage your users, categories, and system health from one central hub.
                         </p>
                     </div>
 
                     {/* KPI Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12">
                         <div data-aos="fade-up" data-aos-delay="100" className="glass-card rounded-3xl p-6">
                             <div className="flex justify-between items-start mb-4">
                                 <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
@@ -145,7 +145,7 @@ export default function AdminDashboard() {
                                 Quick Access
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <Link to="/admin/users" data-aos="fade-right" className="block group bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-xl transition-all hover:border-blue-200">
+                                <Link to="/admin/users" data-aos="fade-right" className="block group bg-white dark:bg-slate-800 rounded-3xl p-5 sm:p-8 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-xl transition-all hover:border-blue-200">
                                     <div className="w-16 h-16 rounded-full bg-slate-50 dark:bg-slate-900 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 text-slate-600 dark:text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 flex items-center justify-center mb-6 transition-colors">
                                         <span className="material-symbols-outlined text-3xl">manage_accounts</span>
                                     </div>
@@ -158,7 +158,7 @@ export default function AdminDashboard() {
                                     </div>
                                 </Link>
 
-                                <Link to="/admin/categories" data-aos="fade-left" className="block group bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-xl transition-all hover:border-violet-200">
+                                <Link to="/admin/categories" data-aos="fade-left" className="block group bg-white dark:bg-slate-800 rounded-3xl p-5 sm:p-8 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-xl transition-all hover:border-violet-200">
                                     <div className="w-16 h-16 rounded-full bg-slate-50 dark:bg-slate-900 group-hover:bg-violet-50 text-slate-600 dark:text-slate-300 group-hover:text-violet-600 flex items-center justify-center mb-6 transition-colors">
                                         <span className="material-symbols-outlined text-3xl">auto_awesome_mosaic</span>
                                     </div>
@@ -171,7 +171,7 @@ export default function AdminDashboard() {
                                     </div>
                                 </Link>
                                 
-                                <Link to="/admin/badges" data-aos="fade-up" className="block group bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-xl transition-all hover:border-amber-200 lg:col-span-2 xl:col-span-1">
+                                <Link to="/admin/badges" data-aos="fade-up" className="block group bg-white dark:bg-slate-800 rounded-3xl p-5 sm:p-8 shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-xl transition-all hover:border-amber-200 lg:col-span-2 xl:col-span-1">
                                     <div className="w-16 h-16 rounded-full bg-slate-50 dark:bg-slate-900 group-hover:bg-amber-50 text-slate-600 dark:text-slate-300 group-hover:text-amber-600 flex items-center justify-center mb-6 transition-colors">
                                         <span className="material-symbols-outlined text-3xl">military_tech</span>
                                     </div>
@@ -188,7 +188,7 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Recent Activity Widget */}
-                        <div data-aos="fade-up" className="glass-card rounded-3xl p-8">
+                        <div data-aos="fade-up" className="glass-card rounded-3xl p-5 sm:p-8">
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center justify-between">
                                 Needs Attention
                                 <span className="material-symbols-outlined text-amber-500 dark:text-amber-400">notification_important</span>
@@ -206,11 +206,11 @@ export default function AdminDashboard() {
                                             : nameParts[0].substring(0, 2).toUpperCase();
 
                                         return (
-                                            <div key={user.id} className="flex gap-4">
+                                            <div key={user.id} className="flex gap-4 min-w-0">
                                                 <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex-shrink-0 flex items-center justify-center text-amber-700 dark:text-amber-300 font-bold text-sm">
                                                     {initials}
                                                 </div>
-                                                <div>
+                                                <div className="min-w-0">
                                                     <p className="text-sm font-bold text-slate-900 dark:text-white">{user.name}</p>
                                                     <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">Applied for Teacher role</p>
                                                     <div className="flex gap-2">

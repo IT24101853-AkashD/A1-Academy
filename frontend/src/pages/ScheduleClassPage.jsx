@@ -93,7 +93,7 @@ export default function ScheduleClassPage() {
         return (
             <Layout>
                 <section className="py-24 px-6 max-w-lg mx-auto w-full min-h-[60vh]">
-                    <div className="bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                    <div className="bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 text-center">
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
                             <span className="material-symbols-outlined text-[32px] text-amber-500 dark:text-amber-400">lock_clock</span>
                         </div>
@@ -115,7 +115,7 @@ export default function ScheduleClassPage() {
                 </div>
                 <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white font-jakarta mb-8">Set up a new class session</h1>
 
-                <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 shadow-level-1 p-8 space-y-5">
+                <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700/80 shadow-level-1 p-5 sm:p-8 space-y-5">
                     {errorMessage && (
                         <div className="px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 text-sm font-semibold text-red-600 dark:text-red-400">
                             {errorMessage}

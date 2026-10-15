@@ -84,7 +84,7 @@ export default function StudentCategoriesPage() {
                 </div>
 
                 {viewState === 'denied' && (
-                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 text-center">
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
                             <span className="material-symbols-outlined text-[32px] text-red-500 dark:text-red-400">block</span>
                         </div>
@@ -96,7 +96,7 @@ export default function StudentCategoriesPage() {
                 )}
 
                 {viewState === 'sessionEnded' && (
-                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 text-center">
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
                             <span className="material-symbols-outlined text-[32px] text-amber-500 dark:text-amber-400">lock_clock</span>
                         </div>
@@ -120,14 +120,14 @@ export default function StudentCategoriesPage() {
                 )}
 
                 {viewState === 'error' && (
-                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 text-center">
                         <p className="text-base font-bold text-red-500 dark:text-red-400">{errorMessage}</p>
                     </div>
                 )}
 
                 {viewState === 'success' && (
                     categories.length === 0 ? (
-                        <div className="bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                        <div className="bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 text-center">
                             <p className="text-base font-medium text-slate-500 dark:text-slate-400">No categories yet - check back soon.</p>
                         </div>
                     ) : (
@@ -139,7 +139,7 @@ export default function StudentCategoriesPage() {
                                     tabIndex={0}
                                     onClick={() => openCategory(category)}
                                     onKeyDown={handleCardKeyDown(category)}
-                                    className="text-left bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-8 cursor-pointer hover:-translate-y-1 hover:shadow-xl transition-all focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-100"
+                                    className="text-left bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-5 sm:p-8 cursor-pointer hover:-translate-y-1 hover:shadow-xl transition-all focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-100"
                                 >
                                     <div className="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-6">
                                         <span className="material-symbols-outlined text-3xl">auto_stories</span>

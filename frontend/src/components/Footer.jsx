@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 export default function Footer() {
   return (
     <footer className="bg-slate-900 pt-16 pb-8 text-slate-400 mt-auto relative z-10">
-        <div className="max-w-7xl mx-auto px-6">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="flex flex-col lg:flex-row justify-between items-center gap-8 mb-12">
                 <div className="text-3xl font-extrabold tracking-tighter text-white">
                     A1<span className="text-amber-500">Academy</span>
                 </div>
@@ -18,7 +18,7 @@ export default function Footer() {
                     <Link to="/terms.html" className="hover:text-amber-400 transition-colors">Terms of Service</Link>
                 </div>
             </div>
-            <div className="border-t border-slate-800 pt-8 text-left text-sm">
+            <div className="border-t border-slate-800 pt-8 text-center lg:text-left text-sm">
                 <p>© 2026 A1 Academy. All rights reserved.</p>
             </div>
         </div>

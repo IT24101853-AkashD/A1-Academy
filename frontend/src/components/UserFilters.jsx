@@ -56,7 +56,7 @@ export default function UserFilters({ role, status, onRoleChange, onStatusChange
                     type="button"
                     onClick={onShowPendingTeachers}
                     aria-pressed={isPendingTeachersView}
-                    className={`flex items-center gap-3 px-8 py-4 rounded-full text-base font-black tracking-wide transition-all cursor-pointer shadow-md hover:shadow-lg ${isPendingTeachersView ? 'bg-amber-500 text-white shadow-amber-500/30 hover:bg-amber-600' : 'bg-white dark:bg-slate-800 border-2 border-amber-300 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:border-amber-400'}`}
+                    className={`flex items-center gap-3 px-5 sm:px-8 py-4 rounded-full text-base font-black tracking-wide transition-all cursor-pointer shadow-md hover:shadow-lg ${isPendingTeachersView ? 'bg-amber-500 text-white shadow-amber-500/30 hover:bg-amber-600' : 'bg-white dark:bg-slate-800 border-2 border-amber-300 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:border-amber-400'}`}
                 >
                     <span className="material-symbols-outlined text-[24px]">hourglass_top</span>
                     Pending Teachers

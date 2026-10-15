@@ -374,7 +374,7 @@ export default function CategoryManagementPage() {
                 </div>
 
                 {viewState === 'denied' && (
-                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 text-center">
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 dark:bg-red-900/30 ring-8 ring-red-50/50 flex items-center justify-center">
                             <span className="material-symbols-outlined text-[32px] text-red-500 dark:text-red-400" aria-hidden="true">block</span>
                         </div>
@@ -386,7 +386,7 @@ export default function CategoryManagementPage() {
                 )}
 
                 {viewState === 'sessionEnded' && (
-                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 text-center">
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 dark:bg-amber-900/30 ring-8 ring-amber-50/50 flex items-center justify-center">
                             <span className="material-symbols-outlined text-[32px] text-amber-500 dark:text-amber-400" aria-hidden="true">lock_clock</span>
                         </div>
@@ -411,7 +411,7 @@ export default function CategoryManagementPage() {
                 )}
 
                 {viewState === 'error' && (
-                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 text-center">
+                    <div className="max-w-lg mx-auto bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 text-center">
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 dark:bg-red-900/30 ring-8 ring-red-50/50 flex items-center justify-center">
                             <span className="material-symbols-outlined text-[32px] text-red-500 dark:text-red-400" aria-hidden="true">error</span>
                         </div>
@@ -421,7 +421,7 @@ export default function CategoryManagementPage() {
 
                 {viewState === 'success' && (
                     <>
-                        <form data-aos="fade-up" data-aos-delay="100" onSubmit={createCategory} className="bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-10 mb-10">
+                        <form data-aos="fade-up" data-aos-delay="100" onSubmit={createCategory} className="bg-white dark:bg-slate-800 rounded-[24px] shadow-level-2 border border-slate-100 dark:border-slate-700 p-6 sm:p-10 mb-10">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-none">
                                     <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 text-[20px]" aria-hidden="true">add_circle</span>
@@ -535,7 +535,7 @@ export default function CategoryManagementPage() {
                                                             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-100 resize-none"
                                                         />
                                                     </div>
-                                                    <div className="flex gap-3">
+                                                    <div className="flex flex-wrap gap-3">
                                                         <button
                                                             type="submit"
                                                             disabled={isEditSaving}
@@ -569,7 +569,7 @@ export default function CategoryManagementPage() {
                                                         <span className="material-symbols-outlined text-[17px] text-red-500 dark:text-red-400 leading-none mt-0.5" aria-hidden="true">warning</span>
                                                         Delete "{category.name}"? This can't be undone.
                                                     </p>
-                                                    <div className="flex gap-3">
+                                                    <div className="flex flex-wrap gap-3">
                                                         <button
                                                             type="button"
                                                             onClick={() => confirmDeleteCategory(category.id)}
@@ -593,7 +593,7 @@ export default function CategoryManagementPage() {
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className="flex items-start justify-between gap-4">
+                                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                                                     <div className="flex items-start gap-3 min-w-0">
                                                         <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-none mt-0.5">
                                                             <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]" aria-hidden="true">category</span>
@@ -603,7 +603,7 @@ export default function CategoryManagementPage() {
                                                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{category.description}</p>
                                                         </div>
                                                     </div>
-                                                    <div className="flex-none flex gap-2">
+                                                    <div className="flex-none flex flex-wrap gap-2 pl-[52px] sm:pl-0">
                                                         <button
                                                             type="button"
                                                             onClick={() => startEditingCategory(category)}
@@ -701,7 +701,7 @@ export default function CategoryManagementPage() {
                                                                 </select>
                                                             )}
                                                         </div>
-                                                        <div className="flex gap-3">
+                                                        <div className="flex flex-wrap gap-3">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => approveSubjectRequest(request.id)}
@@ -734,7 +734,7 @@ export default function CategoryManagementPage() {
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="flex items-start justify-between gap-4">
+                                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                                                         <div className="flex items-start gap-3 min-w-0">
                                                             <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center flex-none mt-0.5">
                                                                 <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 text-[18px]" aria-hidden="true">help</span>
@@ -744,7 +744,7 @@ export default function CategoryManagementPage() {
                                                                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{request.teacherName} · {request.teacherEmail}</p>
                                                             </div>
                                                         </div>
-                                                        <div className="flex-none">
+                                                        <div className="flex-none pl-[52px] sm:pl-0">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => startReviewingRequest(request)}

@@ -14,7 +14,8 @@ export default function Layout({ children }) {
 
   return (
     <div className="flex flex-col w-full text-slate-900 dark:text-slate-100 dark:bg-slate-900 font-sans selection:bg-amber-300 selection:text-slate-900 transition-colors duration-300">
-      <main className="flex-grow flex flex-col">
+      {/* Page roots are centred with mx-auto inside this flex column; w-full stops them shrinking to their content. */}
+      <main className="flex-grow flex flex-col [&>*]:w-full">
         {children}
       </main>
     </div>

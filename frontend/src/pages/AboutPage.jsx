@@ -27,7 +27,7 @@ export default function AboutPage() {
             { icon: 'military_tech', title: 'Gamified Progress', desc: 'We believe in rewarding hard work. Our integrated digital badge system and public recognition boards keep students motivated and engaged.' },
             { icon: 'bar_chart', title: 'Data-Driven Success', desc: 'With dynamic progress cards and detailed grading analytics, students and teachers can visualize academic growth in real-time.' }
           ].map((card, i) => (
-            <div key={i} className="bg-white dark:bg-slate-800/90 backdrop-blur-md rounded-[24px] p-8 shadow-xl border border-slate-100 dark:border-slate-700 hover:-translate-y-2 transition-all duration-300 group" data-aos="fade-up" data-aos-delay={i * 100}>
+            <div key={i} className="bg-white dark:bg-slate-800/90 backdrop-blur-md rounded-[24px] p-5 sm:p-8 shadow-xl border border-slate-100 dark:border-slate-700 hover:-translate-y-2 transition-all duration-300 group" data-aos="fade-up" data-aos-delay={i * 100}>
               <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-6 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/30 transition-colors">
                 <span className="material-symbols-outlined text-slate-600 dark:text-slate-300 group-hover:text-amber-600 dark:group-hover:text-amber-400 text-3xl transition-colors">
                   {card.icon}

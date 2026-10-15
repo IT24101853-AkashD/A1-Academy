@@ -111,9 +111,9 @@ export default function TeacherGradeReportPage() {
 
     return (
         <Layout>
-            <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 font-jakarta min-h-[75vh]">
+            <div className="w-full max-w-7xl mx-auto pt-28 pb-12 px-4 sm:px-6 lg:px-8 font-jakarta min-h-[75vh]">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
                     <div>
                         <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1">
                             <span className="material-symbols-outlined text-[18px]">analytics</span>
@@ -129,7 +129,7 @@ export default function TeacherGradeReportPage() {
 
                     {/* Class Selector Dropdown */}
                     {!loadingClasses && classes.length > 0 && (
-                        <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div className="flex items-center gap-3 w-full lg:w-auto min-w-0 bg-white dark:bg-slate-800 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
                             <label htmlFor="classSelect" className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-2">
                                 Class:
                             </label>
@@ -137,7 +137,7 @@ export default function TeacherGradeReportPage() {
                                 id="classSelect"
                                 value={selectedClassId}
                                 onChange={handleClassChange}
-                                className="px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                className="w-0 min-w-0 flex-1 lg:w-auto lg:flex-none lg:max-w-xs truncate px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                             >
                                 {classes.map((c) => (
                                     <option key={c.id} value={c.id.toString()}>
@@ -151,7 +151,7 @@ export default function TeacherGradeReportPage() {
 
                 {/* Session Ended state */}
                 {sessionEnded && (
-                    <div className="max-w-md mx-auto bg-white dark:bg-slate-800 rounded-3xl p-8 border border-slate-200 dark:border-slate-700 text-center shadow-sm">
+                    <div className="max-w-md mx-auto bg-white dark:bg-slate-800 rounded-3xl p-5 sm:p-8 border border-slate-200 dark:border-slate-700 text-center shadow-sm">
                         <span className="material-symbols-outlined text-4xl text-amber-500 mb-2">lock_clock</span>
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Session Ended</h2>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Please log in again to access class reports.</p>
@@ -168,7 +168,7 @@ export default function TeacherGradeReportPage() {
 
                 {/* No classes available */}
                 {!loadingClasses && classes.length === 0 && !sessionEnded && (
-                    <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 max-w-lg mx-auto p-8 shadow-sm">
+                    <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 max-w-lg mx-auto p-5 sm:p-8 shadow-sm">
                         <span className="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-600 mb-3 block">school</span>
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">No Active Classes Found</h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">Schedule a class and assign student work to view grade analytics.</p>
@@ -261,7 +261,7 @@ export default function TeacherGradeReportPage() {
                         </div>
 
                         {/* Grade Distribution Section */}
-                        <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 sm:p-8 border border-slate-200 dark:border-slate-700 shadow-sm">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
                                 <div>
                                     <h2 className="text-xl font-bold text-slate-900 dark:text-white">Score Distribution</h2>
@@ -306,7 +306,7 @@ export default function TeacherGradeReportPage() {
                         </div>
 
                         {/* Per-Assignment Breakdown Table */}
-                        <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 sm:p-8 border border-slate-200 dark:border-slate-700 shadow-sm">
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Per-Assignment Academic Breakdown</h2>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
                                 Individual assignment performance metrics and score ranges.

@@ -41,7 +41,7 @@ export default function StudentProgressCard() {
 
     if (loading) {
         return (
-            <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700/80 p-8 shadow-level-1 mb-8">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700/80 p-5 sm:p-8 shadow-level-1 mb-8">
                 <div className="flex items-center justify-center py-6">
                     <span className="material-symbols-outlined text-3xl text-indigo-500 animate-spin">progress_activity</span>
                     <span className="ml-3 text-sm font-semibold text-slate-500 dark:text-slate-400">Loading your progress card...</span>
@@ -80,7 +80,7 @@ export default function StudentProgressCard() {
     const gradeBadge = getGradeBadge(progress.overallAverageGrade, progress.gradedSubmissionsCount);
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700/80 p-8 shadow-level-1 mb-8 relative overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700/80 p-5 sm:p-8 shadow-level-1 mb-8 relative overflow-hidden">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                     <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1 font-jakarta">

@@ -523,9 +523,9 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
     return (
         <>
 {/* REGISTER MODAL POPUP */}
-<div id="register-modal" className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-300 ${activeModal === 'register-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
-    <div className={`relative w-full max-w-4xl bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 p-8 md:p-12 overflow-hidden border border-slate-100 dark:border-slate-700 transition-all duration-300 transform ${activeModal === 'register-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
-        <button onClick={closeModal} className="absolute top-6 right-6 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
+<div id="register-modal" className={`fixed inset-0 overflow-y-auto overscroll-contain z-[100] flex p-3 sm:p-4 transition-all duration-300 ${activeModal === 'register-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
+    <div className={`relative m-auto w-full max-w-4xl bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 px-5 pb-5 pt-12 sm:p-8 md:p-12 overflow-hidden border border-slate-100 dark:border-slate-700 transition-all duration-300 transform ${activeModal === 'register-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
+        <button onClick={closeModal} className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
             <span className="material-symbols-outlined text-[32px]">close</span>
         </button>
         <div className="text-center mb-10">
@@ -533,14 +533,14 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
             <p className=" text-lg font-medium text-slate-500 dark:text-slate-400">Select your role to begin the registration process.</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <button type="button" onClick={() => openModal('register-student-modal')} className="bg-white dark:bg-slate-800 rounded-[16px] p-8 shadow-level-1 hover:shadow-level-2 transition-all duration-300 border-2 border-transparent hover:border-amber-500 group flex flex-col items-center text-center cursor-pointer w-full">
+            <button type="button" onClick={() => openModal('register-student-modal')} className="bg-white dark:bg-slate-800 rounded-[16px] p-5 sm:p-8 shadow-level-1 hover:shadow-level-2 transition-all duration-300 border-2 border-transparent hover:border-amber-500 group flex flex-col items-center text-center cursor-pointer w-full">
                 <div className="w-28 h-28 mb-6 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     <img src="https://cdn-icons-png.flaticon.com/512/3135/3135810.png" alt="Cartoon Student Avatar" className="w-20 h-20 object-contain drop-shadow-md"/>
                 </div>
                 <h3 className="font-headline-sm text-[24px] text-slate-900 dark:text-white mb-3">Register as a Student</h3>
                 <p className=" text-base font-medium text-slate-500 dark:text-slate-400">Browse courses, track your progress, and earn digital badges.</p>
             </button>
-            <button type="button" onClick={() => openModal('register-teacher-modal')} className="bg-white dark:bg-slate-800 rounded-[16px] p-8 shadow-level-1 hover:shadow-level-2 transition-all duration-300 border-2 border-transparent hover:border-amber-500 group flex flex-col items-center text-center cursor-pointer w-full">
+            <button type="button" onClick={() => openModal('register-teacher-modal')} className="bg-white dark:bg-slate-800 rounded-[16px] p-5 sm:p-8 shadow-level-1 hover:shadow-level-2 transition-all duration-300 border-2 border-transparent hover:border-amber-500 group flex flex-col items-center text-center cursor-pointer w-full">
                 <div className="w-28 h-28 mb-6 rounded-full overflow-hidden bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     <img src="https://cdn-icons-png.flaticon.com/512/3429/3429433.png" alt="Cartoon Teacher Avatar" className="w-20 h-20 object-contain drop-shadow-md"/>
                 </div>
@@ -552,9 +552,9 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
 </div>
 
 {/* STUDENT REGISTRATION FORM MODAL */}
-<div id="register-student-modal" className={`fixed inset-0 z-[110] flex items-center justify-center p-4 transition-all duration-300 ${activeModal === 'register-student-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
-    <div className={`relative w-full max-w-5xl min-h-[700px] flex flex-col justify-center bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 p-8 md:p-12 border border-slate-100 dark:border-slate-700 overflow-hidden transition-all duration-300 transform ${activeModal === 'register-student-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
-        <button onClick={closeModal} className="absolute top-6 right-6 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
+<div id="register-student-modal" className={`fixed inset-0 overflow-y-auto overscroll-contain z-[110] flex p-3 sm:p-4 transition-all duration-300 ${activeModal === 'register-student-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
+    <div className={`relative m-auto w-full max-w-5xl md:min-h-[700px] flex flex-col justify-center bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 px-5 pb-5 pt-12 sm:p-8 md:p-12 border border-slate-100 dark:border-slate-700 overflow-hidden transition-all duration-300 transform ${activeModal === 'register-student-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
+        <button onClick={closeModal} className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
             <span className="material-symbols-outlined text-[32px]">close</span>
         </button>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
@@ -669,14 +669,14 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
 </div>
 
 {/* DYNAMIC OTP MODAL POPUP */}
-<div id="otp-modal" className={`fixed inset-0 z-[120] flex items-center justify-center p-4 transition-all duration-300 ${activeModal === 'otp-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
-    <div className={`relative w-full max-w-md bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 p-8 border border-slate-100 dark:border-slate-700 text-center transition-all duration-300 transform ${activeModal === 'otp-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
+<div id="otp-modal" className={`fixed inset-0 overflow-y-auto overscroll-contain z-[120] flex p-3 sm:p-4 transition-all duration-300 ${activeModal === 'otp-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
+    <div className={`relative m-auto w-full max-w-md bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 px-5 pb-5 pt-12 sm:p-8 border border-slate-100 dark:border-slate-700 text-center transition-all duration-300 transform ${activeModal === 'otp-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
         <button onClick={() => {
             if (otpContext === 'Student') openModal('register-student-modal');
             else if (otpContext === 'Teacher') openModal('register-teacher-modal');
             else if (otpContext.startsWith('AdminControls')) openModal('admin-controls-modal');
             else openModal('forgot-password-modal');
-        }} className="absolute top-6 right-6 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
+        }} className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
             <span className="material-symbols-outlined text-[32px]">close</span>
         </button>
         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
@@ -730,11 +730,11 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
 </div>
 
 {/* 3. NO-SCROLL TEACHER REGISTRATION FORM MODAL POPUP */}
-<div id="register-teacher-modal" className={`fixed inset-0 z-[110] flex items-center justify-center p-4 transition-all duration-300 ${activeModal === 'register-teacher-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
-    <div className={`relative w-full max-w-5xl min-h-[700px] flex flex-col justify-center bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 p-8 md:p-12 border border-slate-100 dark:border-slate-700 overflow-hidden transition-all duration-300 transform ${activeModal === 'register-teacher-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
+<div id="register-teacher-modal" className={`fixed inset-0 overflow-y-auto overscroll-contain z-[110] flex p-3 sm:p-4 transition-all duration-300 ${activeModal === 'register-teacher-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
+    <div className={`relative m-auto w-full max-w-5xl md:min-h-[700px] flex flex-col justify-center bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 px-5 pb-5 pt-12 sm:p-8 md:p-12 border border-slate-100 dark:border-slate-700 overflow-hidden transition-all duration-300 transform ${activeModal === 'register-teacher-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
         
         {/* Close Button */}
-        <button onClick={closeModal} className="absolute top-6 right-6 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
+        <button onClick={closeModal} className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
             <span className="material-symbols-outlined text-[32px]">close</span>
         </button>
 
@@ -940,10 +940,10 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
 </div>
 
 {/* STUDENT OTP MODAL POPUP */}
-<div id="otp-student-modal" className={`fixed inset-0 z-[130] flex items-center justify-center p-4 transition-all duration-300 ${activeModal === 'otp-student-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
-    <div className={`relative w-full max-w-md bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 p-8 border border-slate-100 dark:border-slate-700 text-center transition-all duration-300 transform ${activeModal === 'otp-student-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
+<div id="otp-student-modal" className={`fixed inset-0 overflow-y-auto overscroll-contain z-[130] flex p-3 sm:p-4 transition-all duration-300 ${activeModal === 'otp-student-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
+    <div className={`relative m-auto w-full max-w-md bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 px-5 pb-5 pt-12 sm:p-8 border border-slate-100 dark:border-slate-700 text-center transition-all duration-300 transform ${activeModal === 'otp-student-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
         {/* Close Button (Returns to Registration) */}
-        <button onClick={() => openModal('register-student-modal')} className="absolute top-6 right-6 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none">
+        <button onClick={() => openModal('register-student-modal')} className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none">
             <span className="material-symbols-outlined text-[28px]">close</span>
         </button>
 
@@ -975,10 +975,10 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
 </div>
 
 {/* TEACHER OTP MODAL POPUP */}
-<div id="otp-teacher-modal" className={`fixed inset-0 z-[130] flex items-center justify-center p-4 transition-all duration-300 ${activeModal === 'otp-teacher-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
-    <div className={`relative w-full max-w-md bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 p-8 border border-slate-100 dark:border-slate-700 text-center transition-all duration-300 transform ${activeModal === 'otp-teacher-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
+<div id="otp-teacher-modal" className={`fixed inset-0 overflow-y-auto overscroll-contain z-[130] flex p-3 sm:p-4 transition-all duration-300 ${activeModal === 'otp-teacher-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
+    <div className={`relative m-auto w-full max-w-md bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 px-5 pb-5 pt-12 sm:p-8 border border-slate-100 dark:border-slate-700 text-center transition-all duration-300 transform ${activeModal === 'otp-teacher-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
         {/* Close Button (Returns to Registration) */}
-        <button onClick={() => openModal('register-teacher-modal')} className="absolute top-6 right-6 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none">
+        <button onClick={() => openModal('register-teacher-modal')} className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none">
             <span className="material-symbols-outlined text-[28px]">close</span>
         </button>
 
@@ -1010,11 +1010,11 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
 </div>
 
 {/* 3. LOGIN MODAL POPUP */}
-<div id="login-modal" className={`fixed inset-0 z-[120] flex items-center justify-center p-4 transition-all duration-300 ${activeModal === 'login-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
-    <div className={`relative w-full max-w-4xl bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 p-8 md:p-12 border border-slate-100 dark:border-slate-700 overflow-hidden transition-all duration-300 transform ${activeModal === 'login-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
+<div id="login-modal" className={`fixed inset-0 overflow-y-auto overscroll-contain z-[120] flex p-3 sm:p-4 transition-all duration-300 ${activeModal === 'login-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
+    <div className={`relative m-auto w-full max-w-4xl bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 px-5 pb-5 pt-12 sm:p-8 md:p-12 border border-slate-100 dark:border-slate-700 overflow-hidden transition-all duration-300 transform ${activeModal === 'login-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
         
         {/* Close Button */}
-        <button onClick={closeModal} className="absolute top-6 right-6 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
+        <button onClick={closeModal} className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
             <span className="material-symbols-outlined text-[32px]">close</span>
         </button>
 
@@ -1122,8 +1122,8 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
 </div>
 
 {/* STUDENT SUCCESS MODAL POPUP */}
-<div id="success-student-modal" className={`fixed inset-0 z-[140] flex items-center justify-center p-4 transition-all duration-300 ${activeModal === 'success-student-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
-    <div className={`relative w-full max-w-sm bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 p-8 border border-slate-100 dark:border-slate-700 text-center transition-all duration-300 transform ${activeModal === 'success-student-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
+<div id="success-student-modal" className={`fixed inset-0 overflow-y-auto overscroll-contain z-[140] flex p-3 sm:p-4 transition-all duration-300 ${activeModal === 'success-student-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
+    <div className={`relative m-auto w-full max-w-sm bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 px-5 pb-5 pt-12 sm:p-8 border border-slate-100 dark:border-slate-700 text-center transition-all duration-300 transform ${activeModal === 'success-student-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
         <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center animate-bounce shadow-sm">
             <span className="text-[48px]">🎉</span>
         </div>
@@ -1135,8 +1135,8 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
 </div>
 
 {/* TEACHER PENDING MODAL POPUP */}
-<div id="pending-teacher-modal" className={`fixed inset-0 z-[140] flex items-center justify-center p-4 transition-all duration-300 ${activeModal === 'pending-teacher-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
-    <div className={`relative w-full max-w-sm bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 p-8 border border-slate-100 dark:border-slate-700 text-center transition-all duration-300 transform ${activeModal === 'pending-teacher-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
+<div id="pending-teacher-modal" className={`fixed inset-0 overflow-y-auto overscroll-contain z-[140] flex p-3 sm:p-4 transition-all duration-300 ${activeModal === 'pending-teacher-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
+    <div className={`relative m-auto w-full max-w-sm bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 px-5 pb-5 pt-12 sm:p-8 border border-slate-100 dark:border-slate-700 text-center transition-all duration-300 transform ${activeModal === 'pending-teacher-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
         <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-amber-300 flex items-center justify-center shadow-sm">
             <span className="material-symbols-outlined text-[48px] text-slate-900 dark:text-white animate-pulse">hourglass_top</span>
         </div>
@@ -1148,9 +1148,9 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
 </div>
 
 {/* FORGOT PASSWORD: STEP 1 (EMAIL REQUEST) */}
-<div id="forgot-password-modal" className={`fixed inset-0 z-[130] flex items-center justify-center p-4 transition-all duration-300 ${activeModal === 'forgot-password-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
-    <div className={`relative w-full max-w-md bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 p-8 border border-slate-100 dark:border-slate-700 text-center transition-all duration-300 transform ${activeModal === 'forgot-password-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
-        <button onClick={() => openModal('login-modal')} className="absolute top-6 right-6 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
+<div id="forgot-password-modal" className={`fixed inset-0 overflow-y-auto overscroll-contain z-[130] flex p-3 sm:p-4 transition-all duration-300 ${activeModal === 'forgot-password-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
+    <div className={`relative m-auto w-full max-w-md bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 px-5 pb-5 pt-12 sm:p-8 border border-slate-100 dark:border-slate-700 text-center transition-all duration-300 transform ${activeModal === 'forgot-password-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
+        <button onClick={() => openModal('login-modal')} className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
             <span className="material-symbols-outlined text-[32px]">close</span>
         </button>
         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
@@ -1178,9 +1178,9 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
 </div>
 
 {/* FORGOT PASSWORD: STEP 3 (NEW PASSWORD) */}
-<div id="new-password-modal" className={`fixed inset-0 z-[150] flex items-center justify-center p-4 transition-all duration-300 ${activeModal === 'new-password-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
-    <div className={`relative w-full max-w-md bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 p-8 border border-slate-100 dark:border-slate-700 text-center transition-all duration-300 transform ${activeModal === 'new-password-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
-        <button onClick={() => openModal('login-modal')} className="absolute top-6 right-6 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
+<div id="new-password-modal" className={`fixed inset-0 overflow-y-auto overscroll-contain z-[150] flex p-3 sm:p-4 transition-all duration-300 ${activeModal === 'new-password-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
+    <div className={`relative m-auto w-full max-w-md bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 px-5 pb-5 pt-12 sm:p-8 border border-slate-100 dark:border-slate-700 text-center transition-all duration-300 transform ${activeModal === 'new-password-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
+        <button onClick={() => openModal('login-modal')} className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
             <span className="material-symbols-outlined text-[32px]">close</span>
         </button>
         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
@@ -1214,8 +1214,8 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
 </div>
 
 {/* FORGOT PASSWORD: STEP 4 (SUCCESS ANIMATION) */}
-<div id="success-reset-modal" className={`fixed inset-0 z-[160] flex items-center justify-center p-4 transition-all duration-300 ${activeModal === 'success-reset-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
-    <div className={`relative w-full max-w-sm bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 p-8 border border-slate-100 dark:border-slate-700 text-center transition-all duration-300 transform ${activeModal === 'success-reset-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
+<div id="success-reset-modal" className={`fixed inset-0 overflow-y-auto overscroll-contain z-[160] flex p-3 sm:p-4 transition-all duration-300 ${activeModal === 'success-reset-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
+    <div className={`relative m-auto w-full max-w-sm bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 px-5 pb-5 pt-12 sm:p-8 border border-slate-100 dark:border-slate-700 text-center transition-all duration-300 transform ${activeModal === 'success-reset-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
         <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shadow-sm">
             <span className="material-symbols-outlined text-[48px] text-emerald-600 dark:text-emerald-400">check_circle</span>
         </div>
@@ -1227,8 +1227,8 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
 </div>
 
 {/* SUCCESS LOGIN MODAL (EASTER EGG) */}
-<div id="success-login-modal" className={`fixed inset-0 z-[160] flex items-center justify-center p-4 transition-all duration-300 ${activeModal === 'success-login-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
-    <div className={`relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 p-12 border border-slate-100 dark:border-slate-700 text-center overflow-hidden transition-all duration-300 transform ${activeModal === 'success-login-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
+<div id="success-login-modal" className={`fixed inset-0 overflow-y-auto overscroll-contain z-[160] flex p-3 sm:p-4 transition-all duration-300 ${activeModal === 'success-login-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
+    <div className={`relative m-auto w-full max-w-lg bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 p-6 sm:p-12 border border-slate-100 dark:border-slate-700 text-center overflow-hidden transition-all duration-300 transform ${activeModal === 'success-login-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
         {/* Fun decorative background elements */}
         <div className="absolute -top-10 -left-10 w-40 h-40 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
         <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse" style={{ animationDelay: '1s' }}></div>
@@ -1253,11 +1253,11 @@ export default function AuthModals({ activeModal, setActiveModal, openModal, clo
 </div>
 
 {/* ADMIN CONTROLS MODAL POPUP */}
-<div id="admin-controls-modal" className={`fixed inset-0 z-[110] flex items-center justify-center p-4 transition-all duration-300 ${activeModal === 'admin-controls-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
-    <div className={`relative w-full max-w-4xl bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 p-8 md:p-12 border border-slate-100 dark:border-slate-700 overflow-hidden transition-all duration-300 transform ${activeModal === 'admin-controls-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
+<div id="admin-controls-modal" className={`fixed inset-0 overflow-y-auto overscroll-contain z-[110] flex p-3 sm:p-4 transition-all duration-300 ${activeModal === 'admin-controls-modal' ? 'opacity-100 backdrop-blur-md bg-slate-900/40' : 'opacity-0 backdrop-blur-none bg-transparent pointer-events-none'}`}>
+    <div className={`relative m-auto w-full max-w-4xl bg-white dark:bg-slate-800 rounded-[24px] shadow-level-3 px-5 pb-5 pt-12 sm:p-8 md:p-12 border border-slate-100 dark:border-slate-700 overflow-hidden transition-all duration-300 transform ${activeModal === 'admin-controls-modal' ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-8 opacity-0'}`}>
         
         {/* Close Button */}
-        <button onClick={closeModal} className="absolute top-6 right-6 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
+        <button onClick={closeModal} className="absolute top-3 right-3 sm:top-6 sm:right-6 z-10 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer outline-none z-10">
             <span className="material-symbols-outlined text-[32px]">close</span>
         </button>
 
