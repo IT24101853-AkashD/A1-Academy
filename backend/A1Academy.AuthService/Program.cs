@@ -83,24 +83,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins("http://localhost:5173", "https://a1-academy-frontend-d4d6h7fuhebqbyfm.southeastasia-01.azurewebsites.net")
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
-
 builder.Services.AddControllers();
 builder.Services.AddA1AcademyHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddSwaggerGen();
+builder.Services.AddA1AcademySwagger("Auth");
 
 var app = builder.Build();
-
-app.UseCors("AllowFrontend");
 
 // Startup DB Verification
 using (var scope = app.Services.CreateScope())
@@ -159,11 +147,7 @@ static void SeedAdminUser(A1Academy.Shared.Data.AppDbContext dbContext, IConfigu
     Console.WriteLine($"SUCCESS: Bootstrap Admin account created for {adminEmail}.");
 }
 
-if (app.Environment.IsDevelopment())
-{
-    //app.UseSwagger();
-    //app.UseSwaggerUI();
-}
+app.UseA1AcademySwagger();
 
 app.UseHttpsRedirection();
 

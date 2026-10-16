@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import GrowthReportWidget from '../components/admin/GrowthReportWidget';
+
+// Shown until the first response arrives, so a placeholder number is never mistaken for real data.
+const formatCount = (value) => (typeof value === 'number' ? value.toLocaleString() : '—');
 
 export default function AdminDashboard() {
     const role = localStorage.getItem('role');
@@ -9,8 +12,33 @@ export default function AdminDashboard() {
     const [pendingTeachers, setPendingTeachers] = useState([]);
     const [pendingCount, setPendingCount] = useState(0);
     const [pendingActionId, setPendingActionId] = useState(null);
+    const [stats, setStats] = useState(null);
 
-    
+    // Live figures for the tiles and the "Needs Attention" list. Re-run after every approval, when
+    // the admin comes back to the tab, and every 30 seconds, so the numbers follow sign-ups,
+    // approvals and category changes made elsewhere without a manual reload.
+    const loadDashboardData = useCallback(async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const headers = { Authorization: `Bearer ${token}` };
+        try {
+            const [statsRes, pendingRes] = await Promise.all([
+                fetch(`${import.meta.env.VITE_API_URL}/api/users/stats`, { headers }),
+                fetch(`${import.meta.env.VITE_API_URL}/api/users?role=Teacher&status=Pending&page=1&pageSize=3`, { headers }),
+            ]);
+            if (statsRes.ok) {
+                setStats(await statsRes.json());
+            }
+            if (pendingRes.ok) {
+                const data = await pendingRes.json();
+                setPendingTeachers(data.items || []);
+                setPendingCount(data.totalCount || 0);
+            }
+        } catch (err) {
+            console.error('Failed to load dashboard data', err);
+        }
+    }, []);
+
     const runAccountAction = async (user, action) => {
         setPendingActionId(user.id);
         try {
@@ -22,6 +50,7 @@ export default function AdminDashboard() {
             if (res.ok) {
                 setPendingTeachers(prev => prev.filter(u => u.id !== user.id));
                 setPendingCount(prev => Math.max(prev - 1, 0));
+                await loadDashboardData();
             }
         } catch (err) {
             console.error('Action failed', err);
@@ -43,19 +72,23 @@ export default function AdminDashboard() {
                 }
             })
             .catch(err => console.error('Failed to fetch profile:', err));
-        fetch(import.meta.env.VITE_API_URL + '/api/users?role=Teacher&status=Pending&page=1&pageSize=3', {
-                headers: { Authorization: `Bearer ${token}` }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data && data.items) {
-                    setPendingTeachers(data.items);
-                    setPendingCount(data.totalCount || 0);
-                }
-            })
-            .catch(err => console.error('Failed to fetch pending teachers:', err));
         }
     }, []);
+
+    useEffect(() => {
+        void loadDashboardData();
+        const refreshWhenVisible = () => {
+            if (document.visibilityState === 'visible') void loadDashboardData();
+        };
+        const interval = setInterval(refreshWhenVisible, 30000);
+        window.addEventListener('focus', loadDashboardData);
+        document.addEventListener('visibilitychange', refreshWhenVisible);
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('focus', loadDashboardData);
+            document.removeEventListener('visibilitychange', refreshWhenVisible);
+        };
+    }, [loadDashboardData]);
 
     useEffect(() => {
         if (window.AOS) {
@@ -94,10 +127,12 @@ export default function AdminDashboard() {
                                 <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                                     <span className="material-symbols-outlined text-2xl">groups</span>
                                 </div>
-                                <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-full">+12%</span>
+                                {stats?.newUsersLast30Days > 0 && (
+                                    <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-full">+{stats.newUsersLast30Days} this month</span>
+                                )}
                             </div>
                             <h3 className="text-slate-500 dark:text-slate-400 font-semibold text-sm mb-1">Total Users</h3>
-                            <p className="text-3xl font-extrabold text-slate-900 dark:text-white">1,248</p>
+                            <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{formatCount(stats?.totalUsers)}</p>
                         </div>
 
                         <div data-aos="fade-up" data-aos-delay="200" className="glass-card rounded-3xl p-6">
@@ -105,10 +140,12 @@ export default function AdminDashboard() {
                                 <div className="w-12 h-12 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center">
                                     <span className="material-symbols-outlined text-2xl">school</span>
                                 </div>
-                                <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-full">+4%</span>
+                                {stats?.newTeachersLast30Days > 0 && (
+                                    <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-full">+{stats.newTeachersLast30Days} this month</span>
+                                )}
                             </div>
                             <h3 className="text-slate-500 dark:text-slate-400 font-semibold text-sm mb-1">Active Teachers</h3>
-                            <p className="text-3xl font-extrabold text-slate-900 dark:text-white">84</p>
+                            <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{formatCount(stats?.activeTeachers)}</p>
                         </div>
 
                         <div data-aos="fade-up" data-aos-delay="300" className="glass-card rounded-3xl p-6">
@@ -116,10 +153,12 @@ export default function AdminDashboard() {
                                 <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                                     <span className="material-symbols-outlined text-2xl">hourglass_top</span>
                                 </div>
-                                <span className="px-2.5 py-1 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold rounded-full">Action Needed</span>
+                                {stats?.pendingApprovals > 0 && (
+                                    <span className="px-2.5 py-1 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold rounded-full">Action Needed</span>
+                                )}
                             </div>
                             <h3 className="text-slate-500 dark:text-slate-400 font-semibold text-sm mb-1">Pending Approvals</h3>
-                            <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{pendingCount}</p>
+                            <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{formatCount(stats?.pendingApprovals)}</p>
                         </div>
 
                         <div data-aos="fade-up" data-aos-delay="400" className="glass-card rounded-3xl p-6">
@@ -129,7 +168,7 @@ export default function AdminDashboard() {
                                 </div>
                             </div>
                             <h3 className="text-slate-500 dark:text-slate-400 font-semibold text-sm mb-1">Total Categories</h3>
-                            <p className="text-3xl font-extrabold text-slate-900 dark:text-white">45</p>
+                            <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{formatCount(stats?.totalCategories)}</p>
                         </div>
                     </div>
 
