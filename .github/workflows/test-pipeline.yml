@@ -124,6 +124,11 @@ jobs:
   e2e-tests:
     name: Browser E2E tests (Selenium)
     runs-on: ubuntu-latest
+    # The whole system these jobs start (same Dockerfiles and compose file as development, an
+    # empty database, captured email) is the project's short-lived staging environment. Naming it
+    # here lists every run under the repository's Environments > staging. No secrets or
+    # protection rules are attached, so fork and Dependabot PRs still run.
+    environment: staging
     env:
       E2E_API_URL: http://localhost:5100
       E2E_FRONTEND_URL: http://localhost:5173
@@ -198,6 +203,7 @@ jobs:
   load-tests:
     name: Load tests (JMeter)
     runs-on: ubuntu-latest
+    environment: staging  # the same short-lived staging stack as e2e-tests
     steps:
     - name: Checkout Code
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
