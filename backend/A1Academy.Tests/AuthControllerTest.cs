@@ -1,4 +1,4 @@
-using A1Academy.AdminService.Controllers; using A1Academy.AuthService.Controllers; 
+using A1Academy.AdminService.Controllers; using A1Academy.AuthService.Controllers; using A1Academy.AuthService.Services; 
 using A1Academy.Shared.Data;
 using A1Academy.Shared.Data.Models;
 using A1Academy.Shared.Services;
@@ -69,8 +69,19 @@ public AuthControllerTests()
         _cache,
         _emailServiceMock.Object,
         _environmentMock.Object,
-        Mock.Of<IHttpClientFactory>());
+        Mock.Of<IHttpClientFactory>(),
+        CreateJwtTokenService());
 }
+
+// Same settings the mocked IConfiguration above returns, so issued tokens match what the
+// tests expect.
+private static JwtTokenService CreateJwtTokenService() =>
+    new(Microsoft.Extensions.Options.Options.Create(new JwtSettings
+    {
+        Key = "ThisIsADevelopmentJwtSecretKey123456789",
+        Issuer = "A1Academy",
+        Audience = "A1AcademyUsers"
+    }));
 
 [Fact]
 public async Task Login_WithValidCredentials_ReturnsOk()
@@ -604,7 +615,8 @@ public void DebugOtp_OutsideDevelopmentOrTesting_ReturnsNotFound()
         _cache,
         _emailServiceMock.Object,
         environmentMock.Object,
-        Mock.Of<IHttpClientFactory>());
+        Mock.Of<IHttpClientFactory>(),
+        CreateJwtTokenService());
 
     // Act
     var result = controller.DebugOtp("student@example.com");

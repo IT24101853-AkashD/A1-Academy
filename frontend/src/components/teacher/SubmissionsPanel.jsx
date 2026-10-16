@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 // One row per enrolled student (plus anyone who submitted but has since left the class), so a
 // Teacher sees at a glance who handed in what - and who hasn't - instead of a long list of
@@ -39,6 +39,13 @@ export default function SubmissionsPanel({ submissions, roster, onDownload, onSa
     const [filter, setFilter] = useState('all');
     const [search, setSearch] = useState('');
     const [gradingId, setGradingId] = useState(null);
+    const scoreInputRef = useRef(null);
+
+    // Move focus to the score box only when the teacher opens a grading form (or Save & next
+    // opens the next one), not on every render as the autoFocus attribute would.
+    useEffect(() => {
+        if (gradingId !== null) scoreInputRef.current?.focus();
+    }, [gradingId]);
     const [gradeInput, setGradeInput] = useState('');
     const [feedbackInput, setFeedbackInput] = useState('');
     const [gradeError, setGradeError] = useState('');
@@ -220,7 +227,7 @@ export default function SubmissionsPanel({ submissions, roster, onDownload, onSa
                                                     type="number"
                                                     min="0"
                                                     max="100"
-                                                    autoFocus
+                                                    ref={scoreInputRef}
                                                     value={gradeInput}
                                                     onChange={(e) => setGradeInput(e.target.value)}
                                                     className="w-full px-2 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"

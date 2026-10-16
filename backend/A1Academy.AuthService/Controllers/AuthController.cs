@@ -2,13 +2,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 using A1Academy.Shared.Data;
 using A1Academy.Shared.Data.Models;
 using A1Academy.Shared.Services;
+using A1Academy.AuthService.Services;
 using Microsoft.Extensions.Caching.Memory;
 using BCrypt.Net;
 using Google.Apis.Auth;
@@ -28,9 +26,11 @@ namespace A1Academy.AuthService.Controllers
         // Hands out clients over pooled connections; creating an HttpClient per request
         // exhausts sockets under load.
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly JwtTokenService _jwtTokenService;
 
-        public AuthController(AppDbContext context, IConfiguration configuration, IMemoryCache cache, IEmailService emailService, IWebHostEnvironment environment, IHttpClientFactory httpClientFactory)
+        public AuthController(AppDbContext context, IConfiguration configuration, IMemoryCache cache, IEmailService emailService, IWebHostEnvironment environment, IHttpClientFactory httpClientFactory, JwtTokenService jwtTokenService)
         {
+            _jwtTokenService = jwtTokenService;
             _httpClientFactory = httpClientFactory;
             _context = context;
             _configuration = configuration;
@@ -208,25 +208,7 @@ namespace A1Academy.AuthService.Controllers
                 return Unauthorized(LoginBlockedMessage(user.AccountStatus));
             }
 
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!);
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                    new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Role, user.Role),
-                    new Claim(A1Academy.Shared.Data.Models.User.SecurityStampClaimType, user.SecurityStamp)
-                }),
-                Expires = DateTime.UtcNow.AddDays(7),
-                Issuer = _configuration["Jwt:Issuer"],
-                Audience = _configuration["Jwt:Audience"],
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            var jwt = tokenHandler.WriteToken(token);
+            var jwt = _jwtTokenService.CreateToken(user);
 
             return Ok(new { token = jwt, role = user.Role });
         }
@@ -297,25 +279,7 @@ namespace A1Academy.AuthService.Controllers
                     return Unauthorized(LoginBlockedMessage(user.AccountStatus));
                 }
 
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!);
-                var tokenDescriptor = new SecurityTokenDescriptor
-                {
-                    Subject = new ClaimsIdentity(new[]
-                    {
-                        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                        new Claim(ClaimTypes.Email, user.Email),
-                        new Claim(ClaimTypes.Role, user.Role),
-                        new Claim(A1Academy.Shared.Data.Models.User.SecurityStampClaimType, user.SecurityStamp)
-                    }),
-                    Expires = DateTime.UtcNow.AddDays(7),
-                    Issuer = _configuration["Jwt:Issuer"],
-                    Audience = _configuration["Jwt:Audience"],
-                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-                };
-                
-                var token = tokenHandler.CreateToken(tokenDescriptor);
-                var jwt = tokenHandler.WriteToken(token);
+                var jwt = _jwtTokenService.CreateToken(user);
 
                 return Ok(new { token = jwt, role = user.Role });
             }
@@ -392,7 +356,7 @@ namespace A1Academy.AuthService.Controllers
         // use (+, -, parentheses) - this is a display field, not something dialed programmatically,
         // so it's a sanity check against garbage input rather than a strict international format.
         private static readonly System.Text.RegularExpressions.Regex PhoneNumberPattern =
-            new(@"^[0-9+()\-\s]{7,20}$");
+            new(@"^[0-9+()\-\s]{7,20}$", System.Text.RegularExpressions.RegexOptions.None, TimeSpan.FromMilliseconds(100));
 
         // Mirrors User.FirstName/LastName's [StringLength(50)]. Without this check, a name longer
         // than the column allows would sail past every check here and only fail once

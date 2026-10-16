@@ -28,6 +28,14 @@ builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
+// Sign-in tokens. The key is checked at start-up so a missing secret stops the service with a
+// clear message instead of failing on the first login.
+builder.Services.AddOptions<A1Academy.AuthService.Services.JwtSettings>()
+    .Bind(builder.Configuration.GetSection("Jwt"))
+    .Validate(settings => !string.IsNullOrWhiteSpace(settings.Key), "Jwt:Key is not configured.")
+    .ValidateOnStart();
+builder.Services.AddSingleton<A1Academy.AuthService.Services.JwtTokenService>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

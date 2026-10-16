@@ -96,6 +96,6 @@ services:
     environment:
       - VITE_API_URL=http://localhost:5100
     ports:
-      - "4173:80"
+      - "4173:8080"
     depends_on:
       - gateway
