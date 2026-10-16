@@ -395,16 +395,55 @@ namespace A1Academy.AdminService.Controllers
 </html>";
         }
 
+        public class DashboardStats
+        {
+            public int TotalUsers { get; set; }
+            public int NewUsersLast30Days { get; set; }
+            public int ActiveTeachers { get; set; }
+            public int NewTeachersLast30Days { get; set; }
+            public int PendingApprovals { get; set; }
+            public int TotalCategories { get; set; }
+        }
+
+        // Live figures for the four tiles at the top of the Admin dashboard. "Users" means the
+        // people the platform serves (Students and Teachers), so Admin accounts are not counted.
+        [HttpGet("stats")]
+        public async Task<ActionResult<DashboardStats>> GetStats()
+        {
+            var since = DateTime.UtcNow.AddDays(-30);
+            var members = _context.Users.Where(u => u.Role == "Student" || u.Role == "Teacher");
+            var teachers = _context.Users.Where(u => u.Role == "Teacher");
+
+            return Ok(new DashboardStats
+            {
+                TotalUsers = await members.CountAsync(),
+                NewUsersLast30Days = await members.CountAsync(u => u.CreatedAt >= since),
+                ActiveTeachers = await teachers.CountAsync(u => u.AccountStatus == AccountStatus.Active),
+                NewTeachersLast30Days = await teachers.CountAsync(u => u.AccountStatus == AccountStatus.Active && u.CreatedAt >= since),
+                PendingApprovals = await teachers.CountAsync(u => u.AccountStatus == AccountStatus.Pending),
+                TotalCategories = await _context.Categories.CountAsync()
+            });
+        }
+
         [HttpGet("growth-report")]
         public async Task<IActionResult> GetGrowthReport([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
         {
-            // Normalize dates to ensure full day coverage if time is not provided
-            var start = startDate.Date;
-            var end = endDate.Date.AddDays(1).AddTicks(-1);
+            if (endDate.Date < startDate.Date)
+            {
+                return BadRequest(new { message = "The end date must be on or after the start date." });
+            }
+
+            // Dates arrive from the query string with DateTimeKind.Unspecified. CreatedAt is a
+            // "timestamp with time zone" column, and Npgsql refuses to compare it with an
+            // Unspecified value (every request returned 500 on PostgreSQL, while the in-memory test
+            // database accepted it). The dates are calendar days in UTC: [start, day after end).
+            var start = DateTime.SpecifyKind(startDate.Date, DateTimeKind.Utc);
+            var endExclusive = DateTime.SpecifyKind(endDate.Date.AddDays(1), DateTimeKind.Utc);
+            var end = endExclusive.AddTicks(-1);
 
             // Use SQL aggregation via EF Core GroupBy to count registrations by role
             var roleCounts = await _context.Users
-                .Where(u => u.CreatedAt >= start && u.CreatedAt <= end)
+                .Where(u => u.CreatedAt >= start && u.CreatedAt < endExclusive)
                 .GroupBy(u => u.Role)
                 .Select(g => new
                 {
@@ -418,7 +457,7 @@ namespace A1Academy.AdminService.Controllers
 
             // Optional: Also group by date for a chart (timeline of growth)
             var dailyRegistrations = await _context.Users
-                .Where(u => u.CreatedAt >= start && u.CreatedAt <= end)
+                .Where(u => u.CreatedAt >= start && u.CreatedAt < endExclusive && (u.Role == "Student" || u.Role == "Teacher"))
                 .GroupBy(u => u.CreatedAt.Date)
                 .Select(g => new
                 {

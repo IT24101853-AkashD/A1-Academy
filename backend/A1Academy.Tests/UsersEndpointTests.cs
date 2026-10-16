@@ -1290,4 +1290,106 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         Assert.True(totalStudents >= 1);
         Assert.True(totalTeachers >= 2);
     }
+
+    private async Task<System.Text.Json.JsonElement> GetAsAsync(HttpClient client, string token, string url)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+    }
+
+    // The dashboard tiles used to show fixed numbers (1,248 users, 84 teachers, 45 categories).
+    // The test database is shared by every test in this class, so the check is on how much each
+    // figure moves when known users and a category are added, not on absolute values.
+    [Fact]
+    public async Task GetStats_AsAdmin_ReflectsCurrentUsersAndCategories()
+    {
+        var suffix = Guid.NewGuid().ToString("N");
+        var client = _factory.CreateClient();
+        var adminEmail = $"admin.stats.{suffix}@example.com";
+        await SeedUserAsync("Admin", "User", adminEmail, "AdminPass1!", "Admin");
+        var token = await LoginAsync(client, adminEmail, "AdminPass1!");
+
+        var before = await GetAsAsync(client, token, "/api/users/stats");
+
+        await SeedUserAsync("Stu", "Dent", $"stats.s.{suffix}@example.com", "StudentPass1!", "Student");
+        await SeedUserAsync("Act", "Ive", $"stats.t1.{suffix}@example.com", "TeacherPass1!", "Teacher");
+        await SeedUserAsync("Pen", "Ding", $"stats.t2.{suffix}@example.com", "TeacherPass1!", "Teacher", AccountStatus.Pending);
+        await SeedUserAsync("Another", "Admin", $"stats.a.{suffix}@example.com", "AdminPass1!", "Admin");
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            context.Categories.Add(new Category { Name = $"Stats-{suffix}" });
+            await context.SaveChangesAsync();
+        }
+
+        var after = await GetAsAsync(client, token, "/api/users/stats");
+
+        int Delta(string name) => after.GetProperty(name).GetInt32() - before.GetProperty(name).GetInt32();
+        Assert.Equal(3, Delta("totalUsers"));            // student + both teachers; admins not counted
+        Assert.Equal(3, Delta("newUsersLast30Days"));
+        Assert.Equal(1, Delta("activeTeachers"));
+        Assert.Equal(1, Delta("newTeachersLast30Days"));
+        Assert.Equal(1, Delta("pendingApprovals"));
+        Assert.Equal(1, Delta("totalCategories"));
+    }
+
+    [Fact]
+    public async Task GetStats_AsTeacher_ReturnsForbidden()
+    {
+        var suffix = Guid.NewGuid().ToString("N");
+        var client = _factory.CreateClient();
+        var email = $"teacher.stats.{suffix}@example.com";
+        await SeedUserAsync("Tea", "Cher", email, "TeacherPass1!", "Teacher");
+        var token = await LoginAsync(client, email, "TeacherPass1!");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/users/stats");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetGrowthReport_CountsOnlyUsersCreatedInsideTheRange()
+    {
+        var suffix = Guid.NewGuid().ToString("N");
+        var client = _factory.CreateClient();
+        var adminEmail = $"admin.range.{suffix}@example.com";
+        await SeedUserAsync("Admin", "User", adminEmail, "AdminPass1!", "Admin");
+        var token = await LoginAsync(client, adminEmail, "AdminPass1!");
+
+        // A fixed range far from "now", so users created by other tests can't fall inside it.
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            context.Users.Add(new User { Email = $"in1.{suffix}@ex.com", PasswordHash = "x", Role = "Student", CreatedAt = new DateTime(2020, 3, 1, 0, 0, 0, DateTimeKind.Utc), FirstName = "In", AccountStatus = AccountStatus.Active });
+            context.Users.Add(new User { Email = $"in2.{suffix}@ex.com", PasswordHash = "x", Role = "Teacher", CreatedAt = new DateTime(2020, 3, 31, 23, 59, 0, DateTimeKind.Utc), FirstName = "In", AccountStatus = AccountStatus.Active });
+            context.Users.Add(new User { Email = $"out.{suffix}@ex.com", PasswordHash = "x", Role = "Student", CreatedAt = new DateTime(2020, 4, 1, 0, 0, 0, DateTimeKind.Utc), FirstName = "Out", AccountStatus = AccountStatus.Active });
+            await context.SaveChangesAsync();
+        }
+
+        var json = await GetAsAsync(client, token, "/api/users/growth-report?startDate=2020-03-01&endDate=2020-03-31");
+
+        Assert.Equal(1, json.GetProperty("totalStudents").GetInt32());
+        Assert.Equal(1, json.GetProperty("totalTeachers").GetInt32());
+    }
+
+    [Fact]
+    public async Task GetGrowthReport_EndBeforeStart_ReturnsBadRequest()
+    {
+        var suffix = Guid.NewGuid().ToString("N");
+        var client = _factory.CreateClient();
+        var adminEmail = $"admin.badrange.{suffix}@example.com";
+        await SeedUserAsync("Admin", "User", adminEmail, "AdminPass1!", "Admin");
+        var token = await LoginAsync(client, adminEmail, "AdminPass1!");
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/users/growth-report?startDate=2026-10-16&endDate=2026-10-01");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }

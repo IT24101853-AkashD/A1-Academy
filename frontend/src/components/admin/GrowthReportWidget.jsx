@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 
+// The last 30 days, as yyyy-mm-dd strings for the date inputs.
+const defaultRange = () => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 30);
+    return { from: start.toISOString().split('T')[0], to: end.toISOString().split('T')[0] };
+};
+
 export default function GrowthReportWidget() {
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    const [startDate, setStartDate] = useState(() => defaultRange().from);
+    const [endDate, setEndDate] = useState(() => defaultRange().to);
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-
-    useEffect(() => {
-        const end = new Date();
-        const start = new Date();
-        start.setDate(start.getDate() - 30);
-        setStartDate(start.toISOString().split('T')[0]);
-        setEndDate(end.toISOString().split('T')[0]);
-    }, []);
 
     const fetchReport = async () => {
         if (!startDate || !endDate) return;
@@ -28,7 +28,8 @@ export default function GrowthReportWidget() {
                 const data = await res.json();
                 setReport(data);
             } else {
-                setError('Failed to fetch report');
+                const body = await res.json().catch(() => null);
+                setError(body?.message || 'Failed to fetch report');
             }
         } catch (err) {
             setError('Network error');
@@ -36,6 +37,12 @@ export default function GrowthReportWidget() {
             setLoading(false);
         }
     };
+
+    // Show the default range's report straight away, instead of an empty panel.
+    useEffect(() => {
+        fetchReport();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <div className="glass-card rounded-3xl p-5 sm:p-8 mb-12">
