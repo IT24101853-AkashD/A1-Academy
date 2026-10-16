@@ -27,5 +27,9 @@ EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 
 COPY --from=build /app/publish .
-ENTRYPOINT ["dotnet", "A1Academy.AdminService.dll"]
 
+# Run as the image's built-in non-root user. The service writes uploaded files under
+# /app/uploads, and /app belongs to root, so that one folder is created and handed to the user.
+RUN mkdir -p /app/uploads && chown "$APP_UID" /app/uploads
+USER $APP_UID
+ENTRYPOINT ["dotnet", "A1Academy.AdminService.dll"]

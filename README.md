@@ -3,15 +3,24 @@
 [![Backend Tests](https://github.com/IT24101853-AkashD/A1-Academy/actions/workflows/ci-backend-tests.yml/badge.svg)](https://github.com/IT24101853-AkashD/A1-Academy/actions/workflows/ci-backend-tests.yml)
 [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=IT24101853-AkashD_A1-Academy&metric=alert_status)](https://sonarcloud.io/project/overview?id=IT24101853-AkashD_A1-Academy)
 
-A1 Academy is a learning platform for **Students**, **Teachers** and **Administrators**: teachers
-schedule classes and share materials and assignments, students enrol and submit work, and admins
-manage users, subjects and teacher approvals - all governed by role-based access control.
+A1 Academy is a learning platform for **Students**, **Teachers** and **Administrators**, all
+governed by role-based access control:
+
+- **Teachers** schedule classes, share materials and assignments, mark attendance, grade
+  submissions, award badges and see their class's grade distribution.
+- **Students** search and enrol in classes, download materials, submit work and follow their
+  attendance and grades on a personal Progress Card.
+- **Admins** approve teachers, manage users, subjects and badge templates, and follow platform
+  growth from a live dashboard.
+- Every role can export its reports as formatted Excel files.
 
 | | URL |
 |---|---|
 | **Live site** | https://a1-academy-frontend-d4d6h7fuhebqbyfm.malaysiawest-01.azurewebsites.net |
 | **API (gateway)** | https://a1academy-gateway.greenfield-88918092.malaysiawest.azurecontainerapps.io |
+| **API docs (Swagger UI)** | https://a1academy-gateway.greenfield-88918092.malaysiawest.azurecontainerapps.io/swagger |
 | **Code quality** | [SonarCloud dashboard](https://sonarcloud.io/project/overview?id=IT24101853-AkashD_A1-Academy) |
+| **Project board** | [JIRA project AA](https://my-team-n7l64tjy.atlassian.net/issues/?jql=project+%3D+%22AA%22) |
 
 ---
 
@@ -30,16 +39,23 @@ Browser ─► Frontend (React + Vite, Azure Web App)
 ```
 
 All backend services are ASP.NET Core 10 and share the `A1Academy.Shared` library (EF Core data
-model, Kafka producer/consumer, email service, health checks).
+model, Kafka producer/consumer, email service, health checks, Swagger set-up).
 
 | Gateway route | Service |
 |---|---|
-| `/api/auth/*` | Auth: register, login, OTP, password reset, profile |
-| `/api/users/*`, `/api/categories/*`, `/api/teacher-subject-requests/*` | Admin |
-| `/api/teacher/subjects/*`, `/api/teacher/classes/*` | Teacher |
-| `/api/student/classes/*` | Student |
+| `/api/auth/*` | Auth: register, login, Google sign-in, OTP, password reset, profile |
+| `/api/users/*`, `/api/categories/*`, `/api/admin/badges/*`, `/api/teacher-subject-requests/*` | Admin: user directory, approvals, dashboard stats, growth report, subjects, badge templates, exports |
+| `/api/teacher/classes/*`, `/api/teacher/subjects/*`, `/api/teacher/badges/*` | Teacher: classes, materials, assignments, attendance, grading, grade distribution, badge awarding |
+| `/api/student/classes/*`, `/api/recognition/*` | Student: search, enrolment, submissions, Progress Card, public recognition board |
+| `/swagger`, `/openapi/{auth,admin,teacher,student}.json` | Gateway: one Swagger UI for all four services |
 
-Every service also exposes `/health/live` (process up) and `/health/ready` (database reachable).
+- Every service also exposes `/health/live` (process up) and `/health/ready` (database reachable).
+- **CORS is handled by the gateway only.** The services are never called from the browser directly,
+  so they send no CORS headers of their own; two `Access-Control-Allow-Origin` headers on one
+  response would make the browser reject it.
+- **API docs:** each service publishes its OpenAPI document at `/swagger/v1/swagger.json`. The gateway
+  serves them at `/openapi/<service>.json` and hosts the Swagger UI at `/swagger`. To call a
+  protected endpoint, run `POST /api/auth/login`, click **Authorize** and paste the returned token.
 
 ## Repository Structure
 
@@ -79,12 +95,17 @@ takes a few minutes.
 | Service | Address on your machine |
 |---|---|
 | API gateway | http://localhost:5100 |
+| Swagger UI | http://localhost:5100/swagger |
 | PostgreSQL | `localhost:5433` (user `appuser`, database `appdb`) |
 | Kafka | `localhost:9092` |
 
 The four services are only reachable through the gateway. On first start an Admin account is
 created: **`admin@a1academy.com` / `LocalAdmin123!`**. The JWT key and admin password in
 `docker-compose.yml` are **local-development values only**; production uses Azure secrets.
+
+> **Brand-new database:** all four services apply migrations at start-up, and on an empty database
+> one of them can lose that race and skip creating the Admin account. If the admin login fails on a
+> fresh volume, run `docker compose restart auth` once.
 
 Check everything is up:
 
@@ -156,6 +177,16 @@ stack, so run `docker compose down` first; the script stops with a message if yo
 Reports land in `test-results/`, `frontend/reports/`, `frontend/coverage/` and
 `performance/jmeter/results/` (HTML dashboards). None of these are committed.
 
+**Current results** (16 October 2026)
+
+| Layer | Tests | Result |
+|---|---|---|
+| Backend unit + integration (xUnit) | 252 | All passing |
+| Frontend components (Vitest, 20 files) | 170 | All passing |
+| Browser E2E: Selenium journey + WebdriverIO (3 specs) | 1 + 14 | All passing |
+| Load: JMeter login at 50 / 100 / 200 users | 3,500 requests | 0% errors; slowest response 1.96 s (limit 5 s) |
+| SonarCloud on `main` | 85.7% coverage, 0 bugs, 2.3% duplication | Quality Gate passed |
+
 ---
 
 ## CI/CD
@@ -164,7 +195,7 @@ Build, test and deploy are separate jobs, so a red check names the stage that fa
 
 | Workflow | Runs on | What it does |
 |---|---|---|
-| `test-pipeline.yml` (**Test Pipeline**) | Every PR, every merge to `main`, and by hand | Four parallel jobs - backend tests, frontend tests, browser E2E, load tests - each writing its results to the run summary, plus a final **Pipeline result** check |
+| `test-pipeline.yml` (**Test Pipeline**) | Every PR, every merge to `main`, and by hand | Four parallel jobs - backend tests, frontend tests, browser E2E, load tests (the last two in the `staging` environment) - each writing its results to the run summary, plus a final **Pipeline result** check |
 | `ci-backend-tests.yml` | Every PR touching `backend/` | Builds the solution and runs the backend tests |
 | `ci-{auth,admin,teacher,student}.yml` | PRs and merges touching that service or `Shared` | Tests, builds the Docker image; on `main` pushes it and deploys |
 | `ci-gateway.yml` | PRs and merges touching the gateway | Builds; on `main` pushes and deploys |
@@ -182,6 +213,14 @@ Build, test and deploy are separate jobs, so a red check names the stage that fa
 - All GitHub Actions are **pinned to commit SHAs**; **Dependabot** opens weekly update PRs for NuGet,
   npm and Actions. Coupled major upgrades (EF Core, Npgsql, ASP.NET Core auth, App Insights) are
   excluded and should be done together.
+
+### Environments
+
+| Environment | Where | How it is created |
+|---|---|---|
+| **Development** | A developer's machine | `docker compose up -d --build` + `npm run dev` (see Running Locally) |
+| **Staging** | GitHub Actions runner, one per pipeline run | The E2E and load jobs (GitHub environment `staging`) start the full system from `docker-compose.yml` + `docker-compose.test.yml` with an empty database and Mailpit, test it, and tear it down |
+| **Production** | Azure, Malaysia West | Automatic deploy of every merge to `main` (see Production below) |
 
 ---
 
@@ -224,6 +263,29 @@ bash scripts/devops-azure-setup.sh restart [app]     # required after any config
 
 > **Cost:** Event Hubs Standard and the Container Apps use the student subscription's credit.
 > Delete the resource group once the project no longer needs to run.
+
+### Security measures
+
+- Passwords hashed with BCrypt; signed JWTs with role claims, issued by one `JwtTokenService` whose
+  key comes from validated `Jwt` settings (the `jwt-key` secret in production). The Auth service
+  refuses to start without a key.
+- Every endpoint checks roles on the server (403), and every request re-checks the account status,
+  so deactivating a user ends their session immediately.
+- Data isolation: students only see their own grades and progress, and teachers only their own
+  classes.
+- All containers run as a **non-root user**; the frontend image uses `nginx-unprivileged`.
+- PostgreSQL requires SSL and accepts only Azure services; deploys use GitHub OIDC.
+- SonarCloud scans every pull request and blocks a merge when its Quality Gate fails.
+
+---
+
+## Known Issues
+
+| Issue | Impact | Workaround |
+|---|---|---|
+| On a brand-new database the services race to apply migrations, and the Admin account may not be created | Admin login fails on a fresh volume | Restart the Auth service once |
+| No automated browser test for the full badge journey (template, award, recognition board) | Covered by API tests and a manual walkthrough only | - |
+| Load tests cover login (and, in Sprint 3, class search and enrolment) but not the reporting endpoints | Report performance under load is not measured | - |
 
 ---
 

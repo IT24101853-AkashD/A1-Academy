@@ -27,5 +27,7 @@ EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 
 COPY --from=build /app/publish .
-ENTRYPOINT ["dotnet", "A1Academy.Gateway.dll"]
 
+# Run as the image's built-in non-root user (the gateway writes nothing to disk).
+USER $APP_UID
+ENTRYPOINT ["dotnet", "A1Academy.Gateway.dll"]
