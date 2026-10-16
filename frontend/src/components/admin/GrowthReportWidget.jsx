@@ -40,7 +40,8 @@ export default function GrowthReportWidget() {
 
     // Show the default range's report straight away, instead of an empty panel.
     useEffect(() => {
-        fetchReport();
+        // fetchReport handles its own errors, so there is nothing to await here.
+        void fetchReport();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 

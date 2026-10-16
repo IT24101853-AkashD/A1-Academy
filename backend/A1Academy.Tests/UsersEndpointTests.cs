@@ -1291,7 +1291,7 @@ public class UsersEndpointTests : IClassFixture<ApiWebApplicationFactory>
         Assert.True(totalTeachers >= 2);
     }
 
-    private async Task<System.Text.Json.JsonElement> GetAsAsync(HttpClient client, string token, string url)
+    private static async Task<System.Text.Json.JsonElement> GetAsAsync(HttpClient client, string token, string url)
     {
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);

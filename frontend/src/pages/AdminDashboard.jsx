@@ -76,9 +76,9 @@ export default function AdminDashboard() {
     }, []);
 
     useEffect(() => {
-        loadDashboardData();
+        void loadDashboardData();
         const refreshWhenVisible = () => {
-            if (document.visibilityState === 'visible') loadDashboardData();
+            if (document.visibilityState === 'visible') void loadDashboardData();
         };
         const interval = setInterval(refreshWhenVisible, 30000);
         window.addEventListener('focus', loadDashboardData);
